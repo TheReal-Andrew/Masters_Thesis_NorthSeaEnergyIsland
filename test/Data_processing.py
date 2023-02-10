@@ -154,8 +154,4 @@ stats = pd.DataFrame({'height':heights,
                       'mean':mean,
                       'max':max_})
 
-# swap_rows(stats, -1, -2)
-
-# stats = stats.iloc[::-1]
-
 
