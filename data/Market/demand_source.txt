@@ -1,0 +1,14 @@
+The demand data is the same as used in the PyPSA-Eur-Sec-Path model, a model of the european power system for 2020 
+to 2050 in 5-year intervals. The demand is input data to this model, sourced from ENTSO-E and prepared by 
+Open Power Systems Data [1]. Description of the data for the model is found in the supplementary materials [2], and 
+the datafiles are sourced from the archive of input data from the PyPSA-Eur-Sec-Path model [3].
+All demand is modeled on 2015, and there is no difference between the datasets [2].
+
+[1] Demand time series directly from Open-power-systems prepared dataset of ENTSO-E data:
+https://data.open-power-system-data.org/time_series/2018-03-13
+
+[2] Model supplementary materials:
+" Supplementary Materials for “Early decarbonisation of the European energy system pays off” "
+
+[3] Model Data is available at:
+https://zenodo.org/record/4010644

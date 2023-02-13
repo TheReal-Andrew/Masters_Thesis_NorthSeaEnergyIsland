@@ -1,0 +1,10 @@
+Prices are sourced from PyPSA-Eur-Sec-path, a model of the european power system for 2020 to 2050 in 5-year intervals. 
+Prices are a result of the optimization, and are found as the lagrange multipliers of the energy balance on each bus.
+They are found by opening the solved network in python and exporting the time series of marginal_price for the buses.
+
+The prices are taken from the base case, called "version-Base.zip", and importing the pypsa network from the files
+postnetwork-go_TYNDP_2030.nc
+postnetwork-go_TYNDP_2040.nc
+
+Data is available at:
+https://zenodo.org/record/4010644
