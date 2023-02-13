@@ -8,7 +8,8 @@ All demand is modeled on 2015, and there is no difference between the datasets [
 https://data.open-power-system-data.org/time_series/2018-03-13
 
 [2] Model supplementary materials:
-" Supplementary Materials for “Early decarbonisation of the European energy system pays off” "
+Articles " Supplementary Materials for “Early decarbonisation of the European energy system pays off” "
+https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-20015-4/MediaObjects/41467_2020_20015_MOESM1_ESM.pdf
 
 [3] Model Data is available at:
 https://zenodo.org/record/4010644
