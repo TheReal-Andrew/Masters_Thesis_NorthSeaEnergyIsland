@@ -4,9 +4,9 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
-import island_plt as ip
+# import island_plt as ip
 
-ip.set_plot_options()
+# ip.set_plot_options()
 
 #%% Choose lot
 
@@ -19,7 +19,7 @@ sub_folders = [name for name in os.listdir(folder)
                if os.path.isdir(os.path.join(folder, name))
                and lot in name]
 
-#%% Read data
+#%% Read Energinet data data
 
 # Initiate list of dataframes
 wind_data_seperated = []
@@ -114,7 +114,7 @@ ax.text(1.01, 0.8,
                 transform=ax.transAxes,
                 )
 
-ax.set_title('Time series of wind speeds at 120m \n  Lot 1, December 2021, WindStatus',
+ax.set_title('Time series of wind speeds at 120m \n '+ lot +', December 2021, WindStatus',
               fontsize = 12)
 
 #%% Plot histogram
@@ -129,7 +129,7 @@ plt.legend()
 ax.set_xlabel('Wind speed [m/s]')
 ax.set_ylabel('Counts')
 
-ax.set_title('Histogram of wind speeds at latitude = 56.6280, longitude = 6.3007 (Energy Island)')
+ax.set_title('Histogram of wind speeds at latitude = 56.6280, longitude = 6.3007 (Energy Island) \n' + lot )
 
 #%% Statistics
 
