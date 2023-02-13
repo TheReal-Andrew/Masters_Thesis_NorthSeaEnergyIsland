@@ -4,9 +4,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
-# import island_plt as ip
-
-# ip.set_plot_options()
 
 #%% Choose lot
 
@@ -19,7 +16,7 @@ sub_folders = [name for name in os.listdir(folder)
                if os.path.isdir(os.path.join(folder, name))
                and lot in name]
 
-#%% Read Energinet data data
+#%% Read data
 
 # Initiate list of dataframes
 wind_data_seperated = []
@@ -63,7 +60,18 @@ for folder in sub_folders:
 # Combine all dataframe in the list into one dataframe
 wind_data = pd.concat(wind_data_seperated)
 wind_data = wind_data.resample('H').mean()
-
+wind_data.rename(columns={'WindSpeed004m m/s': '004m', 
+                          'WindSpeed030m m/s': '030m',
+                          'WindSpeed040m m/s': '040m',
+                          'WindSpeed060m m/s': '060m',
+                          'WindSpeed090m m/s': '090m',
+                          'WindSpeed100m m/s': '100m',
+                          'WindSpeed120m m/s': '120m',
+                          'WindSpeed150m m/s': '150m',
+                          'WindSpeed180m m/s': '180m',
+                          'WindSpeed200m m/s': '200m',
+                          'WindSpeed240m m/s': '240m',
+                          'WindSpeed270m m/s': '270m',}, inplace=True)
 
 #%% Read Renewable Ninja
 
@@ -76,45 +84,43 @@ wind_ninja = pd.read_csv('ninja_wind.csv',
 wind_ninja.index = pd.to_datetime(wind_data.index)
 
 #%% Plot time-series data
-fig, ax = plt.subplots(figsize =(10, 5), dpi = 300)
-plt.plot(wind_ninja, label = '2019 RenewableNinja, (hub)height = 138m')
-plt.plot(wind_data.iloc[:,5], 
-          label = '2021 Energinet (LiDAR buoy), height = 120m')
+h = '120m' # Chosen height
 
-# ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+fig, ax = plt.subplots(figsize =(10, 5), dpi = 300)
+
+plt.plot(wind_ninja,   label = '2019 RenewableNinja, (hub)height = 138m')
+plt.plot(wind_data[h], label = '2021 Energinet (LiDAR buoy), height = 120m')
+
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
 ax.yaxis.set_minor_locator(MultipleLocator(1))
-
-# ax.set_xlim([wind_ninja.index[0], wind_ninja.index[-1]])
-# ax.set_ylim(0,25)
 
 ax.set_xlabel('Time [hr]')
 ax.set_ylabel('Wind speed [m/s]')
 
-plt.legend(loc = 'lower left')
+plt.legend(loc = 'upper right')
 plt.grid()
 
 ax.text(1.01, 1, 
                 str('Renewable Ninja:\n'
-                    + 'Std = '+ str(round(wind_ninja['wind_speed'].std(),2)) +'m/s\n'
-                    + 'Min = '+ str(round(wind_ninja['wind_speed'].min(),2)) +' m/s\n'
+                    + 'Std = ' + str(round(wind_ninja['wind_speed'].std(), 2)) +'m/s\n'
+                    + 'Min = ' + str(round(wind_ninja['wind_speed'].min(), 2)) +'m/s\n'
                     + 'Mean = '+ str(round(wind_ninja['wind_speed'].mean(),2)) +'m/s\n'
-                    + 'Max = '+ str(round(wind_ninja['wind_speed'].max(),2)) +'m/s\n'),
+                    + 'Max = ' + str(round(wind_ninja['wind_speed'].max(), 2)) +'m/s\n'),
                 ha='left', va='top', 
                 transform=ax.transAxes,
                 )
 
-ax.text(1.01, 0.8, 
-                str('Statistics:\n'
-                    + 'Std = '+ str(round(wind_data.iloc[:,5].std(),2)) +'m/s\n'
-                    + 'Min = '+ str(round(wind_data.iloc[:,5].min(),2)) +' m/s\n'
-                    + 'Mean = '+ str(round(wind_data.iloc[:,5].mean(),2)) +'m/s\n'
-                    + 'Max = '+ str(round(wind_data.iloc[:,5].max(),2)) +'m/s\n'),
+ax.text(1.01, 0.75, 
+                str('Energinet:\n'
+                    + 'Std = ' + str(round(wind_data[h].std(), 2)) +'m/s\n'
+                    + 'Min = ' + str(round(wind_data[h].min(), 2)) +'m/s\n'
+                    + 'Mean = '+ str(round(wind_data[h].mean(),2)) +'m/s\n'
+                    + 'Max = ' + str(round(wind_data[h].max(), 2)) +'m/s\n'),
                 ha='left', va='top', 
                 transform=ax.transAxes,
                 )
 
-ax.set_title('Time series of wind speeds at 120m \n '+ lot +', December 2021, WindStatus',
+ax.set_title('Time series of wind speeds at 120m \n  Lot 1, December 2021, WindStatus',
               fontsize = 12)
 
 #%% Plot histogram
@@ -129,29 +135,31 @@ plt.legend()
 ax.set_xlabel('Wind speed [m/s]')
 ax.set_ylabel('Counts')
 
-ax.set_title('Histogram of wind speeds at latitude = 56.6280, longitude = 6.3007 (Energy Island) \n' + lot )
+ax.set_title('Histogram of wind speeds at latitude = 56.6280, longitude = 6.3007 (Energy Island)')
 
-#%% Statistics
+#%% Correction
 
-# def swap_rows(df, row1, row2):
-#     df.iloc[row1], df.iloc[row2] =  df.iloc[row2].copy(), df.iloc[row1].copy()
-#     return df
+wind_corrected = wind_ninja['wind_speed']/wind_ninja['wind_speed'].mean() * wind_data[h].mean()
+# wind_corrected = wind_ninja['wind_speed']/wind_ninja['wind_speed'].std() * wind_data[h].std()
+# wind_corrected = wind_corrected - wind_corrected.std()
+fig, ax = plt.subplots(figsize =(10, 5), dpi = 300)
 
-heights = [270, 240, 200, 180, 150, 120, 100, 90, 60, 30, 40, 4]
-heights = list(reversed(heights))
+plt.plot(wind_data[h],   label = 'Energinet')
+plt.plot(wind_corrected, label = 'Corrected')
 
-std, min_, mean, max_ = [], [], [], []
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
+ax.yaxis.set_minor_locator(MultipleLocator(1))
 
-for i in range(0, wind_data.shape[1]):
-    std.append(round(wind_data.iloc[:,i].std(),2))
-    min_.append(round(wind_data.iloc[:,i].min(),2))
-    mean.append(round(wind_data.iloc[:,i].mean(),2))
-    max_.append(round(wind_data.iloc[:,i].max(),2))
+ax.set_xlabel('Time [hr]')
+ax.set_ylabel('Wind speed [m/s]')
 
-stats = pd.DataFrame({'height':heights,
-                      'std':std,
-                      'min':min_,
-                      'mean':mean,
-                      'max':max_})
+plt.legend(loc = 'upper right')
+plt.grid()
 
 
+print(wind_data[h].describe())
+print(wind_corrected.describe())
+
+fig, ax = plt.subplots(figsize =(14, 7), dpi = 300)
+ax.hist([wind_data[h].values,wind_corrected.values], bins = np.arange(0,26,1), rwidth=0.9,label = ['Energinet','Corrected'])
+plt.legend()
