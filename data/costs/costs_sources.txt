@@ -1,0 +1,3 @@
+name: technology_data_for_el_and_dh
+link: https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-generation-electricity-and
+cite: Danish Energy Agency, June 2022
