@@ -4,6 +4,9 @@ Created on Wed Feb 15 20:21:54 2023
 
 @author: lukas
 """
+#%%
+# Generalization Of Renewables Module (GORM) module containing useful functions
+
 
 def add_bilink(n, bus0, bus1, link_name, efficiency = 1,
                capital_cost = 0, marginal_cost = 0, p_nom_extendable = True):
