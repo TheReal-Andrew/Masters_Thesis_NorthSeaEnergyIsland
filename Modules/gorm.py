@@ -5,9 +5,39 @@ Created on Wed Feb 15 20:21:54 2023
 @author: lukas
 """
 #%%
-# Generalization Of Renewables Module (GORM) module containing useful functions
+# General cOde Resource Module (GORM) - module containing useful functions
 
+#%% General functions
 
+# Play sound from folder
+def its_britney_bitch(path):
+    import os
+    import random 
+    path=path
+    files=os.listdir(path)
+    d=random.choice(files)
+    os.startfile(path + '/' + d)
+
+#%% Calculations and Operations
+
+# Get annuity Annuity from discount rate and lifetime
+def get_annuity(i, n):
+    annuity = i/(1.-1./(1.+i)**n)
+    return annuity
+
+# Remove outliers from dataframe, and replace with n standard deviations.
+def remove_outliers(df,columns,n_std):
+    for col in columns:
+        print('Working on column: {}'.format(col))
+        
+        df[col][ df[col] >= df[col].mean() + (n_std * df[col].std())] = \
+        df[col].mean() + (n_std * df[col].std())
+        
+    return df
+
+#%% PyPSA Functions
+
+# Add bidirectional link with setup for losses
 def add_bilink(n, bus0, bus1, link_name, efficiency = 1,
                capital_cost = 0, marginal_cost = 0, p_nom_extendable = True):
     
