@@ -5,6 +5,11 @@ Created on Wed Feb 22 09:29:02 2023
 @author: lukas
 """
 
+import os
+import sys
+# Add modules folder to path
+sys.path.append(os.path.abspath('../../modules')) 
+
 import pypsa
 from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
 import pandas as pd
@@ -14,14 +19,12 @@ import matplotlib.pyplot as plt
 import island_plt as ip
 ip.set_plot_options()
 
-import os
-import sys
-
 #%% ------- CONTROL -----------------------------------
 
 should_plot = True
 
 year     = 2030        # Choose year
+wind_cap = 3000        # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 link_efficiency = 0.97 
@@ -119,11 +122,11 @@ for i in range(0, country_df.shape[0]): #i becomes integers
 # ----- Add wind generator --------------------
 n.add("Generator",
       "Wind",
-      bus               = "Island",
+      bus               = bus_df['Bus name'][0], # Add to island bus
       carrier           = "wind",
       p_nom_extendable  = True,
-      p_nom_min         = 3_000,
-      p_nom_ma          = 3_000,
+      p_nom_min         = wind_cap,
+      p_nom_max         = wind_cap,
       p_max_pu          = wind_cf['electricity'].values,
       marginal_cost     = tech_df['marginal cost']['wind turbine'],
       capital_cost      = tech_df['capital cost']['wind turbine']
