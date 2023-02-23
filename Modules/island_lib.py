@@ -25,8 +25,8 @@ def its_britney_bitch(path):
 def get_load_and_price(year): # require year
     import pandas as pd
     
-    cprice = pd.read_csv('https://github.com/TheReal-Andrew/NorthSeaEnergyIsland/blob/main/Data/market/price_%d.csv?raw=true'%year, index_col = 0)      
-    cload = pd.read_csv('https://github.com/TheReal-Andrew/NorthSeaEnergyIsland/blob/main/Data/market/load_%d.csv?raw=true'%year, index_col = 0)
+    cprice = pd.read_csv('https://github.com/TheReal-Andrew/Pre_project/tree/main/Data/market/price_%d.csv?raw=true'%year, index_col = 0)      
+    cload = pd.read_csv('https://github.com/TheReal-Andrew/Pre_project/tree/main/Data/market/load_%d.csv?raw=true'%year, index_col = 0)
     
     return cprice, cload
 

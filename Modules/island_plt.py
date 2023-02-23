@@ -34,13 +34,13 @@ def set_plot_options():
     plt.rcParams['figure.dpi'] = 300        #Set resolution
     matplotlib.rcParams['font.family'] = ['DejaVu Sans']     #Change font to Computer Modern Sans Serif
     plt.rcParams['axes.unicode_minus'] = False          #Re-enable minus signs on axes))
-    plt.rcParams['axes.facecolor']= "0.99"              #Set plot background color
+    plt.rcParams['axes.facecolor'] = color_bg              #Set plot background color
     plt.rcParams.update({"axes.grid" : True, "grid.color": color_gridaxe}) #Set grid color
     plt.rcParams['axes.grid'] = True
-    # plt.fontname = "Computer Modern Serif"
 
 #%% Geographical plot
 def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
+    import cartopy.crs as ccrs
     #Plots geographical map with buses and links shown
     
     plt.rc("figure", figsize = size)   #Set plot resolution
