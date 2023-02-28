@@ -48,7 +48,7 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
     network.plot(
         color_geomap = True,            #Coloring on oceans
         boundaries = bounds,            #Boundaries of the plot as [x1,x2,y1,y2]
-        projection=ccrs.EqualEarth()    #Choose cartopy.crs projection
+        projection=ccrs.EqualEarth(),   #Choose cartopy.crs projection
         )
 
 #%% Powerflow plot
