@@ -32,9 +32,12 @@ def set_plot_options():
     rc = {"axes.edgecolor":color_gridaxe} 
     plt.style.use(('ggplot', rc))           #Set style with extra spines
     plt.rcParams['figure.dpi'] = 300        #Set resolution
+    plt.rcParams['figure.figsize'] = [10, 5]
+    matplotlib.rc('font', size=15)
+    matplotlib.rc('axes', titlesize=20)
     matplotlib.rcParams['font.family'] = ['DejaVu Sans']     #Change font to Computer Modern Sans Serif
     plt.rcParams['axes.unicode_minus'] = False          #Re-enable minus signs on axes))
-    plt.rcParams['axes.facecolor']= "0.99"              #Set plot background color
+    plt.rcParams['axes.facecolor']= color_bg             #Set plot background color
     plt.rcParams.update({"axes.grid" : True, "grid.color": color_gridaxe}) #Set grid color
     plt.rcParams['axes.grid'] = True
     # plt.fontname = "Computer Modern Serif"
