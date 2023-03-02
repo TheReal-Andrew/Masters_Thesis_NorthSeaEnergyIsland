@@ -110,8 +110,8 @@ def get_area_use():
     import pandas as pd
     
     area_use = pd.Series( data = {'storage':0.9,  #[m^2/MWh] Capacity
-                                  'hydrogen':3.7, #[m^2/MW] capacity
-                                  'data':30,      #[m^2/MW] IT output
+                                  'hydrogen':12,  #3.7, #[m^2/MW] capacity
+                                  'data':33,      #[m^2/MW] IT output
                                   })
     
     return area_use
@@ -147,26 +147,57 @@ def get_tech_data(year = 2030, r = 0.07):
     storage_data = storage_data[year]
     
     # ----- Hydrogen -----
+    hydrogen_data = (pd.read_excel(r'../../data/costs/data_sheets_for_renewable_fuels.xlsx',
+                                 sheet_name = '86 PEMEC 100MW',
+                                 skiprows = [0, 1], # Drop initial empty columns
+                                 usecols = 'B:F') # Use specific columns
+                    .dropna(axis = 1, how = 'all').dropna(axis = 0, how = 'all') # Remove empty rows/columns
+                    .set_index('Technology') # set index
+                    )
+
+    hydrogen_data.columns = hydrogen_data.iloc[0,:] # Change column names
+    hydrogen_data = hydrogen_data[2:29]             # Get only relevant data
+    hydrogen_data = hydrogen_data[year]
+    
+    # ----- Wind -----
+    wind_data = (pd.read_excel(r'../../data/costs/technology_data_for_el_and_dh.xlsx',
+                                 sheet_name = '21 Offshore turbines',
+                                 skiprows = [0, 2], # Drop initial empty columns
+                                 usecols = 'A:G',
+                                 index_col = [0, 1]
+                                 ) # Use specific columns
+                    .dropna(axis = 1, how = 'all').dropna(axis = 0, how = 'all') # Remove empty rows/columns
+                    )
+
+    wind_data = wind_data[year]
     
     # ------------------- Cost calculations --------------------------
     # ----- wind -----
-    cc_wind       = float(get_annuity(r, 30) * 1.8e6) # [euro/MW] UNCONFIRMED
-    mc_wind       = 0.01                          # [euro/MWh] UNCONFIRMED
+    cc_wind       = (get_annuity(r, wind_data['Energy/technical data']['Technical lifetime [years]'])
+                     * wind_data['Financial data']['Nominal investment (*total) [2020-MEUR/MW_e]'] * 1e6
+                     + wind_data['Financial data']['Fixed O&M (*total) [2020-EUR/MW_e/y]']
+                     )# [euro/MW] From Energistyrelsen
+    
+    mc_wind       = wind_data['Financial data']['Variable O&M (*total) [2020-EUR/MWh_e]']   # [euro/MWh] From Energistyrelsen
     
     # ----- hydrogen -----
-    cc_hydrogen   = float(get_annuity(0.07, 25)*6e5*(1+0.05)) # [euro/MW]  UNCONFIRMED
+    cc_hydrogen   = (get_annuity(r, hydrogen_data['Technical lifetime (years)'])
+                     * hydrogen_data['Specific investment (€ / kW of total input_e)'] * 1e3
+                     * (1+ (hydrogen_data['Fixed O&M (% of specific investment / year) ']*0.01))
+                     ) # [euro/MW]  From Energistyrelsen
+    
     mc_hydrogen   = 127 # [euro/MWh] Revenue - UNCONFIRMED
     
     # ----- storage -----
     cc_storage    = (get_annuity(r,storage_data['Technical lifetime (years)']) # Annuity
                           * storage_data['Specific investment (M€2015 per MWh)'] * 1e6 # Investment
                           + storage_data['Fixed O&M (k€2015/MW/year)'] * 1e3 # O&M
-                          ) # [euro/MWh]
-    mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [euro/MWh] 
+                          ) # [euro/MWh] From Energistyrelsen
+    mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [euro/MWh]  From Energistyrelsen
     
     # ----- datacenter -----
-    cc_datacenter = 10e6 # [euro/MW]  UNCONFIRMED
-    mc_datacenter = 127    # [euro/MWh] revenue UNCONFIRMED
+    cc_datacenter = 1e6 # [euro/MW]  UNCONFIRMED
+    mc_datacenter = 120    # [euro/MWh] revenue UNCONFIRMED
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!

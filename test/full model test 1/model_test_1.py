@@ -23,15 +23,16 @@ ip.set_plot_options()
 #%% ------- CONTROL -----------------------------------
 
 # Main control
-should_solve = True
-should_plot  = True
+should_solve     = True
+should_plot      = True
 
 # Main parameters
 year     = 2030        # Choose year
 wind_cap = 3000        # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
-link_efficiency = 0.90 
+link_efficiency = 0.9 
+link_limit = 2000      # [MW] Limit links to countries. float('inf')
 r        = 0.07        # Discount rate
 
 filename = "network_1_" # Choose filename for export
@@ -40,10 +41,10 @@ filename = "network_1_" # Choose filename for export
 connected_countries =  [
                         "Denmark",         
                         "Norway",          
-                        "Germany",         
-                        "Netherlands",     
-                        "Belgium",         
-                        "United Kingdom"
+                        # "Germany",         
+                        # "Netherlands",     
+                        # "Belgium",         
+                        # "United Kingdom"
                         ]
 
 jiggle = [0, 0]
@@ -52,6 +53,8 @@ jiggle = [0, 0]
 add_storage = True # Add storage on island
 add_data    = True # Add datacenter on island
 add_hydrogen= True # Add hydrogen production on island
+add_c_gens  = True # Add country generators
+add_c_loads = True # Add country demand
 
 #%% ------- IMPORT DATA -----------------------------------
 
@@ -112,30 +115,32 @@ for country in country_df['Bus name']:
                     marginal_cost = tech_df['marginal cost']['link'],
                     carrier       = 'DC',
                     p_nom_extendable = True,
-                    # p_nom_max     = 2000, # [MW]
+                    p_nom_max     = link_limit, # [MW]
                     bus_shift     = jiggle,
                     )
 
 ### COUNTRIES ###
 # ----- Add generators for countries--------------------
 #Add generators to each country bus with varying marginal costs
-for country in country_df['Bus name']:
-    n.add('Generator',
-          name             = "Gen " + country,
-          bus              = country,
-          capital_cost     = 0,
-          marginal_cost    = cprice[country_df.loc[country]['Abbreviation']].values,
-          p_nom_extendable = True
-          )
-    
+if add_c_gens:
+    for country in country_df['Bus name']:
+        n.add('Generator',
+              name             = "Gen " + country,
+              bus              = country,
+              capital_cost     = 0,
+              marginal_cost    = cprice[country_df.loc[country]['Abbreviation']].values,
+              p_nom_extendable = True
+              )
+        
 # ----- Add loads for countries--------------------
 # Add loads to each country bus
-for country in country_df['Bus name']:
-    n.add('Load',
-          name    = "Load " + country,
-          bus     = country,
-          p_set   = cload[country_df.loc[country]['Abbreviation']].values,
-          ) 
+if add_c_loads:
+    for country in country_df['Bus name']:
+        n.add('Load',
+              name    = "Load " + country,
+              bus     = country,
+              p_set   = cload[country_df.loc[country]['Abbreviation']].values,
+              ) 
 
 ### ISLAND ###
 # ----- Add wind generator --------------------
@@ -222,16 +227,144 @@ else:
 if should_plot:
     ip.plot_geomap(n)
 
-linkz = n.links_t.p0
+# Extra
+# linkz = n.links_t.p0
 
-linkz2 = n.links[~n.links.index.str.contains("bus")]
+# linkz2 = n.links[~n.links.index.str.contains("bus")]
 
-country = 'Denmark'
-linkz_country = n.links[n.links.index.str.contains(country)]
+# country = 'Denmark'
+# linkz_country = n.links[n.links.index.str.contains(country)]
 
-linkz2['p_nom_opt'].hist(bins = 12, figsize = (10,5))
-linkz2['p_nom_opt'].plot(figsize = (10,5))
+# linkz2['p_nom_opt'].hist(bins = 12, figsize = (10,5))
+# linkz2['p_nom_opt'].plot(figsize = (10,5))
 
+#%% Network diagram 
+
+def draw_bus(n, bus, show = True):
+    import schemdraw
+    import schemdraw.elements as elm
+    from schemdraw.segments import Segment, util, math, SegmentCircle
+    
+    class MyGen(elm.Element):
+        def __init__(self, *d, **kwargs):
+            super().__init__(*d, **kwargs)
+            self.segments.append(Segment(
+                [(0, 0), (0.75, 0)]))
+            sin_y = util.linspace(-.25, .25, num=25)
+            sin_x = [.2 * math.sin((sy-.25)*math.pi*2/.5) + 1.25 for sy in sin_y]
+            self.segments.append(Segment(list(zip(sin_x, sin_y))))
+            self.segments.append(SegmentCircle((1.25, 0), 0.5,))
+            
+    class MyLoad(elm.Element):
+        def __init__(self, *d, **kwargs):
+            super().__init__(*d, **kwargs)
+            lead = 0.95
+            h = 0.8
+            w = 0.5
+            self.segments.append(Segment(
+                [(0, 0), (0, lead), (-w, lead+h), (w, lead+h), (0, lead)]))
+            self.params['drop'] = (0, 0)
+            self.params['theta'] = 0
+            self.anchors['start'] = (0, 0)
+            self.anchors['center'] = (0, 0)
+            self.anchors['end'] = (0, 0)
+            
+    class MyStore(elm.Element):
+        def __init__(self, *d, **kwargs):
+            super().__init__(*d, **kwargs)
+            lead = 0.75
+            h = lead + 1
+            w = 1
+            self.segments.append(Segment(
+                [(0, 0), (lead, 0), (lead, w/2), (h, w/2),
+                  (h, -w/2), (lead, -w/2), (lead, 0)
+                  ]))
+    
+    bus_color  = 'steelblue'
+    link_color = 'darkorange'
+    fontsize = 7
+    title_fontsize = 12
+    
+    gens   = n.generators[n.generators['bus'] == bus] #Get all generators on bus
+    loads  = n.loads[n.loads['bus'] == bus]
+    stores = n.stores[n.stores['bus'] == bus]
+    
+    with schemdraw.Drawing(show = show) as d:
+        d += elm.Dot().color(bus_color).label(bus, fontsize = title_fontsize) #Start bus
+        
+        for gen in gens.index:
+            d += elm.Line().color(bus_color).length(1.5) #Add line piece
+            d.push()
+            label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
+            d += MyGen().up().label(label, loc='right', fontsize = fontsize)
+            d.pop()
+        
+        for store in stores.index:
+            d += elm.Line().color(bus_color).length(1.5) #Add line piece
+            d.push()
+            label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
+            d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
+            d.pop()
+            
+        for load in loads.index:
+            d += elm.Line().color(bus_color).length(1.5) #Add line piece
+            d.push()
+            label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
+            d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
+            d.pop()
+            
+        d += elm.Line(arrow = '-o').color(bus_color).length(1.5) # End bus
+        
+    return d
+
+buses = bus_df['Bus name']
+# buses = n.buses.index
+
+n.buses['sX'] = [0, 15, 12,   0, 15,  5, 12]
+n.buses['sY'] = [0, 0,   5,  -1, -1,  -1, 4]
+
+n.buses['coords'] = [
+                    [0,  0], # Island
+                    [15, 0], # DK
+                    [12, 5], # Norway
+                    [0, -1], # DK e0
+                    [15, 1], # DK e1
+                    [5, -1], # NO e0
+                    [12, 4], # NO e1
+                    ]
+
+# links1 = n.links[~n.links.index.str.contains("bus")].copy()
+
+# links1['bus0'] = [ 'Energy ' + x[:7] for x in links1['bus0']]
+# links1['bus1'] = [x[10:-3] for x in links1['bus1']]
+
+s = pd.Series([])
+
+for bus in buses:
+    
+    bus_diag = pd.Series({bus:draw_bus(n, bus, show = False)})
+    
+    s = pd.concat([s, bus_diag])
+    
+s.name = 'graphic'
+# data = pd.concat([s, n.buses['sX'], n.buses['sY']], axis = 1)
+
+data = pd.concat([s, n.buses['coords']], axis = 1)
+
+import schemdraw
+import schemdraw.elements as elm
+
+with schemdraw.Drawing() as d:
+    
+    d.push()
+    
+    for bus in bus_df['Bus name']:
+        d += (elm.ElementDrawing(data.loc[bus]['graphic'])
+              .at((data.loc[bus]['coords'][0], 
+                   data.loc[bus]['coords'][1]))
+              )
+        d.pop()
+    
 
 
 

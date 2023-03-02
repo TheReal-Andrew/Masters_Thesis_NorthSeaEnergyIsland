@@ -14,68 +14,90 @@ import sys
 sys.path.append(os.path.abspath('../../modules')) 
 
 import gorm as gm
+
+import matplotlib.pyplot as plt
 import island_plt as ip
+ip.set_plot_options()
 
-n = pypsa.Network()
-t = pd.date_range('2030-01-01 00:00', '2030-12-31 23:00', freq = 'H')
-n.set_snapshots(t)
+area_use = gm.get_area_use()
+area_use.index = ['Battery storage', 'PEM Electrolysis', 'Datacenter']
 
-wind_cf         = pd.read_csv(r'data\wind_formatted.csv',
-                       index_col = [0], sep=",")
+fig = plt.figure()
+ax = area_use.plot.bar(figsize = (10,5), rot = 0, width = 0.25)
 
-tech_df         = gm.get_tech_data(2030, 0.07)
+ax.set_title('Technology area use')
+ax.set_ylabel('Area use [m$^2$/MW]')
 
-cprice, cload   = gm.get_load_and_price(2030, ["Denmark"], n_std = 1)
+ax.bar_label(ax.containers[0])
 
-n.madd('Bus',
-       names = ['Island', 'DK'],
-       x = [6,  8],
-       y = [56, 57])
+plt.savefig('Tech area use (TEMP).pdf', format = 'pdf', bbox_inches='tight') 
 
-n.add(
-    "Generator",
-    name             = "DK Gen",
-    bus              = "DK",
-    capital_cost     = 0,            
-    marginal_cost    = cprice['DK'].values,
-    p_nom_extendable = True,   #Make sure country can always deliver to price
-    )
+# ax.bar_label(
+#     bar_container, fmt=lambda x: '{:.1f} km/h'.format(x * 1.61)
+# )
 
 
-n.add("Generator",
-      "Wind",
-      bus               = 'Island', # Add to island bus
-      carrier           = "wind",
-      p_nom_extendable  = True,
-      p_nom_min         = 3000,
-      p_nom_max         = 3000,
-      p_max_pu          = wind_cf['electricity'].values,
-      capital_cost      = tech_df['capital cost']['wind turbine'],
-      marginal_cost     = tech_df['marginal cost']['wind turbine'],
-      )
 
-n.add('Store',
-      'store1',
-      bus = 'Island',
-      e_nom_extendable = True,
-      capital_cost      = tech_df['capital cost']['storage'],
-      marginal_cost     = tech_df['marginal cost']['storage'],
-      )
+# n = pypsa.Network()
+# t = pd.date_range('2030-01-01 00:00', '2030-12-31 23:00', freq = 'H')
+# n.set_snapshots(t)
 
-n.add('Load',
-      'Load1',
-      bus = 'DK',
-      p_set = 1000,)
+# wind_cf         = pd.read_csv(r'data\wind_formatted.csv',
+#                        index_col = [0], sep=",")
 
-gm.add_bi_link(n, 'DK', 'Island', link_name = 'Link1', carrier = 'DC', efficiency = 0.97)
+# tech_df         = gm.get_tech_data(2030, 0.07)
 
-n.lopf(pyomo = False,
-       solver_name = 'gurobi',
-       keep_shadowprices = True,
-       keep_references = True,
-       # extra_functionality = extra_functionalities,
-       )
+# cprice, cload   = gm.get_load_and_price(2030, ["Denmark"], n_std = 1)
 
-ip.plot_geomap(n)
+# n.madd('Bus',
+#        names = ['Island', 'DK'],
+#        x = [6,  8],
+#        y = [56, 57])
 
-linkz = n.links_t.p0
+# n.add(
+#     "Generator",
+#     name             = "DK Gen",
+#     bus              = "DK",
+#     capital_cost     = 0,            
+#     marginal_cost    = cprice['DK'].values,
+#     p_nom_extendable = True,   #Make sure country can always deliver to price
+#     )
+
+
+# n.add("Generator",
+#       "Wind",
+#       bus               = 'Island', # Add to island bus
+#       carrier           = "wind",
+#       p_nom_extendable  = True,
+#       p_nom_min         = 3000,
+#       p_nom_max         = 3000,
+#       p_max_pu          = wind_cf['electricity'].values,
+#       capital_cost      = tech_df['capital cost']['wind turbine'],
+#       marginal_cost     = tech_df['marginal cost']['wind turbine'],
+#       )
+
+# n.add('Store',
+#       'store1',
+#       bus = 'Island',
+#       e_nom_extendable = True,
+#       capital_cost      = tech_df['capital cost']['storage'],
+#       marginal_cost     = tech_df['marginal cost']['storage'],
+#       )
+
+# n.add('Load',
+#       'Load1',
+#       bus = 'DK',
+#       p_set = 1000,)
+
+# gm.add_bi_link(n, 'DK', 'Island', link_name = 'Link1', carrier = 'DC', efficiency = 0.97)
+
+# n.lopf(pyomo = False,
+#        solver_name = 'gurobi',
+#        keep_shadowprices = True,
+#        keep_references = True,
+#        # extra_functionality = extra_functionalities,
+#        )
+
+# ip.plot_geomap(n)
+
+# linkz = n.links_t.p0
