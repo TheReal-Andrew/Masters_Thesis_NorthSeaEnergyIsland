@@ -1,7 +1,18 @@
-name: technology_data_for_el_and_dh
-link: https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-generation-electricity-and
-cite: Danish Energy Agency, updated June 2022
 
+---------------------------------------------------------------------------------------------------------------------
+name: data_sheets_for_renewable_fuels
+from: Danish Energy Agency collection of technology data catalogues.
+link: https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-renewable-fuels
+cite: Danish Energy Agency, updated April 2022
+
+---------------------------------------------------------------------------------------------------------------------
 name: technology_data_catalogue_for_energy_storage
+from: Danish Energy Agency collection of technology data catalogues.
 link: https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-energy-storage
 cite: Danish Enegy Agency, October 2018 - updated January 2020
+
+---------------------------------------------------------------------------------------------------------------------
+name: technology_data_for_el_and_dh
+from: Danish Energy Agency collection of technology data catalogues.
+link: https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-generation-electricity-and
+cite: Danish Energy Agency, updated June 2022
