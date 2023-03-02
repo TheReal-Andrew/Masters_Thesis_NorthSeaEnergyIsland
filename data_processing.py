@@ -5,11 +5,17 @@ import matplotlib.pyplot as plt
 import datetime
 import matplotlib.dates as mdates
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from scipy import special
+from scipy.optimize import curve_fit
+import statistics
+import modules.island_plt as ip
+ip.set_plot_options()
 
 #%% Choose lot
 
-lotn = 4
+lotn = 1
 lot  = 'Lot ' + str(lotn)
+h = '138m' # Chosen height
 
 #%% Get list with folders in working directory
 folder = os.getcwd() + "/data/energinet/"
@@ -102,7 +108,6 @@ for i in wind_data.index:
         else:
             continue
 wind_ninja = test
-    # wind_ninja = wind_ninja.drop(j)
 
 #%% Linear interpolation
 x1 = 120
@@ -112,217 +117,55 @@ y2 = wind_data['150m']
 x  = 138
 wind_data['138m'] = y1+(x-x1)*((y2-y1)/(x2-x1))
 
-#%% Plot time-series data
-h = '138m' # Chosen height
+#%% Plot time-series and histogram data
+fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
 
-fig, ax = plt.subplots(2,3,figsize =(40, 10), dpi = 300)
+ax.plot(wind_data[h], label = '2021 Energinet (LiDAR buoy)')
+ax.plot(wind_ninja,   label = '2019 RenewableNinja')
 
-ax[0,0].plot(test,   label = '2019 RenewableNinja')
-ax[0,0].plot(wind_data[h], label = '2021 Energinet (LiDAR buoy)')
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
+ax.yaxis.set_minor_locator(MultipleLocator(1))
 
-ax[0,0].xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
-ax[0,0].yaxis.set_minor_locator(MultipleLocator(1))
+ax.set_ylim([0,35])
+ax.set_xlim([wind_data[h].index[0], wind_data[h].index[-1]])
 
-ax[0,0].set_ylim([0,35])
-ax[0,0].set_xlim([wind_data[h].index[0], wind_data[h].index[-1]])
+ax.set_xlabel('Time [hr]')
+ax.set_ylabel('Wind speed [m/s]')
 
-ax[0,0].set_xlabel('Time [hr]')
-ax[0,0].set_ylabel('Wind speed [m/s]')
+ax.legend(loc = 'upper right', fontsize = 11)
+ax.grid()
 
-ax[0,0].legend(loc = 'upper right')
-ax[0,0].grid()
-
-ax[0,0].text(1.01, 1, 
+ax.text(1.01, 1, 
                 str('Renewable Ninja:\n'
-                    + 'Std = ' + str(round(wind_ninja['wind_speed'].std(), 2)) +'m/s\n'
-                    + 'Min = ' + str(round(wind_ninja['wind_speed'].min(), 2)) +'m/s\n'
-                    + 'Mean = '+ str(round(wind_ninja['wind_speed'].mean(),2)) +'m/s\n'
-                    + 'Max = ' + str(round(wind_ninja['wind_speed'].max(), 2)) +'m/s\n'),
-                ha='left', va='top', 
-                transform=ax[0,0].transAxes,
+                    + 'Std = ' + str(round(wind_ninja['wind_speed'].std(), 1)) +'m/s\n'
+                    + 'Min = ' + str(round(wind_ninja['wind_speed'].min(), 1)) +'m/s\n'
+                    + 'Mean = '+ str(round(wind_ninja['wind_speed'].mean(),1)) +'m/s\n'
+                    + 'Max = ' + str(round(wind_ninja['wind_speed'].max(), 1)) +'m/s\n'),
+                ha='left', va='top', fontsize=11, 
+                transform=ax.transAxes,
                 )
 
-ax[0,0].text(1.01, 0.75, 
+ax.text(1.01, 0.65, 
                 str('Energinet:\n'
-                    + 'Std = ' + str(round(wind_data[h].std(), 2)) +'m/s\n'
-                    + 'Min = ' + str(round(wind_data[h].min(), 2)) +'m/s\n'
-                    + 'Mean = '+ str(round(wind_data[h].mean(),2)) +'m/s\n'
-                    + 'Max = ' + str(round(wind_data[h].max(), 2)) +'m/s\n'),
-                ha='left', va='top', 
-                transform=ax[0,0].transAxes,
+                    + 'Std = ' + str(round(wind_data[h].std(), 1)) +'m/s\n'
+                    + 'Min = ' + str(round(wind_data[h].min(), 1)) +'m/s\n'
+                    + 'Mean = '+ str(round(wind_data[h].mean(),1)) +'m/s\n'
+                    + 'Max = ' + str(round(wind_data[h].max(), 1)) +'m/s\n'),
+                ha='left', va='top', fontsize = 11, 
+                transform=ax.transAxes,
                 )
 
-ax[0,0].text(0.01, 0.97, 
-                str('RÅ DATA\n'+str(lot)),
-                ha='left', va='top', 
-                transform=ax[0,0].transAxes,
-                fontsize = 30,
-                )
+ax.set_title('Time series of wind speeds at '+ str(lot) +' at height ' + h)
 
-ax[0,0].set_title('Time series of wind speeds at '+ str(lot) +' at height ' + h,
-              fontsize = 12)
+fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
 
+ax.hist([wind_data[h].values,wind_ninja['wind_speed'].values], bins = np.arange(0,27,1), rwidth=0.9,label = ['2021 Energinet (LiDAR buoy)','2019 RenewableNinja'])
+ax.set_xticks(np.arange(0,27))
+ax.legend(fontsize = 11)
+ax.set_xlabel('Wind speed [m/s]')
+ax.set_ylabel('Counts')
 
-ax[1,0].hist([wind_ninja['wind_speed'].values,wind_data[h].values], bins = np.arange(0,26,1), rwidth=0.9,label = ['2019 RenewableNinja',
-                                                                                                             '2021 Energinet (LiDAR buoy)'])
-ax[1,0].set_xticks(np.arange(0,26))
-ax[1,0].legend()
-ax[1,0].set_xlabel('Wind speed [m/s]')
-ax[1,0].set_ylabel('Counts')
+ax.set_xlim([0,26])
+ax.set_ylim([0,600])
 
-ax[1,0].text(0.01, 0.97, 
-                str('RÅ DATA\n'+str(lot)),
-                ha='left', va='top', 
-                transform=ax[1,0].transAxes,
-                fontsize = 30,
-                )
-
-ax[1,0].set_xlim([0,25])
-ax[1,0].set_ylim([0,600])
-
-ax[1,0].set_title('Histogram of wind speeds at ' + lot + ' and Renewable Ninja')
-
-# Mean correction
-wind_mean_corrected = wind_ninja['wind_speed']/wind_ninja['wind_speed'].mean() * wind_data[h].mean()
-
-ax[0,1].plot(wind_mean_corrected, label = 'RenewableNinja (mean corrected)')
-ax[0,1].plot(wind_data[h], label = '2021 Energinet (LiDAR buoy)')
-
-ax[0,1].xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
-ax[0,1].yaxis.set_minor_locator(MultipleLocator(1))
-
-ax[0,1].set_ylim([0,35])
-ax[0,1].set_xlim([wind_data[h].index[0], wind_data[h].index[-1]])
-
-ax[0,1].set_xlabel('Time [hr]')
-ax[0,1].set_ylabel('Wind speed [m/s]')
-
-ax[0,1].legend(loc = 'upper right')
-ax[0,1].grid()
-
-ax[0,1].text(1.01, 1, 
-                str('Renewable Ninja:\n'
-                    + 'Std = ' + str(round(wind_mean_corrected.std(), 2)) +'m/s\n'
-                    + 'Min = ' + str(round(wind_mean_corrected.min(), 2)) +'m/s\n'
-                    + 'Mean = '+ str(round(wind_mean_corrected.mean(),2)) +'m/s\n'
-                    + 'Max = ' + str(round(wind_mean_corrected.max(), 2)) +'m/s\n'),
-                ha='left', va='top', 
-                transform=ax[0,1].transAxes,
-                )
-
-ax[0,1].text(1.01, 0.75, 
-                str('Energinet:\n'
-                    + 'Std = ' + str(round(wind_data[h].std(), 2)) +'m/s\n'
-                    + 'Min = ' + str(round(wind_data[h].min(), 2)) +'m/s\n'
-                    + 'Mean = '+ str(round(wind_data[h].mean(),2)) +'m/s\n'
-                    + 'Max = ' + str(round(wind_data[h].max(), 2)) +'m/s\n'),
-                ha='left', va='top', 
-                transform=ax[0,1].transAxes,
-                )
-
-ax[0,1].text(0.01, 0.97, 
-                str('Mean\ncorrected\n'+lot),
-                ha='left', va='top', 
-                transform=ax[0,1].transAxes,
-                fontsize = 30,
-                )
-
-ax[0,1].set_title('Time series of wind speeds at '+ str(lot) +' at height ' + h,
-              fontsize = 12)
-
-ax[1,1].hist([wind_mean_corrected,wind_data[h].values], 
-         bins = np.arange(0,26,1), 
-         rwidth = 0.9,
-         label = ['RenewableNinja (mean corrected)',
-                  '2021 Energinet (LiDAR buoy)',
-                  ])
-
-ax[1,1].set_xticks(np.arange(0,26))
-ax[1,1].legend()
-ax[1,1].set_xlabel('Wind speed [m/s]')
-ax[1,1].set_ylabel('Counts')
-ax[1,1].set_xlim([0,25])
-ax[1,1].set_ylim([0,600])
-ax[1,1].set_title('Histogram of wind speeds at ' + lot + ' and Renewable Ninja')
-
-ax[1,1].text(0.01, 0.97, 
-                str('Mean\ncorrected\n'+lot),
-                ha='left', va='top', 
-                transform=ax[1,1].transAxes,
-                fontsize = 30,
-                )
-
-# Alt. std correction
-# fig3, ax3 = plt.subplots(2,1,figsize =(10, 10), dpi = 300)
-
-wind_mean_corrected = wind_ninja['wind_speed']/wind_ninja['wind_speed'].mean() * wind_data[h].mean()
-wind_std_corrected = wind_ninja['wind_speed']/wind_ninja['wind_speed'].std() * wind_data[h].std()
-wind_std_corrected = wind_std_corrected - wind_mean_corrected.std()
-wind_std_corrected = wind_std_corrected[wind_std_corrected > 0]
-
-ax[0,2].plot(wind_std_corrected, label = 'RenewableNinja (alt. std corrected)')
-ax[0,2].plot(wind_data[h], label = '2021 Energinet (LiDAR buoy)')
-
-ax[0,2].xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
-ax[0,2].yaxis.set_minor_locator(MultipleLocator(1))
-
-ax[0,2].set_ylim([0,35])
-ax[0,2].set_xlim([wind_data[h].index[0], wind_data[h].index[-1]])
-
-ax[0,2].set_xlabel('Time [hr]')
-ax[0,2].set_ylabel('Wind speed [m/s]')
-
-ax[0,2].legend(loc = 'upper right')
-ax[0,2].grid()
-
-ax[0,2].text(1.01, 1, 
-                str('Renewable Ninja:\n'
-                    + 'Std = ' + str(round(wind_std_corrected.std(), 2)) +'m/s\n'
-                    + 'Min = ' + str(round(wind_std_corrected.min(), 2)) +'m/s\n'
-                    + 'Mean = '+ str(round(wind_std_corrected.mean(),2)) +'m/s\n'
-                    + 'Max = ' + str(round(wind_std_corrected.max(), 2)) +'m/s\n'),
-                ha='left', va='top', 
-                transform=ax[0,2].transAxes,
-                )
-
-ax[0,2].text(1.01, 0.75, 
-                str('Energinet:\n'
-                    + 'Std = ' + str(round(wind_data[h].std(), 2)) +'m/s\n'
-                    + 'Min = ' + str(round(wind_data[h].min(), 2)) +'m/s\n'
-                    + 'Mean = '+ str(round(wind_data[h].mean(),2)) +'m/s\n'
-                    + 'Max = ' + str(round(wind_data[h].max(), 2)) +'m/s\n'),
-                ha='left', va='top', 
-                transform=ax[0,2].transAxes,
-                )
-
-ax[0,2].text(0.01, 0.97, 
-                str('Alt. std\ncorrected\n'+lot),
-                ha='left', va='top', 
-                transform=ax[0,2].transAxes,
-                fontsize = 30,
-                )
-
-ax[0,2].set_title('Time series of wind speeds at '+ str(lot) +' at height ' + h,
-              fontsize = 12)
-
-ax[1,2].hist([wind_std_corrected,wind_data[h].values], 
-         bins = np.arange(0,26,1), 
-         rwidth = 0.9,
-         label = ['RenewableNinja (alt. std corrected)',
-                  '2021 Energinet (LiDAR buoy)',
-                  ])
-
-ax[1,2].set_xticks(np.arange(0,26))
-ax[1,2].legend()
-ax[1,2].set_xlabel('Wind speed [m/s]')
-ax[1,2].set_ylabel('Counts')
-ax[1,2].set_ylim([0,600])
-ax[1,2].set_xlim([0,25])
-ax[1,2].set_title('Histogram of wind speeds at ' + lot + ' and Renewable Ninja')
-
-ax[1,2].text(0.01, 0.97, 
-                str('Alt. std\ncorrected\n'+lot),
-                ha='left', va='top', 
-                transform=ax[1,2].transAxes,
-                fontsize = 30,
-                )
+ax.set_title('Histogram of wind speeds at ' + lot + ' and Renewable Ninja')
