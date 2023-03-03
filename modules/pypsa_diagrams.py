@@ -11,6 +11,28 @@ Created on Thu Mar  2 20:57:40 2023
 # The schemdraw package is required for drawing the diagrams.
 # https://schemdraw.readthedocs.io/en/latest/
 
+#%%
+def circle_points(r, n):
+    # From https://stackoverflow.com/questions/33510979/generator-of-evenly-spaced-points-in-a-circle-in-python
+    import numpy as np
+    import pandas as pd
+    
+    circles = []
+    for r, n in zip(r, n):
+        t = np.linspace(0, 2*np.pi, n, endpoint=False)
+        x = r * np.cos(t)
+        y = r * np.sin(t)
+        circles.append(np.c_[x, y])
+        
+    return circles
+
+def plot_circle_points(r, n):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    pos = circle_points(r, n)
+    
+    plt.plot(pos[0][:,0], pos[0][:,1], 'o')
 
 #%% 
 def draw_bus(n, bus, show = True, 
