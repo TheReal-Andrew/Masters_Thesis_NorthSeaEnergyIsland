@@ -15,6 +15,7 @@ from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_d
 import pandas as pd
 
 import gorm as gm
+import pypsa_diagrams as pdiag
 
 import matplotlib.pyplot as plt
 import island_plt as ip
@@ -25,6 +26,8 @@ ip.set_plot_options()
 # Main control
 should_solve     = True
 should_plot      = True
+should_bus_diagram = True
+should_n_diagram   = False
 
 # Main parameters
 year     = 2030        # Choose year
@@ -32,7 +35,7 @@ wind_cap = 3000        # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 link_efficiency = 0.9 
-link_limit = 2000      # [MW] Limit links to countries. float('inf')
+link_limit = float('inf')      # [MW] Limit links to countries. float('inf')
 r        = 0.07        # Discount rate
 
 filename = "network_1_" # Choose filename for export
@@ -41,10 +44,10 @@ filename = "network_1_" # Choose filename for export
 connected_countries =  [
                         "Denmark",         
                         "Norway",          
-                        # "Germany",         
-                        # "Netherlands",     
-                        # "Belgium",         
-                        # "United Kingdom"
+                        "Germany",         
+                        "Netherlands",     
+                        "Belgium",         
+                        "United Kingdom"
                         ]
 
 jiggle = [0, 0]
@@ -240,131 +243,111 @@ if should_plot:
 
 #%% Network diagram 
 
-def draw_bus(n, bus, show = True):
-    import schemdraw
-    import schemdraw.elements as elm
-    from schemdraw.segments import Segment, util, math, SegmentCircle
-    
-    class MyGen(elm.Element):
-        def __init__(self, *d, **kwargs):
-            super().__init__(*d, **kwargs)
-            self.segments.append(Segment(
-                [(0, 0), (0.75, 0)]))
-            sin_y = util.linspace(-.25, .25, num=25)
-            sin_x = [.2 * math.sin((sy-.25)*math.pi*2/.5) + 1.25 for sy in sin_y]
-            self.segments.append(Segment(list(zip(sin_x, sin_y))))
-            self.segments.append(SegmentCircle((1.25, 0), 0.5,))
-            
-    class MyLoad(elm.Element):
-        def __init__(self, *d, **kwargs):
-            super().__init__(*d, **kwargs)
-            lead = 0.95
-            h = 0.8
-            w = 0.5
-            self.segments.append(Segment(
-                [(0, 0), (0, lead), (-w, lead+h), (w, lead+h), (0, lead)]))
-            self.params['drop'] = (0, 0)
-            self.params['theta'] = 0
-            self.anchors['start'] = (0, 0)
-            self.anchors['center'] = (0, 0)
-            self.anchors['end'] = (0, 0)
-            
-    class MyStore(elm.Element):
-        def __init__(self, *d, **kwargs):
-            super().__init__(*d, **kwargs)
-            lead = 0.75
-            h = lead + 1
-            w = 1
-            self.segments.append(Segment(
-                [(0, 0), (lead, 0), (lead, w/2), (h, w/2),
-                  (h, -w/2), (lead, -w/2), (lead, 0)
-                  ]))
-    
-    bus_color  = 'steelblue'
-    link_color = 'darkorange'
-    fontsize = 7
-    title_fontsize = 12
-    
-    gens   = n.generators[n.generators['bus'] == bus] #Get all generators on bus
-    loads  = n.loads[n.loads['bus'] == bus]
-    stores = n.stores[n.stores['bus'] == bus]
-    
-    with schemdraw.Drawing(show = show) as d:
-        d += elm.Dot().color(bus_color).label(bus, fontsize = title_fontsize) #Start bus
-        
-        for gen in gens.index:
-            d += elm.Line().color(bus_color).length(1.5) #Add line piece
-            d.push()
-            label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
-            d += MyGen().up().label(label, loc='right', fontsize = fontsize)
-            d.pop()
-        
-        for store in stores.index:
-            d += elm.Line().color(bus_color).length(1.5) #Add line piece
-            d.push()
-            label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
-            d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
-            d.pop()
-            
-        for load in loads.index:
-            d += elm.Line().color(bus_color).length(1.5) #Add line piece
-            d.push()
-            label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
-            d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
-            d.pop()
-            
-        d += elm.Line(arrow = '-o').color(bus_color).length(1.5) # End bus
-        
-    return d
-
-buses = bus_df['Bus name']
-# buses = n.buses.index
-
-n.buses['sX'] = [0, 15, 12,   0, 15,  5, 12]
-n.buses['sY'] = [0, 0,   5,  -1, -1,  -1, 4]
-
-n.buses['coords'] = [
-                    [0,  0], # Island
-                    [15, 0], # DK
-                    [12, 5], # Norway
-                    [0, -1], # DK e0
-                    [15, 1], # DK e1
-                    [5, -1], # NO e0
-                    [12, 4], # NO e1
-                    ]
-
 # links1 = n.links[~n.links.index.str.contains("bus")].copy()
 
 # links1['bus0'] = [ 'Energy ' + x[:7] for x in links1['bus0']]
 # links1['bus1'] = [x[10:-3] for x in links1['bus1']]
 
-s = pd.Series([])
-
-for bus in buses:
-    
-    bus_diag = pd.Series({bus:draw_bus(n, bus, show = False)})
-    
-    s = pd.concat([s, bus_diag])
-    
-s.name = 'graphic'
-# data = pd.concat([s, n.buses['sX'], n.buses['sY']], axis = 1)
-
-data = pd.concat([s, n.buses['coords']], axis = 1)
-
 import schemdraw
 import schemdraw.elements as elm
 
-with schemdraw.Drawing() as d:
+if should_bus_diagram:
     
-    d.push()
+    buses = bus_df['Bus name']
+    # buses = n.buses.index
     
-    for bus in bus_df['Bus name']:
-        d += (elm.ElementDrawing(data.loc[bus]['graphic'])
-              .at((data.loc[bus]['coords'][0], 
-                   data.loc[bus]['coords'][1]))
-              )
-        d.pop()
+    s = pd.Series([])
+    for bus in buses:
+        
+        bus_diag = pd.Series({bus: pdiag.draw_bus(n, bus, show = True)})
+        s = pd.concat([s, bus_diag])
+
+if should_n_diagram:
+    ###
     
+    buses = bus_df['Bus name']
+    # buses = n.buses.index
+    
+    n.buses['sX'] = [0, 15, 12,   0, 15,  5, 12]
+    n.buses['sY'] = [0, 0,   5,  -1, -1,  -1, 4]
+    
+    n.buses['coords'] = [
+                        [0,  0], # Island
+                        [15, 0], # DK
+                        [12, 5], # Norway
+                        [0, -1], # DK e0
+                        [15, 1], # DK e1
+                        [5, -1], # NO e0
+                        [12, 4], # NO e1
+                        ]
+    
+    s = pd.Series([])
+    for bus in buses:
+        
+        bus_diag = pd.Series({bus: pdiag.draw_bus(n, bus, show = False)})
+        s = pd.concat([s, bus_diag])
+        
+    s.name = 'graphic'
+    data = pd.concat([s, n.buses['coords']], axis = 1)
+    
+    with schemdraw.Drawing(file = 'test1.pdf') as d:
+        
+        d.push()
+        
+        for bus in bus_df['Bus name']:
+            d += (elm.ElementDrawing(data.loc[bus]['graphic'])
+                  .at((data.loc[bus]['coords'][0], 
+                        data.loc[bus]['coords'][1]))
+                  
+                  )
+            d.pop()
+    ####
+
+# import schemdraw
+# import schemdraw.elements as elm
+# from schemdraw.segments import Segment, util, math, SegmentCircle
+
+# # ----- Define custom elements -----
+# class MyGen(elm.Element):
+#     def __init__(self, *d, **kwargs):
+#         super().__init__(*d, **kwargs)
+#         self.segments.append(Segment(
+#             [(0, 0), (0.75, 0)]))
+#         sin_y = util.linspace(-.25, .25, num=25)
+#         sin_x = [.2 * math.sin((sy-.25)*math.pi*2/.5) + 1.25 for sy in sin_y]
+#         self.segments.append(Segment(list(zip(sin_x, sin_y))))
+#         self.segments.append(SegmentCircle((1.25, 0), 0.5,))
+        
+# class MyLoad(elm.Element):
+#     def __init__(self, *d, **kwargs):
+#         super().__init__(*d, **kwargs)
+#         lead = 0.95
+#         h = 0.8
+#         w = 0.5
+#         self.segments.append(Segment(
+#             [(0, 0), (0, lead), (-w, lead+h), (w, lead+h), (0, lead)]))
+#         self.params['drop'] = (0, 0)
+#         self.params['theta'] = 0
+#         self.anchors['start'] = (0, 0)
+#         self.anchors['center'] = (0, 0)
+#         self.anchors['end'] = (0, 0)
+        
+# class MyStore(elm.Element):
+#     def __init__(self, *d, **kwargs):
+#         super().__init__(*d, **kwargs)
+#         lead = 0.75
+#         h = lead + 1
+#         w = 1
+#         self.segments.append(Segment(
+#             [(0, 0), (lead, 0), (lead, w/2), (h, w/2),
+#               (h, -w/2), (lead, -w/2), (lead, 0)
+#               ]))
+
+# # ----- Get elements on this bus from network -----
+# gens   = n.generators[n.generators['bus'] == bus] #Get all generators on bus
+# loads  = n.loads[n.loads['bus'] == bus]
+# stores = n.stores[n.stores['bus'] == bus]
+
 
 
 
