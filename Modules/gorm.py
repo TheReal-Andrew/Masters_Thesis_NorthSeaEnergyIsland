@@ -229,6 +229,7 @@ def get_tech_data(year = 2030, r = 0.07):
 def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
                capital_cost = 0, marginal_cost = 0, 
                p_nom_extendable = True, p_nom_max = float('inf'),
+               p_nom_min = 0,
                x = None, y = None, bus_shift = [0, 0]):
     # Function that adds a bidirectional link with efficiency and marginal cost
     # between two buses. This is done by adding additional "efficiency buses" 
@@ -260,6 +261,7 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
           p_nom_extendable  = p_nom_extendable,
           capital_cost      = capital_cost,    #Capital cost is added here
           p_nom_max         = p_nom_max,
+          p_nom_min         = p_nom_min,
           carrier           = carrier,
           )
     

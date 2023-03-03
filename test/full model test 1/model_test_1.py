@@ -26,17 +26,20 @@ ip.set_plot_options()
 # Main control
 should_solve     = True
 should_plot      = True
-should_bus_diagram = True
+should_bus_diagram = False
 should_n_diagram   = False
 
 # Main parameters
 year     = 2030        # Choose year
+r        = 0.07        # Discount rate
 wind_cap = 3000        # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
-link_efficiency = 0.9 
-link_limit = float('inf')      # [MW] Limit links to countries. float('inf')
-r        = 0.07        # Discount rate
+
+link_efficiency = 0.1           # Efficiency of links
+link_total_max  = wind_cap      # Total allowed link capacity
+link_p_nom_min  = 800           # Minimum allowed capacity for one link
+link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
 
 filename = "network_1_" # Choose filename for export
 
@@ -87,9 +90,10 @@ n = pypsa.Network()
 t = pd.date_range('2030-01-01 00:00', '2030-12-31 23:00', freq = 'H')[:n_hrs]
 n.set_snapshots(t)
 
-# Add area use and island area to network for easier use in extra_functionalities
-n.area_use   = area_use
-n.total_area = island_area 
+# Add data to network for easier access when creating constraints
+n.area_use       = area_use
+n.total_area     = island_area 
+n.link_total_max = link_total_max
 
 # ----- Add buses-------------------
 # Add multiple buses by passing arrays from bus_df to parameters and using madd
@@ -119,6 +123,7 @@ for country in country_df['Bus name']:
                     carrier       = 'DC',
                     p_nom_extendable = True,
                     p_nom_max     = link_limit, # [MW]
+                    p_nom_min     = link_p_nom_min,
                     bus_shift     = jiggle,
                     )
 
@@ -210,9 +215,23 @@ def area_constraint(n, snapshots):
     rhs = n.total_area #[m^2]
     
     define_constraints(n, lhs, '<=', rhs, 'Generator', 'Area_Use')
+    
+# def link_constraint(n, snapshots):
+    # link_names = n.links[~n.links.index.str.contains("bus")].index
+    
+    # vars_links   = get_var(n, 'Link', 'p_nom')
+    # vars_links   = vars_links[link_names]
+    
+    # for link in link_names:
+    #     rhs = n.min_link_cap
+    #     lhs = linexpr(1, vars_links[link])
+    #     define_constraints(n, lhs, '<=', rhs, 'Link', link + '_min')
+    
+    # Total cap constraint
 
 def extra_functionalities(n, snapshots):
     area_constraint(n, snapshots)
+    # link_constraint(n, snapshots)
 
 #%% Solve
 if should_solve:
