@@ -34,7 +34,8 @@ def plot_circle_points(r, n):
     
     plt.plot(pos[0][:,0], pos[0][:,1], 'o')
 
-#%% 
+#%% Drawing functions
+
 def draw_bus(n, bus, show = True, 
              bus_color = 'steelblue', link_color = 'darkorange',
              fontsize = 7, title_fontsize = 12,
@@ -119,3 +120,169 @@ def draw_bus(n, bus, show = True,
         d += elm.Line(arrow = '-o').color(bus_color).length(line_length) # End bus
         
     return d
+
+def draw_network(n, spacing = 2, 
+                 line_length = 1.5, link_line_length = 0.75, 
+                 headwidth = 0.45, headlength = 0.75,
+                 arrow_color = 'darkorange',
+                 fontsize = 8, title_fontsize = 12,
+                 bus_color = 'steelblue', link_color = 'darkorange', 
+                 pos = None, filename = 'pypsa_diagram.pdf'):
+    import pandas as pd
+    pd.options.mode.chained_assignment = None #Disable warning (For line 218)
+    import numpy as np
+    import schemdraw
+    import schemdraw.elements as elm
+    
+    if pos == None or len(pos) != len(n.buses.index):
+        print('\nWARNING: draw_network():  No position given, or not sufficienct positions for the buses. Using automatic circular layout. \n')
+        
+        n_buses = len(n.buses.index)
+        T = [n_buses]
+        R = [n_buses * spacing]
+    
+        # Create positions in a circle
+        pos = circle_points(R, T)
+        s = pd.DataFrame(pos[0], columns = ['x', 'y'])
+        s.index = n.buses.index
+        
+    else:
+        print('\nINFO: draw_network(): bus positions given. spacing parameter has no effects. \n')
+        s = pd.DataFrame(pos, columns = ['x', 'y'])
+        s.index = n.buses.index
+
+    # pdiag.plot_circle_points(R, T)
+
+    # ------ CUSTOM ELEMENTS --------------------------------------------------
+    from schemdraw.segments import Segment, util, math, SegmentCircle
+    
+    # ----- Define custom elements -----
+    class MyGen(elm.Element):
+        def __init__(self, *d, **kwargs):
+            super().__init__(*d, **kwargs)
+            self.segments.append(Segment(
+                [(0, 0), (0.75, 0)]))
+            sin_y = util.linspace(-.25, .25, num=25)
+            sin_x = [.2 * math.sin((sy-.25)*math.pi*2/.5) + 1.25 for sy in sin_y]
+            self.segments.append(Segment(list(zip(sin_x, sin_y))))
+            self.segments.append(SegmentCircle((1.25, 0), 0.5,))
+            
+    class MyLoad(elm.Element):
+        def __init__(self, *d, **kwargs):
+            super().__init__(*d, **kwargs)
+            lead = 0.95
+            h = 0.8
+            w = 0.5
+            self.segments.append(Segment(
+                [(0, 0), (0, lead), (-w, lead+h), (w, lead+h), (0, lead)]))
+            self.params['drop'] = (0, 0)
+            self.params['theta'] = 0
+            self.anchors['start'] = (0, 0)
+            self.anchors['center'] = (0, 0)
+            self.anchors['end'] = (0, 0)
+            
+    class MyStore(elm.Element):
+        def __init__(self, *d, **kwargs):
+            super().__init__(*d, **kwargs)
+            lead = 0.75
+            h = lead + 1
+            w = 1
+            self.segments.append(Segment(
+                [(0, 0), (lead, 0), (lead, w/2), (h, w/2),
+                  (h, -w/2), (lead, -w/2), (lead, 0)
+                  ]))
+            
+    # ------ DRAW NETWORK -----------------------------------------------------
+    with schemdraw.Drawing(file = filename) as d:
+        
+        # Add columns with start and end cooridnates for links
+        n.links['start'] = np.nan
+        n.links['end']   = np.nan
+        
+        for bus in n.buses.index:
+            d += (elm.Dot()
+                  .color(bus_color)
+                  .label(bus, fontsize = title_fontsize)
+                  .at(( s['x'][bus], s['y'][bus] )))
+            
+            # ----- Get elements on this bus from network -----
+            gens   = n.generators[n.generators['bus'] == bus] #Get all generators on bus
+            loads  = n.loads[n.loads['bus'] == bus]
+            stores = n.stores[n.stores['bus'] == bus]
+            
+            for link in n.links.index:
+                # Loop through 
+                
+                if n.links['bus0'][link] == bus:
+                    
+                    d += elm.Line().color(bus_color).length(link_line_length) #Add line piece
+                    d += (C := elm.Dot().color(link_color))
+                    
+                    n.links['start'][link] = C
+            
+            for gen in gens.index:
+                # Loop through generators on this bus, and add new line segment
+                # and generator icon. Add label to icon.
+                
+                d += elm.Line().color(bus_color).length(line_length) #Add line piece
+                d.push() # Save position
+                label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
+                d += MyGen().up().label(label, loc='right', fontsize = fontsize)
+                d.pop()  # Return to saved position
+            
+            for store in stores.index:
+                # Loop through stores on this bus, and add new line segment
+                # and store icon. Add label to icon.
+                
+                d += elm.Line().color(bus_color).length(line_length) #Add line piece
+                d.push()
+                label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
+                d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
+                d.pop()
+                
+            for load in loads.index:
+                # Loop through loads on this bus, and add new line segment
+                # and load icon. Add label to icon.
+                
+                d += elm.Line().color(bus_color).length(line_length) #Add line piece
+                d.push()
+                label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
+                d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
+                d.pop()
+                
+            for link in n.links.index:
+                
+                if n.links['bus1'][link] == bus:
+                    
+                    d += elm.Line().color(bus_color).length(link_line_length) #Add line piece
+                    d += (C := elm.Dot().color(link_color))
+                    
+                    n.links['end'][link] = C
+            
+            d += elm.Line(arrow = '-o').color(bus_color).length(link_line_length)
+        
+        for link in n.links.index:
+            # Loop through all links, and create lines with arrows.
+            
+            d += ( elm.Wire('N', k = 1)
+                  .color(link_color)
+                  .at(n.links['start'][link].center)
+                  .to(n.links['end'][link].center)
+                  .label('p: ' + str(n.links.p_nom_opt[link]), fontsize = fontsize)
+                  .zorder(0.1)
+                  )
+            
+            d += elm.Arrowhead(headwidth = headwidth, headlength = headlength).color(arrow_color)
+            
+            if n.links.p_min_pu[link] < 0:
+                # if link is bidirectional, add an additional arrow head.
+                d += ( elm.Wire('N', k = 1)
+                      .color(link_color)
+                      .at(n.links['end'][link].center)
+                      .to(n.links['start'][link].center)
+                      .zorder(0)
+                      )
+                
+                d += elm.Arrowhead(headwidth = headwidth, headlength = headlength).color(arrow_color)
+            
+            
