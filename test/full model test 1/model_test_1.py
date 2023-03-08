@@ -24,15 +24,15 @@ ip.set_plot_options()
 #%% ------- CONTROL -----------------------------------
 
 # Main control
-should_solve     = True
-should_plot      = True
+should_solve       = True
+should_plot        = False
 should_bus_diagram = False
-should_n_diagram   = False
+should_n_diagram   = True
 
 # Main parameters
 year     = 2030        # Choose year
 r        = 0.07        # Discount rate
-wind_cap = 3000        # [MW] Installed wind capacity
+wind_cap = 10000       # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 
@@ -126,6 +126,9 @@ for country in country_df['Bus name']:
                     p_nom_min     = link_p_nom_min,
                     bus_shift     = jiggle,
                     )
+    
+# Add list of main links to network to differetniate
+n.main_links = n.links[~n.links.index.str.contains("bus")].index
 
 ### COUNTRIES ###
 # ----- Add generators for countries--------------------
@@ -167,7 +170,7 @@ n.add("Generator",
 # ----- Add battery storage --------------------
 if add_storage:
     n.add("Store",
-          "Store",
+          "Island_store",
           bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
           carrier           = "Store1",
           e_nom_extendable  = True,
@@ -205,33 +208,40 @@ if add_data:
 
 #%% Extra functionality
 def area_constraint(n, snapshots):
+    
+    # Get variables for all generators and store
     vars_gen   = get_var(n, 'Generator', 'p_nom')
     vars_store = get_var(n, 'Store', 'e_nom')
     
+    # Apply area use on variable and create linear expression 
     lhs = linexpr((n.area_use['hydrogen'], vars_gen["P2X"]), 
                   (n.area_use['data'],     vars_gen["Data"]), 
-                  (n.area_use['storage'],  vars_store))
+                  (n.area_use['storage'],  vars_store['Island_store']))
     
+    # Define area use limit
     rhs = n.total_area #[m^2]
     
-    define_constraints(n, lhs, '<=', rhs, 'Generator', 'Area_Use')
+    # Define constraint
+    define_constraints(n, lhs, '<=', rhs, 'Island', 'Area_Use')
     
-# def link_constraint(n, snapshots):
-    # link_names = n.links[~n.links.index.str.contains("bus")].index
+def link_constraint(n, snapshots):
+    # Get main links
+    link_names = n.main_links
     
-    # vars_links   = get_var(n, 'Link', 'p_nom')
-    # vars_links   = vars_links[link_names]
+    # get all link variables, and then get only main link variables
+    vars_links   = get_var(n, 'Link', 'p_nom')
+    vars_links   = vars_links[link_names]
     
-    # for link in link_names:
-    #     rhs = n.min_link_cap
-    #     lhs = linexpr(1, vars_links[link])
-    #     define_constraints(n, lhs, '<=', rhs, 'Link', link + '_min')
+    # Sum up link capacities of chosen links (lhs), and set limit (rhs)
+    rhs          = n.link_total_max
+    lhs          = join_exprs(linexpr((1, vars_links)))
     
-    # Total cap constraint
+    #Define constraint and name it 'Total constraint'
+    define_constraints(n, lhs, '=', rhs, 'Link', 'Total constraint')
 
 def extra_functionalities(n, snapshots):
     area_constraint(n, snapshots)
-    # link_constraint(n, snapshots)
+    link_constraint(n, snapshots)
 
 #%% Solve
 if should_solve:
@@ -239,7 +249,7 @@ if should_solve:
            solver_name = 'gurobi',
            keep_shadowprices = True,
            keep_references = True,
-            extra_functionality = extra_functionalities,
+           extra_functionality = extra_functionalities,
            )
 else:
     pass
@@ -249,6 +259,20 @@ else:
 if should_plot:
     ip.plot_geomap(n)
 
+if should_n_diagram:
+    
+    pos = [
+           [0, 0], #Island
+           [20, -1], #Denmark
+           [15, 8],  #Norway
+           [18, -10], #DE
+           [6, -11], #NE
+           [-4, -12], #BE
+           [-10, 1], #UK
+          ]
+    
+    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None)
+    
 # Extra
 # linkz = n.links_t.p0
 
@@ -260,9 +284,6 @@ if should_plot:
 # linkz2['p_nom_opt'].hist(bins = 12, figsize = (10,5))
 # linkz2['p_nom_opt'].plot(figsize = (10,5))
 
-#%% Network diagram 
-
-pdiag.draw_network(n, spacing = 1)
 
 
 

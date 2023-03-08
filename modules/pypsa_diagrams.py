@@ -127,13 +127,27 @@ def draw_network(n, spacing = 2,
                  arrow_color = 'darkorange',
                  fontsize = 8, title_fontsize = 12,
                  bus_color = 'steelblue', link_color = 'darkorange', 
-                 pos = None, filename = 'pypsa_diagram.pdf'):
+                 pos = None, filename = 'pypsa_diagram.pdf',
+                 handle_bi = False):
     import pandas as pd
     pd.options.mode.chained_assignment = None #Disable warning (For line 218)
     import numpy as np
     import schemdraw
     import schemdraw.elements as elm
+    import matplotlib.pyplot as plt
     
+    plt.figure()
+    n = n.copy()
+    
+    # ----- Handle bidirectional links -----
+    if handle_bi:
+        n.buses = n.buses[~n.buses.index.str.contains('e0|e1')] #Clean out buses
+        n.links = n.links[~n.links.index.str.contains('e0|e1')] #Clean out links
+        
+        n.links['bus0'] = ['Energy Island' for x in n.links['bus0']]
+        n.links['bus1'] = [x[10:-3] for x in n.links['bus1']]
+    
+    # ----- Set positions -----
     if pos == None or len(pos) != len(n.buses.index):
         print('\nWARNING: draw_network():  No position given, or not sufficienct positions for the buses. Using automatic circular layout. \n')
         
@@ -261,26 +275,35 @@ def draw_network(n, spacing = 2,
             
             d += elm.Line(arrow = '-o').color(bus_color).length(link_line_length)
         
+        
+        w = ( (n.links.p_nom_opt/n.links.p_nom_opt.max()) )*4 + 0.05
+        
         for link in n.links.index:
             # Loop through all links, and create lines with arrows.
             
-            d += ( elm.Wire('N', k = 1)
+            w_link = w[link]
+            
+            style = 'N'
+            
+            d += ( elm.Wire(style, k = 1)
                   .color(link_color)
                   .at(n.links['start'][link].center)
                   .to(n.links['end'][link].center)
                   .label('p: ' + str(n.links.p_nom_opt[link]), fontsize = fontsize)
                   .zorder(0.1)
+                  .linewidth(w_link)
                   )
             
             d += elm.Arrowhead(headwidth = headwidth, headlength = headlength).color(arrow_color)
             
             if n.links.p_min_pu[link] < 0:
                 # if link is bidirectional, add an additional arrow head.
-                d += ( elm.Wire('N', k = 1)
+                d += ( elm.Wire(style, k = 1)
                       .color(link_color)
                       .at(n.links['end'][link].center)
                       .to(n.links['start'][link].center)
                       .zorder(0)
+                      .linewidth(w_link)
                       )
                 
                 d += elm.Arrowhead(headwidth = headwidth, headlength = headlength).color(arrow_color)
