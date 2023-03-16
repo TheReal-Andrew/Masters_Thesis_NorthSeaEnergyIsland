@@ -15,6 +15,7 @@ from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_d
 import pandas as pd
 
 import gorm as gm
+import pypsa_diagrams as pdiag
 
 import matplotlib.pyplot as plt
 import island_plt as ip
@@ -23,17 +24,22 @@ ip.set_plot_options()
 #%% ------- CONTROL -----------------------------------
 
 # Main control
-should_solve     = True
-should_plot      = True
+should_solve       = True
+should_plot        = False
+should_bus_diagram = False
+should_n_diagram   = True
 
 # Main parameters
 year     = 2030        # Choose year
-wind_cap = 3000        # [MW] Installed wind capacity
+r        = 0.07        # Discount rate
+wind_cap = 10000       # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
-link_efficiency = 0.9 
-link_limit = 2000      # [MW] Limit links to countries. float('inf')
-r        = 0.07        # Discount rate
+
+link_efficiency = 0.1           # Efficiency of links
+link_total_max  = wind_cap      # Total allowed link capacity
+link_p_nom_min  = 800           # Minimum allowed capacity for one link
+link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
 
 filename = "network_1_" # Choose filename for export
 
@@ -41,10 +47,10 @@ filename = "network_1_" # Choose filename for export
 connected_countries =  [
                         "Denmark",         
                         "Norway",          
-                        # "Germany",         
-                        # "Netherlands",     
-                        # "Belgium",         
-                        # "United Kingdom"
+                        "Germany",         
+                        "Netherlands",     
+                        "Belgium",         
+                        "United Kingdom"
                         ]
 
 jiggle = [0, 0]
@@ -84,9 +90,10 @@ n = pypsa.Network()
 t = pd.date_range('2030-01-01 00:00', '2030-12-31 23:00', freq = 'H')[:n_hrs]
 n.set_snapshots(t)
 
-# Add area use and island area to network for easier use in extra_functionalities
-n.area_use   = area_use
-n.total_area = island_area 
+# Add data to network for easier access when creating constraints
+n.area_use       = area_use
+n.total_area     = island_area 
+n.link_total_max = link_total_max
 
 # ----- Add buses-------------------
 # Add multiple buses by passing arrays from bus_df to parameters and using madd
@@ -116,8 +123,12 @@ for country in country_df['Bus name']:
                     carrier       = 'DC',
                     p_nom_extendable = True,
                     p_nom_max     = link_limit, # [MW]
+                    p_nom_min     = link_p_nom_min,
                     bus_shift     = jiggle,
                     )
+    
+# Add list of main links to network to differetniate
+n.main_links = n.links[~n.links.index.str.contains("bus")].index
 
 ### COUNTRIES ###
 # ----- Add generators for countries--------------------
@@ -159,7 +170,7 @@ n.add("Generator",
 # ----- Add battery storage --------------------
 if add_storage:
     n.add("Store",
-          "Store",
+          "Island_store",
           bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
           carrier           = "Store1",
           e_nom_extendable  = True,
@@ -197,19 +208,40 @@ if add_data:
 
 #%% Extra functionality
 def area_constraint(n, snapshots):
+    
+    # Get variables for all generators and store
     vars_gen   = get_var(n, 'Generator', 'p_nom')
     vars_store = get_var(n, 'Store', 'e_nom')
     
+    # Apply area use on variable and create linear expression 
     lhs = linexpr((n.area_use['hydrogen'], vars_gen["P2X"]), 
                   (n.area_use['data'],     vars_gen["Data"]), 
-                  (n.area_use['storage'],  vars_store))
+                  (n.area_use['storage'],  vars_store['Island_store']))
     
+    # Define area use limit
     rhs = n.total_area #[m^2]
     
-    define_constraints(n, lhs, '<=', rhs, 'Generator', 'Area_Use')
+    # Define constraint
+    define_constraints(n, lhs, '<=', rhs, 'Island', 'Area_Use')
+    
+def link_constraint(n, snapshots):
+    # Get main links
+    link_names = n.main_links
+    
+    # get all link variables, and then get only main link variables
+    vars_links   = get_var(n, 'Link', 'p_nom')
+    vars_links   = vars_links[link_names]
+    
+    # Sum up link capacities of chosen links (lhs), and set limit (rhs)
+    rhs          = n.link_total_max
+    lhs          = join_exprs(linexpr((1, vars_links)))
+    
+    #Define constraint and name it 'Total constraint'
+    define_constraints(n, lhs, '=', rhs, 'Link', 'Total constraint')
 
 def extra_functionalities(n, snapshots):
     area_constraint(n, snapshots)
+    link_constraint(n, snapshots)
 
 #%% Solve
 if should_solve:
@@ -217,7 +249,7 @@ if should_solve:
            solver_name = 'gurobi',
            keep_shadowprices = True,
            keep_references = True,
-            extra_functionality = extra_functionalities,
+           extra_functionality = extra_functionalities,
            )
 else:
     pass
@@ -227,6 +259,20 @@ else:
 if should_plot:
     ip.plot_geomap(n)
 
+if should_n_diagram:
+    
+    pos = [
+           [0, 0], #Island
+           [20, -1], #Denmark
+           [15, 8],  #Norway
+           [18, -10], #DE
+           [6, -11], #NE
+           [-4, -12], #BE
+           [-10, 1], #UK
+          ]
+    
+    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None)
+    
 # Extra
 # linkz = n.links_t.p0
 
@@ -237,134 +283,6 @@ if should_plot:
 
 # linkz2['p_nom_opt'].hist(bins = 12, figsize = (10,5))
 # linkz2['p_nom_opt'].plot(figsize = (10,5))
-
-#%% Network diagram 
-
-def draw_bus(n, bus, show = True):
-    import schemdraw
-    import schemdraw.elements as elm
-    from schemdraw.segments import Segment, util, math, SegmentCircle
-    
-    class MyGen(elm.Element):
-        def __init__(self, *d, **kwargs):
-            super().__init__(*d, **kwargs)
-            self.segments.append(Segment(
-                [(0, 0), (0.75, 0)]))
-            sin_y = util.linspace(-.25, .25, num=25)
-            sin_x = [.2 * math.sin((sy-.25)*math.pi*2/.5) + 1.25 for sy in sin_y]
-            self.segments.append(Segment(list(zip(sin_x, sin_y))))
-            self.segments.append(SegmentCircle((1.25, 0), 0.5,))
-            
-    class MyLoad(elm.Element):
-        def __init__(self, *d, **kwargs):
-            super().__init__(*d, **kwargs)
-            lead = 0.95
-            h = 0.8
-            w = 0.5
-            self.segments.append(Segment(
-                [(0, 0), (0, lead), (-w, lead+h), (w, lead+h), (0, lead)]))
-            self.params['drop'] = (0, 0)
-            self.params['theta'] = 0
-            self.anchors['start'] = (0, 0)
-            self.anchors['center'] = (0, 0)
-            self.anchors['end'] = (0, 0)
-            
-    class MyStore(elm.Element):
-        def __init__(self, *d, **kwargs):
-            super().__init__(*d, **kwargs)
-            lead = 0.75
-            h = lead + 1
-            w = 1
-            self.segments.append(Segment(
-                [(0, 0), (lead, 0), (lead, w/2), (h, w/2),
-                  (h, -w/2), (lead, -w/2), (lead, 0)
-                  ]))
-    
-    bus_color  = 'steelblue'
-    link_color = 'darkorange'
-    fontsize = 7
-    title_fontsize = 12
-    
-    gens   = n.generators[n.generators['bus'] == bus] #Get all generators on bus
-    loads  = n.loads[n.loads['bus'] == bus]
-    stores = n.stores[n.stores['bus'] == bus]
-    
-    with schemdraw.Drawing(show = show) as d:
-        d += elm.Dot().color(bus_color).label(bus, fontsize = title_fontsize) #Start bus
-        
-        for gen in gens.index:
-            d += elm.Line().color(bus_color).length(1.5) #Add line piece
-            d.push()
-            label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
-            d += MyGen().up().label(label, loc='right', fontsize = fontsize)
-            d.pop()
-        
-        for store in stores.index:
-            d += elm.Line().color(bus_color).length(1.5) #Add line piece
-            d.push()
-            label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
-            d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
-            d.pop()
-            
-        for load in loads.index:
-            d += elm.Line().color(bus_color).length(1.5) #Add line piece
-            d.push()
-            label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
-            d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
-            d.pop()
-            
-        d += elm.Line(arrow = '-o').color(bus_color).length(1.5) # End bus
-        
-    return d
-
-buses = bus_df['Bus name']
-# buses = n.buses.index
-
-n.buses['sX'] = [0, 15, 12,   0, 15,  5, 12]
-n.buses['sY'] = [0, 0,   5,  -1, -1,  -1, 4]
-
-n.buses['coords'] = [
-                    [0,  0], # Island
-                    [15, 0], # DK
-                    [12, 5], # Norway
-                    [0, -1], # DK e0
-                    [15, 1], # DK e1
-                    [5, -1], # NO e0
-                    [12, 4], # NO e1
-                    ]
-
-# links1 = n.links[~n.links.index.str.contains("bus")].copy()
-
-# links1['bus0'] = [ 'Energy ' + x[:7] for x in links1['bus0']]
-# links1['bus1'] = [x[10:-3] for x in links1['bus1']]
-
-s = pd.Series([])
-
-for bus in buses:
-    
-    bus_diag = pd.Series({bus:draw_bus(n, bus, show = False)})
-    
-    s = pd.concat([s, bus_diag])
-    
-s.name = 'graphic'
-# data = pd.concat([s, n.buses['sX'], n.buses['sY']], axis = 1)
-
-data = pd.concat([s, n.buses['coords']], axis = 1)
-
-import schemdraw
-import schemdraw.elements as elm
-
-with schemdraw.Drawing() as d:
-    
-    d.push()
-    
-    for bus in bus_df['Bus name']:
-        d += (elm.ElementDrawing(data.loc[bus]['graphic'])
-              .at((data.loc[bus]['coords'][0], 
-                   data.loc[bus]['coords'][1]))
-              )
-        d.pop()
-    
 
 
 
