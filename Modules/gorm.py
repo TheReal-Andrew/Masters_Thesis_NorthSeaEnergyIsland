@@ -196,8 +196,8 @@ def get_tech_data(year = 2030, r = 0.07):
     mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [euro/MWh]  From Energistyrelsen
     
     # ----- datacenter -----
-    cc_datacenter = 1e6 # [euro/MW]  UNCONFIRMED
-    mc_datacenter = 1000    # [euro/MWh] revenue UNCONFIRMED
+    cc_datacenter = 38.117e6 # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
+    mc_datacenter = 3.914e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
     # mc_datacenter = 4000
     
     # ----- link -----
