@@ -39,11 +39,23 @@ def plot_circle_points(r, n):
 def draw_bus(n, bus, show = True, 
              bus_color = 'steelblue', link_color = 'darkorange',
              fontsize = 7, title_fontsize = 12,
-             line_length = 1.5):
+             line_length = 1.5, link_line_length = 0.75,
+             handle_bi = False,
+             filename = 'bus_diagram.pdf'):
     # Draw a bus, as well as the components on the bus.
     import schemdraw
     import schemdraw.elements as elm
     from schemdraw.segments import Segment, util, math, SegmentCircle
+    
+    n = n.copy()
+    
+    # ----- Handle bidirectional links -----
+    if handle_bi:
+        n.buses = n.buses[~n.buses.index.str.contains('e0|e1')] #Clean out buses
+        n.links = n.links[~n.links.index.str.contains('e0|e1')] #Clean out links
+        
+        n.links['bus0'] = ['Energy Island' for x in n.links['bus0']]
+        n.links['bus1'] = [x[10:-3] for x in n.links['bus1']]
     
     # ----- Define custom elements -----
     class MyGen(elm.Element):
@@ -87,16 +99,21 @@ def draw_bus(n, bus, show = True,
     stores = n.stores[n.stores['bus'] == bus]
     
     # ----- Draw bus using schemdraw -----
-    with schemdraw.Drawing(show = show) as d:
+    with schemdraw.Drawing(file = filename) as d:
         # Add initial dot
         d += elm.Dot().color(bus_color).label(bus, fontsize = title_fontsize) #Start bus
         
+        for link in n.links.index:
+            label = link.replace(' ', ' \n')
+            d += elm.Line().color(bus_color).length(link_line_length) 
+            d += elm.Dot().color(link_color).label(label, loc = 'bottom', fontsize = fontsize)
         
         for gen in gens.index:
             # Create a new line piece, and add icon with text
             d += elm.Line().color(bus_color).length(line_length) #Add line piece
             d.push() # Save this place
-            label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
+            label = gen.replace(' ', ' \n')
+            # label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
             d += MyGen().up().label(label, loc='right', fontsize = fontsize)
             d.pop() # Return to saved place
         
@@ -104,7 +121,8 @@ def draw_bus(n, bus, show = True,
             # Create a new line piece, and add icon with text
             d += elm.Line().color(bus_color).length(line_length) #Add line piece
             d.push()
-            label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
+            label = 'Store'
+            # label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
             d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
             d.pop()
             
@@ -112,12 +130,15 @@ def draw_bus(n, bus, show = True,
             # Create a new line piece, and add icon with text
             d += elm.Line().color(bus_color).length(line_length) #Add line piece
             d.push()
-            label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
+            label = load.replace(' ', ' \n')
+            # label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
             d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
             d.pop()
-            
+        
         # End bus with a line ending in a dot
         d += elm.Line(arrow = '-o').color(bus_color).length(line_length) # End bus
+        
+        
         
     return d
 
@@ -136,8 +157,22 @@ def draw_network(n, spacing = 2,
     import schemdraw.elements as elm
     import matplotlib.pyplot as plt
     
+    schemdraw.theme('monokai')
+    
     plt.figure()
     n = n.copy()
+    
+    It = 'Island to '
+    
+    index1 = [
+              It+'United Kingdom',
+              It+'Norway',
+              It+'Belgium',
+              It+'Netherlands',
+              It+'Germany',
+              It+'Denmark']
+    
+    n.links = n.links.reindex(index1)
     
     # ----- Handle bidirectional links -----
     if handle_bi:
@@ -149,6 +184,7 @@ def draw_network(n, spacing = 2,
     
     # ----- Set positions -----
     if pos == None or len(pos) != len(n.buses.index):
+        #Determine if automatic position is used, or if positions are provided
         print('\nWARNING: draw_network():  No position given, or not sufficienct positions for the buses. Using automatic circular layout. \n')
         
         n_buses = len(n.buses.index)
@@ -280,6 +316,8 @@ def draw_network(n, spacing = 2,
         
         for link in n.links.index:
             # Loop through all links, and create lines with arrows.
+            
+            # n.links.reindex(index1)
             
             w_link = w[link]
             

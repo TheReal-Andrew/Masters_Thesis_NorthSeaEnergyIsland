@@ -27,18 +27,18 @@ ip.set_plot_options()
 should_solve       = True
 should_plot        = False
 should_bus_diagram = False
-should_n_diagram   = True
+should_n_diagram   = False
 
 # Main parameters
 year     = 2030        # Choose year
 r        = 0.07        # Discount rate
-wind_cap = 10000       # [MW] Installed wind capacity
+wind_cap = 3000       # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 
 link_efficiency = 0.1           # Efficiency of links
 link_total_max  = wind_cap      # Total allowed link capacity
-link_p_nom_min  = 800           # Minimum allowed capacity for one link
+link_p_nom_min  = 0           # Minimum allowed capacity for one link
 link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
 
 filename = "network_1_" # Choose filename for export
@@ -91,9 +91,11 @@ t = pd.date_range('2030-01-01 00:00', '2030-12-31 23:00', freq = 'H')[:n_hrs]
 n.set_snapshots(t)
 
 # Add data to network for easier access when creating constraints
+n.bus_df         = bus_df
 n.area_use       = area_use
 n.total_area     = island_area 
 n.link_total_max = link_total_max
+n.link_p_nom_min = link_p_nom_min
 
 # ----- Add buses-------------------
 # Add multiple buses by passing arrays from bus_df to parameters and using madd
@@ -163,7 +165,7 @@ n.add("Generator",
       p_nom_min         = wind_cap, # Ensure that capacity is pre-built
       p_nom_max         = wind_cap, # Ensure that capacity is pre-built
       p_max_pu          = wind_cf['electricity'].values,
-      capital_cost      = tech_df['capital cost']['wind turbine'],
+      # capital_cost      = tech_df['capital cost']['wind turbine'],
       marginal_cost     = tech_df['marginal cost']['wind turbine'],
       )
 
@@ -225,15 +227,18 @@ def area_constraint(n, snapshots):
     define_constraints(n, lhs, '<=', rhs, 'Island', 'Area_Use')
     
 def link_constraint(n, snapshots):
-    # Get main links
-    link_names = n.main_links
+    # Get main links 
+    link_names = n.main_links               # List of main link names
+    link_t     = n.link_total_max           # Maximum total link capacity
+    link_min   = n.link_p_nom_min           # Minimum link capacity
+    link_t_min = link_min * len(link_names) # Minimum total link capacity
     
     # get all link variables, and then get only main link variables
     vars_links   = get_var(n, 'Link', 'p_nom')
     vars_links   = vars_links[link_names]
     
     # Sum up link capacities of chosen links (lhs), and set limit (rhs)
-    rhs          = n.link_total_max
+    rhs          = link_t if link_t >= link_t_min else link_t_min
     lhs          = join_exprs(linexpr((1, vars_links)))
     
     #Define constraint and name it 'Total constraint'
@@ -256,6 +261,8 @@ else:
     
 #%% Plot
 
+ip.set_plot_options()
+
 if should_plot:
     ip.plot_geomap(n)
 
@@ -271,8 +278,34 @@ if should_n_diagram:
            [-10, 1], #UK
           ]
     
-    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None)
+    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
+                       bus_color = 'azure',
+                       filename = 'pypsa_diagram_3_2.svg')
     
+if should_bus_diagram:
+    pdiag.draw_bus(n, 'Energy Island', bus_color = 'azure',
+                   handle_bi = True, link_line_length = 1.1,
+                   filename = 'bus_diagram1.svg')
+    
+    
+
+t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
+ax = n.generators_t.p['P2X'][t2].abs().plot(figsize = (15,5))
+fig = plt.gcf()
+ax.set_xlabel('Time [hr]')
+ax.set_ylabel('Power consumed [MW]')
+ax.set_title('P2X')
+fig.savefig('P2X_timeseries.svg', format = 'svg', bbox_inches='tight')
+
+# t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
+# ax = n.generators_t.p['Data'][t2].abs().plot(figsize = (15,5))
+# fig = plt.gcf()
+# ax.set_xlabel('Time [hr]')
+# ax.set_ylabel('Power consumed [MW]')
+# ax.set_title('Data')
+# fig.savefig('Data_timeseries.svg', format = 'svg', bbox_inches='tight')
+
+
 # Extra
 # linkz = n.links_t.p0
 

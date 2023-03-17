@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 15 20:21:54 2023
 
@@ -186,7 +186,7 @@ def get_tech_data(year = 2030, r = 0.07):
                      * (1+ (hydrogen_data['Fixed O&M (% of specific investment / year) ']*0.01))
                      ) # [euro/MW]  From Energistyrelsen
     
-    mc_hydrogen   = 127 # [euro/MWh] Revenue - UNCONFIRMED
+    mc_hydrogen   = 42 # [euro/MWh] Revenue - Lazard LCOE / H2_LHV
     
     # ----- storage -----
     cc_storage    = (get_annuity(r,storage_data['Technical lifetime (years)']) # Annuity
@@ -197,7 +197,8 @@ def get_tech_data(year = 2030, r = 0.07):
     
     # ----- datacenter -----
     cc_datacenter = 1e6 # [euro/MW]  UNCONFIRMED
-    mc_datacenter = 120    # [euro/MWh] revenue UNCONFIRMED
+    mc_datacenter = 1000    # [euro/MWh] revenue UNCONFIRMED
+    # mc_datacenter = 4000
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
@@ -205,7 +206,7 @@ def get_tech_data(year = 2030, r = 0.07):
                                  * link_data['investment']
                                  * DR
                                  ) 
-    mc_link       = 5 #38 [euro/MWh] UNCONFIRMED
+    mc_link       = 0.001 #38 [euro/MWh] UNCONFIRMED
     
     # ---- Assemble tech dataframe
     tech_df = pd.DataFrame(
