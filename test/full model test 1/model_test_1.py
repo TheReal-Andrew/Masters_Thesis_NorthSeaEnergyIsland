@@ -25,9 +25,9 @@ ip.set_plot_options()
 
 # Main control
 should_solve       = True
-should_plot        = False
+should_plot        = True
 should_bus_diagram = False
-should_n_diagram   = False
+should_n_diagram   = True
 
 # Main parameters
 year     = 2030        # Choose year
@@ -36,7 +36,7 @@ wind_cap = 3000       # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 
-link_efficiency = 0.1           # Efficiency of links
+link_efficiency = 0.95          # Efficiency of links
 link_total_max  = wind_cap      # Total allowed link capacity
 link_p_nom_min  = 0           # Minimum allowed capacity for one link
 link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
@@ -289,13 +289,7 @@ if should_bus_diagram:
     
     
 
-t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
-ax = n.generators_t.p['P2X'][t2].abs().plot(figsize = (15,5))
-fig = plt.gcf()
-ax.set_xlabel('Time [hr]')
-ax.set_ylabel('Power consumed [MW]')
-ax.set_title('P2X')
-fig.savefig('P2X_timeseries.svg', format = 'svg', bbox_inches='tight')
+
 
 # t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
 # ax = n.generators_t.p['Data'][t2].abs().plot(figsize = (15,5))

@@ -132,6 +132,7 @@ def get_tech_data(year = 2030, r = 0.07):
     
     # Extract HVDC submarine link data values and unstack
     link_data = pypsa_data['value'].loc['HVDC submarine'].unstack(level = 0)
+        # No link data for specific years
     
     # ----- Battery Storage Data -----
     storage_data = (pd.read_excel(r'../../data/costs/technology_data_catalogue_for_energy_storage.xlsx',
@@ -148,7 +149,7 @@ def get_tech_data(year = 2030, r = 0.07):
     
     # ----- Hydrogen -----
     hydrogen_data = (pd.read_excel(r'../../data/costs/data_sheets_for_renewable_fuels.xlsx',
-                                 sheet_name = '86 PEMEC 100MW',
+                                 sheet_name = '86 AEC 100MW',
                                  skiprows = [0, 1], # Drop initial empty columns
                                  usecols = 'B:F') # Use specific columns
                     .dropna(axis = 1, how = 'all').dropna(axis = 0, how = 'all') # Remove empty rows/columns
@@ -198,7 +199,6 @@ def get_tech_data(year = 2030, r = 0.07):
     # ----- datacenter -----
     cc_datacenter = 38.117e6 # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
     mc_datacenter = 3.914e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
-    # mc_datacenter = 4000
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
@@ -206,7 +206,7 @@ def get_tech_data(year = 2030, r = 0.07):
                                  * link_data['investment']
                                  * DR
                                  ) 
-    mc_link       = 0.001 #38 [euro/MWh] UNCONFIRMED
+    mc_link       = 0.001 #38 [euro/MWh] 
     
     # ---- Assemble tech dataframe
     tech_df = pd.DataFrame(
