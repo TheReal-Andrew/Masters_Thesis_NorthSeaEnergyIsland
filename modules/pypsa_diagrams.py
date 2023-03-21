@@ -41,7 +41,7 @@ def draw_bus(n, bus, show = True,
              fontsize = 7, title_fontsize = 12,
              line_length = 1.5, link_line_length = 0.75,
              handle_bi = False,
-             filename = 'bus_diagram.pdf'):
+             filename = 'graphics/bus_diagram.pdf'):
     # Draw a bus, as well as the components on the bus.
     import schemdraw
     import schemdraw.elements as elm
@@ -148,7 +148,7 @@ def draw_network(n, spacing = 2,
                  arrow_color = 'darkorange',
                  fontsize = 8, title_fontsize = 12,
                  bus_color = 'steelblue', link_color = 'darkorange', 
-                 pos = None, filename = 'pypsa_diagram.pdf',
+                 pos = None, filename = 'graphics/pypsa_diagram.pdf',
                  handle_bi = False):
     import pandas as pd
     pd.options.mode.chained_assignment = None #Disable warning (For line 218)

@@ -14,7 +14,7 @@ import pypsa
 from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
 import pandas as pd
 
-import gorm as gm
+import gorm_v1 as gm
 import pypsa_diagrams as pdiag
 
 import matplotlib.pyplot as plt
@@ -34,7 +34,7 @@ year     = 2030        # Choose year
 r        = 0.07        # Discount rate
 wind_cap = 3000       # [MW] Installed wind capacity
 n_hrs    = 8760        # [hrs] Choose number of hours to simulate
-island_area = 120_000  # [m^2] total island area
+island_area = 120_000*0.6  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
 link_total_max  = wind_cap      # Total allowed link capacity
