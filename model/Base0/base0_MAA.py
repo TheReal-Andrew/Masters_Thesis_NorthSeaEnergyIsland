@@ -28,7 +28,7 @@ Should_MAA   = True
 
 input_name = 'base0_opt.nc'
 
-n_snapshots   = 24*7*8 # Snapshots MUSt be the same as in the optimal solution!
+n_snapshots   = 8760 # Snapshots MUSt be the same as in the optimal solution!
 link_sum_max  = 3000 # Must be the same as in the optimal solution!
 
 # MAA control
@@ -172,38 +172,26 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-#%%
-import numpy as np
-from numpy.linalg import det
-from scipy.stats import dirichlet
-from scipy.spatial import Delaunay
+#%% Seaborn heatmap
+# import numpy as np
+# from numpy.linalg import det
+# from scipy.stats import dirichlet
+# from scipy.spatial import Delaunay
+
+# d = gm.sample_in_hull(solutions, 10000)
+
+# d_df = pandas.DataFrame(d,
+#                         columns = techs)
+
+# d_corr = d_df.corr()
 
 
-def dist_in_hull(points, n):
-    # From https://stackoverflow.com/questions/59073952/how-to-get-uniformly-distributed-points-in-convex-hull
-    dims = points.shape[-1]
-    hull = points[ConvexHull(points).vertices]
-    deln = hull[Delaunay(hull).simplices]
+# # Seaborn
+# mask = np.triu(d_corr)
+# # np.fill_diagonal(mask, False)
+# import seaborn as sns
 
-    vols = np.abs(det(deln[:, :dims, :] - deln[:, dims:, :])) / np.math.factorial(dims)    
-    sample = np.random.choice(len(vols), size = n, p = vols / vols.sum())
-
-    return np.einsum('ijk, ij -> ik', deln[sample], dirichlet.rvs([1]*(dims + 1), size = n))
-
-d = dist_in_hull(solutions, 10000)
-
-d_df = pandas.DataFrame(d,
-                        columns = techs)
-
-d_corr = d_df.corr()
-
-
-# Seaborn
-mask = np.triu(d_corr)
-# np.fill_diagonal(mask, False)
-import seaborn as sns
-
-sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
+# sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
 
 #%% 2D Subplots
 
@@ -211,7 +199,7 @@ gm.solutions_2D(techs, solutions, n_samples = 10000)
 
 gm.solutions_heatmap2(techs, solutions)
 
-#%%
+#%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions)
 
 d_df = pandas.DataFrame(d,

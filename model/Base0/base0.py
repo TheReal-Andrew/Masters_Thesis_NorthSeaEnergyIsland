@@ -33,7 +33,7 @@ should_n_diagram   = True
 year     = 2030        # Choose year
 r        = 0.07        # Discount rate
 wind_cap = 3000        # [MW] Installed wind capacity
-n_hrs    = 24*7*8        # [hrs] Choose number of hours to simulate
+n_hrs    = 8760        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
