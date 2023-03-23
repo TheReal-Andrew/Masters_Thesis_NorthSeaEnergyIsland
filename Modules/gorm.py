@@ -70,6 +70,9 @@ def sample_in_hull(points, n = 1000):
 
     return np.einsum('ijk, ij -> ik', deln[sample], dirichlet.rvs([1]*(dims + 1), size = n))
 
+
+
+
 #%% ------- PyPSA FUNCTIONS -----------------------------------
 
 # Add bidirectional link with setup for losses
@@ -414,9 +417,9 @@ def solutions_2D(techs, solutions, n_samples = 1000):
             x = solutions[:,i]
             y = solutions[:,j]
             
-            # for simplex in hull.simplices:
+            for simplex in hull.simplices:
             
-            #     ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 1)
+                ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 1)
                 
             ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)

@@ -38,8 +38,8 @@ mga_slack     = 0.1   # 10%
 variables = {
                 'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
-                'x3':('Store',     'Store1'),
-               'x4':('Link',      'link_Denmark'),
+                # 'x3':('Store',     'Store1'),
+               # 'x4':('Link',      'link_Denmark'),
                # 'x5':('Link',      'link_Germany'),
                # 'x6':('Link',      'link_Belgium'),
             }
@@ -197,7 +197,7 @@ if Should_MAA:
 
 gm.solutions_2D(techs, solutions, n_samples = 10000)
 
-gm.solutions_heatmap2(techs, solutions)
+# gm.solutions_heatmap2(techs, solutions)
 
 #%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions)
