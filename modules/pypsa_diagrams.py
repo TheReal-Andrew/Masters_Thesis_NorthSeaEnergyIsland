@@ -162,17 +162,18 @@ def draw_network(n, spacing = 2,
     plt.figure()
     n = n.copy()
     
-    It = 'Island to '
+    # It = 'Island to '
     
-    index1 = [
-              It+'United Kingdom',
-              It+'Norway',
-              It+'Belgium',
-              It+'Netherlands',
-              It+'Germany',
-              It+'Denmark']
+    # index1 = [
+    #           It+'United Kingdom',
+    #           It+'Norway',
+    #           It+'Belgium',
+    #           It+'Netherlands',
+    #           It+'Germany',
+    #           It+'Denmark']
     
-    n.links = n.links.reindex(index1)
+    # n.links = n.links.reindex(index1)
+    
     
     # ----- Handle bidirectional links -----
     if handle_bi:
@@ -181,6 +182,7 @@ def draw_network(n, spacing = 2,
         
         n.links['bus0'] = ['Energy Island' for x in n.links['bus0']]
         n.links['bus1'] = [x[10:-3] for x in n.links['bus1']]
+        
     
     # ----- Set positions -----
     if pos == None or len(pos) != len(n.buses.index):

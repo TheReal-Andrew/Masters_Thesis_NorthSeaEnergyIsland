@@ -18,8 +18,7 @@ import gorm as gm
 import tim as tm
 import pypsa_diagrams as pdiag
 
-import island_plt as ip
-ip.set_plot_options()
+gm.set_plot_options()
 
 #%% ------- CONTROL -----------------------------------
 
@@ -28,14 +27,14 @@ should_solve       = True
 should_export      = True
 should_plot        = True
 should_bus_diagram = False
-should_n_diagram   = False
+should_n_diagram   = True
 
 # Main parameters
 year     = 2030        # Choose year
 r        = 0.07        # Discount rate
-wind_cap = 3000       # [MW] Installed wind capacity
-n_hrs    = 8760        # [hrs] Choose number of hours to simulate
-island_area = 120_000*0.6  # [m^2] total island area
+wind_cap = 3000        # [MW] Installed wind capacity
+n_hrs    = 24*7*8        # [hrs] Choose number of hours to simulate
+island_area = 120_000  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
 link_sum_max    = wind_cap      # Total allowed link capacity
@@ -47,11 +46,11 @@ filename = "/base0_opt.nc" # Choose filename for export
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
                         "Denmark",         
-                        # "Norway",          
+                        "Norway",          
                         "Germany",         
-                        # "Netherlands",     
+                        "Netherlands",     
                         "Belgium",         
-                        # "United Kingdom"
+                        "United Kingdom"
                         ]
 
 jiggle = [0, 0]
@@ -67,11 +66,13 @@ add_c_loads = True # Add country demand
 
 # ----- Wind capacity factor data ---------
 wind_cf         = pd.read_csv(r'data\wind_formatted.csv',
-                       index_col = [0], sep=",")[:n_hrs]
+                       index_col = [0], sep=",").iloc[:n_hrs,:]
 
 # ----- Country demand and price ---------
 # Import price and demand for each country for the year, and remove outliers
 cprice, cload   = tm.get_load_and_price(year, connected_countries, n_std = 1)
+cprice = cprice.iloc[:n_hrs,:]
+cload  = cload.iloc[:n_hrs,:] 
 
 # ----- Dataframe with bus data ---------
 # Get dataframe with bus info, only for the connected countries.
@@ -134,7 +135,7 @@ for country in country_df['Bus name']:
 # Add list of main links to network to differetniate
 n.main_links = n.links[~n.links.index.str.contains("bus")].index
 
-### COUNTRIES ###
+# ______________________________ ### COUNTRIES ### ____________________________
 # ----- Add generators for countries--------------------
 #Add generators to each country bus with varying marginal costs
 if add_c_gens:
@@ -157,7 +158,7 @@ if add_c_loads:
               p_set   = cload[country_df.loc[country]['Abbreviation']].values,
               ) 
 
-### ISLAND ###
+# ______________________________ ### ISLAND ### _______________________________
 # ----- Add wind generator --------------------
 n.add("Generator",
       "Wind",
@@ -167,7 +168,7 @@ n.add("Generator",
       p_nom_min         = wind_cap, # Ensure that capacity is pre-built
       p_nom_max         = wind_cap, # Ensure that capacity is pre-built
       p_max_pu          = wind_cf['electricity'].values,
-       capital_cost      = tech_df['capital cost']['wind turbine'],
+      capital_cost      = tech_df['capital cost']['wind turbine'],
       marginal_cost     = tech_df['marginal cost']['wind turbine'],
       )
 
@@ -207,48 +208,13 @@ if add_data:
             p_max_pu          = -0.99,
             p_min_pu          = -1,
             capital_cost      = tech_df['capital cost']['datacenter'],
-            marginal_cost     = tech_df['marginal cost']['datacenter']/3.5,
+            marginal_cost     = tech_df['marginal cost']['datacenter'],
             )
 
 #%% Extra functionality
-def area_constraint(n, snapshots):
-    
-    # Get variables for all generators and store
-    vars_gen   = get_var(n, 'Generator', 'p_nom')
-    vars_store = get_var(n, 'Store', 'e_nom')
-    
-    # Apply area use on variable and create linear expression 
-    lhs = linexpr((n.area_use['hydrogen'], vars_gen["P2X"]), 
-                  (n.area_use['data'],     vars_gen["Data"]), 
-                  (n.area_use['storage'],  vars_store['Island_store']))
-    
-    # Define area use limit
-    rhs = n.total_area #[m^2]
-    
-    # Define constraint
-    define_constraints(n, lhs, '<=', rhs, 'Island', 'Area_Use')
-    
-def link_constraint(n, snapshots):
-    # Create a constraint that limits the sum of link capacities
-    
-    # Get link info from network
-    link_names = n.main_links               # List of main link names
-    link_t     = n.link_sum_max           # Maximum total link capacity
-    
-    # Get all link variables, and filter for only main link variables
-    vars_links   = get_var(n, 'Link', 'p_nom')
-    vars_links   = vars_links[link_names]
-    
-    # Sum up link capacities of chosen links (lhs), and set limit (rhs)
-    rhs          = link_t
-    lhs          = join_exprs(linexpr((1, vars_links)))
-    
-    #Define constraint and name it 'Total constraint'
-    define_constraints(n, lhs, '=', rhs, 'Link', 'Total constraint')
-
 def extra_functionalities(n, snapshots):
-    area_constraint(n, snapshots)
-    link_constraint(n, snapshots)
+    gm.area_constraint(n, snapshots)
+    gm.link_constraint(n, snapshots)
 
 #%% Solve
 if should_solve:
@@ -263,29 +229,24 @@ if should_solve:
         filename = filename
         export_path = os.getcwd() + filename
         n.export_to_netcdf(export_path)
-    else:
-        pass
-    
-else:
-    pass
     
 #%% Plot
 
-ip.set_plot_options()
+gm.set_plot_options()
 
 if should_plot:
-    ip.plot_geomap(n)
+    gm.plot_geomap(n)
 
 if should_n_diagram:
     
     pos = [
-           [0, 0], #Island
-           [20, -1], #Denmark
-           [15, 8],  #Norway
+           [0, 0],    #Island
+           [20, -1],  #Denmark
+           [15, 8],   #Norway
            [18, -10], #DE
-           [6, -11], #NE
+           [6, -11],  #NE
            [-4, -12], #BE
-           [-10, 1], #UK
+           [-10, 1],  #UK
           ]
     
     pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
@@ -297,9 +258,6 @@ if should_bus_diagram:
                    handle_bi = True, link_line_length = 1.1,
                    filename = 'graphics/bus_diagram1.svg')
     
-    
-
-
 
 # t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
 # ax = n.generators_t.p['Data'][t2].abs().plot(figsize = (15,5))
