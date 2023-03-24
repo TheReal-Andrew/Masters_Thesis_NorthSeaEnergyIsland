@@ -55,21 +55,51 @@ def get_earth_distance(lat1,lat2,lon1,lon2):
 
 def sample_in_hull(points, n = 1000):
     # From https://stackoverflow.com/questions/59073952/how-to-get-uniformly-distributed-points-in-convex-hull
-    from scipy.spatial import ConvexHull
+    import random
     import numpy as np
     from numpy.linalg import det
-    from scipy.stats import dirichlet
+    # from scipy.stats import dirichlet
     from scipy.spatial import Delaunay
+    from scipy.spatial import ConvexHull
     
-    dims = points.shape[-1]
-    hull = points[ConvexHull(points).vertices]
-    deln = hull[Delaunay(hull).simplices]
+    dims = points.shape[-1]                     # Determine dimension of simplexes
+    hull = points[ConvexHull(points).vertices]  # Find MGA points
+    deln = hull[Delaunay(hull).simplices]       # Split MGA-hull into simplexes
 
-    vols = np.abs(det(deln[:, :dims, :] - deln[:, dims:, :])) / np.math.factorial(dims)    
-    sample = np.random.choice(len(vols), size = n, p = vols / vols.sum())
+    vols = np.abs(det(deln[:, :dims, :] - deln[:, dims:, :])) / np.math.factorial(dims) # Calculate volume of simplexes   
+    
+    #### Find number of samples pr. simplex from their volume
+    sample_pr_simplex = [None] * vols.shape[-1]
+    for k in range(vols.shape[-1]):    
+        sample_pr_simplex[k] = int(np.round(vols[k]/vols.sum()*1000))
+    
+    #### Find random samples
+    samples = np.zeros(shape=(n,dims))
+    counter = 0
+    for l in range(vols.shape[-1]):
+            for ll in range(sample_pr_simplex[l]):
+               
+                #### Find random vector which == 1
+                a_list = [0,1]
+                for i in range(dims): 
+                    a_list.insert(i+1, random.uniform(0, 1))
+                    a_list.sort()
+                
+                r = [None] * (dims+1)
+                for j in range(len(a_list)-1):
+                    r[j] = a_list[j+1] - a_list[j]
+                
+                #### Sample the space
+                sample_x = np.zeros(shape=(1,dims))
 
-    return np.einsum('ijk, ij -> ik', deln[sample], dirichlet.rvs([1]*(dims + 1), size = n))
-
+                for k in range(deln.shape[1]):
+                    sample_x = np.add(deln[l][k]*r[k], sample_x)
+                           
+                samples[counter] = sample_x
+                counter = counter + 1
+        
+    return samples
+    
 #%% ------- PyPSA FUNCTIONS -----------------------------------
 
 # Add bidirectional link with setup for losses
@@ -414,9 +444,9 @@ def solutions_2D(techs, solutions, n_samples = 1000):
             x = solutions[:,i]
             y = solutions[:,j]
             
-            # for simplex in hull.simplices:
+            for simplex in hull.simplices:
             
-            #     ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 1)
+                ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 1)
                 
             ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)
