@@ -28,6 +28,16 @@ def get_annuity(i, n):
     annuity = i/(1.-1./(1.+i)**n)
     return annuity
 
+def get_annuity_snap(i, n, n_hrs):
+    
+    i = i / (8760 / n_hrs)
+    
+    n = n * (8760 / n_hrs) # convert years to snapshots
+    
+    annuity = i/(1.-1./(1.+i)**n)
+    
+    return annuity
+
 # Remove outliers from dataframe, and replace with n standard deviations.
 def remove_outliers(df,columns,n_std):
     for col in columns:
@@ -419,12 +429,12 @@ def solutions_2D(techs, solutions, n_samples = 1000):
             
             for simplex in hull.simplices:
             
-                ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 1)
+                ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 0)
                 
             ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)
             
-            ax.plot(d[:,i], d[:,j], 'o', label = 'samples', zorder = 0)
+            ax.plot(d[:,i], d[:,j], 'o', label = 'samples', zorder = 1)
             
             # text_box = ax.text(x.max(), y.max(), "Text in a Box", ha='left', va='top', bbox={'facecolor': 'yellow', 'alpha': 0.5, 'pad': 10})
             

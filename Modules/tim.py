@@ -17,8 +17,9 @@ def get_load_and_price(year, connected_countries, n_std): # require year
     
     # load data
     cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      
-    cload = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
-
+    # cload = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
+    cload = pd.read_csv(f"../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
+    
     # Get bus_df with selected country abbreviations
     bus_df      = get_bus_df(connected_countries)
 
@@ -77,7 +78,7 @@ def get_area_use():
     return area_use
 
 #%% ----- TECH DATA -----
-def get_tech_data(year = 2030, r = 0.07):
+def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     # Create dataframe with technology data from year and discount rate (r)
     import pandas as pd 
     import gorm as gm
@@ -135,7 +136,7 @@ def get_tech_data(year = 2030, r = 0.07):
     
     # ------------------- Cost calculations --------------------------
     # ----- wind -----
-    cc_wind       = (gm.get_annuity(r, wind_data['Energy/technical data']['Technical lifetime [years]'])
+    cc_wind       = (gm.get_annuity_snap(r, wind_data['Energy/technical data']['Technical lifetime [years]'], n_hrs)
                      * wind_data['Financial data']['Nominal investment (*total) [2020-MEUR/MW_e]'] * 1e6
                      + wind_data['Financial data']['Fixed O&M (*total) [2020-EUR/MW_e/y]']
                      )# [euro/MW] From Energistyrelsen
@@ -143,7 +144,7 @@ def get_tech_data(year = 2030, r = 0.07):
     mc_wind       = wind_data['Financial data']['Variable O&M (*total) [2020-EUR/MWh_e]']   # [euro/MWh] From Energistyrelsen
     
     # ----- hydrogen -----
-    cc_hydrogen   = (gm.get_annuity(r, hydrogen_data['Technical lifetime (years)'])
+    cc_hydrogen   = (gm.get_annuity_snap(r, hydrogen_data['Technical lifetime (years)'], n_hrs)
                      * hydrogen_data['Specific investment (€ / kW of total input_e)'] * 1e3
                      * (1+ (hydrogen_data['Fixed O&M (% of specific investment / year) ']*0.01))
                      ) # [euro/MW]  From Energistyrelsen
@@ -151,14 +152,14 @@ def get_tech_data(year = 2030, r = 0.07):
     mc_hydrogen   = 42 # [euro/MWh] Revenue - Lazard LCOE / H2_LHV
     
     # ----- storage -----
-    cc_storage    = (gm.get_annuity(r,storage_data['Technical lifetime (years)']) # Annuity
+    cc_storage    = (gm.get_annuity_snap(r, storage_data['Technical lifetime (years)'], n_hrs) # Annuity
                           * storage_data['Specific investment (M€2015 per MWh)'] * 1e6 # Investment
                           + storage_data['Fixed O&M (k€2015/MW/year)'] * 1e3 # O&M
                           ) # [euro/MWh] From Energistyrelsen
     mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [euro/MWh]  From Energistyrelsen
     
     # ----- datacenter -----
-    cc_datacenter = (gm.get_annuity(r,5)
+    cc_datacenter = (gm.get_annuity_snap(r, 5, n_hrs)
                         * 38.117e6
                         * (1 + 0.02)
                         ) # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
@@ -166,7 +167,7 @@ def get_tech_data(year = 2030, r = 0.07):
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
-    cc_link       = float( gm.get_annuity(r, link_data['lifetime']) # [euro/MW/km]  
+    cc_link       = float( gm.get_annuity_snap(r, link_data['lifetime'], n_hrs) # [euro/MW/km]  
                                  * link_data['investment']
                                  * DR
                                  ) 

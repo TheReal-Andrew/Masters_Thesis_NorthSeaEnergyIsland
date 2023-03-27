@@ -41,7 +41,7 @@ def draw_bus(n, bus, show = True,
              fontsize = 7, title_fontsize = 12,
              line_length = 1.5, link_line_length = 0.75,
              handle_bi = False,
-             filename = 'graphics/bus_diagram.pdf'):
+             filename = 'bus_diagram.pdf'):
     # Draw a bus, as well as the components on the bus.
     import schemdraw
     import schemdraw.elements as elm
@@ -94,6 +94,7 @@ def draw_bus(n, bus, show = True,
                   ]))
     
     # ----- Get elements on this bus from network -----
+    links  = n.links[(n.links.bus0 == bus) | (n.links.bus1 == bus)]
     gens   = n.generators[n.generators['bus'] == bus] #Get all generators on bus
     loads  = n.loads[n.loads['bus'] == bus]
     stores = n.stores[n.stores['bus'] == bus]
@@ -103,7 +104,7 @@ def draw_bus(n, bus, show = True,
         # Add initial dot
         d += elm.Dot().color(bus_color).label(bus, fontsize = title_fontsize) #Start bus
         
-        for link in n.links.index:
+        for link in links.index:
             label = link.replace(' ', ' \n')
             d += elm.Line().color(bus_color).length(link_line_length) 
             d += elm.Dot().color(link_color).label(label, loc = 'bottom', fontsize = fontsize)

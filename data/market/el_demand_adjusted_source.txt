@@ -1,0 +1,14 @@
+The el_demand_adjusted data is data extracted from the PyPSA-Eur-Sec-Path model [1], a model of the european power system
+for 2020 to 2050 in 5-year intervals. The PyPSA-Eur-Sec-Path model relies on demand data from ENTSO-E and prepared by Open Power Systems 
+Data [2]. However, this data is for a single year (2015). To obtain the effects of electrification in 2030, 2040 and 2050,
+the adjusted demand is extracted from PyPSA-Eur-Sec-Path. The el_damnd_adjusted data is the sum of the loads and links '
+for each relevant country in each snapshot. 
+For the input data (the "demand" files in this folder), the demand is constant across the years. With this adjusted data,
+the demand accurately increases with electrification over the years. 
+
+[1] Model supplementary materials:
+Articles " Supplementary Materials for “Early decarbonisation of the European energy system pays off” "
+https://static-content.springer.com/esm/art%3A10.1038%2Fs41467-020-20015-4/MediaObjects/41467_2020_20015_MOESM1_ESM.pdf
+
+[2] Demand time series directly from Open-power-systems prepared dataset of ENTSO-E data:
+https://data.open-power-system-data.org/time_series/2018-03-13

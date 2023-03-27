@@ -8,7 +8,8 @@ Created on Mon Mar 20 13:06:40 2023
 import os
 import sys
 # Add modules folder to path
-sys.path.append(os.path.abspath('../../modules')) 
+if os.path.abspath('../../modules') not in sys.path:
+    sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
 import numpy as np
@@ -28,7 +29,7 @@ Should_MAA   = True
 
 input_name = 'base0_opt.nc'
 
-n_snapshots   = 8760 # Snapshots MUSt be the same as in the optimal solution!
+n_snapshots   = 24*7*2 # Snapshots MUSt be the same as in the optimal solution!
 link_sum_max  = 3000 # Must be the same as in the optimal solution!
 
 # MAA control
@@ -39,8 +40,8 @@ variables = {
                 'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
                 # 'x3':('Store',     'Store1'),
-               # 'x4':('Link',      'link_Denmark'),
-               # 'x5':('Link',      'link_Germany'),
+                # 'x4':('Link',      'link_Denmark'),
+                # 'x5':('Link',      'link_Germany'),
                # 'x6':('Link',      'link_Belgium'),
             }
 direction     = [1] * len(variables) # Create liste of ones the size of variables. 1 means minimize, -1 means maximize 
@@ -199,7 +200,7 @@ gm.solutions_2D(techs, solutions, n_samples = 10000)
 
 # gm.solutions_heatmap2(techs, solutions)
 
-#%% Samples dataframe and normalization
+#%% Samples dataframe and normalize
 d = gm.sample_in_hull(solutions)
 
 d_df = pandas.DataFrame(d,
