@@ -88,6 +88,7 @@ def sample_in_hull(points, n = 1000):
                 r = [None] * (dims+1)
                 for j in range(len(a_list)-1):
                     r[j] = a_list[j+1] - a_list[j]
+                random.shuffle(r)
                 
                 #### Sample the space
                 sample_x = np.zeros(shape=(1,dims))
