@@ -18,7 +18,7 @@ def get_load_and_price(year, connected_countries, n_std): # require year
     # load data
     cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      
     # cload = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
-    cload = pd.read_csv(f"../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
+    cload = pd.read_csv(f"../../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
     
     # Get bus_df with selected country abbreviations
     bus_df      = get_bus_df(connected_countries)
