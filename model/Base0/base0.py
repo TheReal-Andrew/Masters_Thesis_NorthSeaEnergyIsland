@@ -8,8 +8,7 @@ Created on Wed Feb 22 09:29:02 2023
 import os
 import sys
 # Add modules folder to path
-if os.path.abspath('../../modules') not in sys.path:
-    sys.path.append(os.path.abspath('../../modules')) 
+sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
 from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
@@ -34,7 +33,7 @@ should_n_diagram   = True
 year     = 2030        # Choose year
 r        = 0.07        # Discount rate
 wind_cap = 3000        # [MW] Installed wind capacity
-n_hrs    = 24*7*2        # [hrs] Choose number of hours to simulate
+n_hrs    = 24*7        # [hrs] Choose number of hours to simulate
 island_area = 120_000  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
@@ -81,7 +80,7 @@ bus_df          = tm.get_bus_df(connected_countries) # Import country data for l
 country_df      = bus_df[1:].copy() 
 
 # ----- Dataframe with tech data ---------
-tech_df         = tm.get_tech_data(year, r, n_hrs)
+tech_df         = tm.get_tech_data(year, r)
 
 # ----- Area use data ---------
 area_use        = tm.get_area_use()
@@ -169,7 +168,7 @@ n.add("Generator",
       p_nom_min         = wind_cap, # Ensure that capacity is pre-built
       p_nom_max         = wind_cap, # Ensure that capacity is pre-built
       p_max_pu          = wind_cf['electricity'].values,
-      capital_cost      = tech_df['capital cost']['wind turbine']*100,
+      capital_cost      = tech_df['capital cost']['wind turbine'],
       marginal_cost     = tech_df['marginal cost']['wind turbine'],
       )
 

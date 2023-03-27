@@ -8,8 +8,7 @@ Created on Mon Mar 20 13:06:40 2023
 import os
 import sys
 # Add modules folder to path
-if os.path.abspath('../../modules') not in sys.path:
-    sys.path.append(os.path.abspath('../../modules')) 
+sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
 import numpy as np
@@ -19,7 +18,7 @@ import pandas
 
 import gorm as gm
 import tim as tm
-
+from ttictoc import tic,toc
 gm.set_plot_options()
 
 #%% Control
@@ -29,7 +28,7 @@ Should_MAA   = True
 
 input_name = 'base0_opt.nc'
 
-n_snapshots   = 24*7*2 # Snapshots MUSt be the same as in the optimal solution!
+n_snapshots   = 24*7 # Snapshots MUSt be the same as in the optimal solution!
 link_sum_max  = 3000 # Must be the same as in the optimal solution!
 
 # MAA control
@@ -42,7 +41,7 @@ variables = {
                 # 'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_Denmark'),
                 # 'x5':('Link',      'link_Germany'),
-               # 'x6':('Link',      'link_Belgium'),
+                # 'x6':('Link',      'link_Belgium'),
             }
 direction     = [1] * len(variables) # Create liste of ones the size of variables. 1 means minimize, -1 means maximize 
 mga_variables = list(variables.keys())
@@ -84,7 +83,7 @@ def extra_functionality(n,snapshots,options,direction):
     gm.define_mga_objective(n,snapshots,direction,options)
 
 #%% MGA - Search 1 direction
-
+tic()
 if Should_MAA:
     direction = direction # 1 means minimize, -1 means maximize 
     mga_variables = mga_variables # The variables that we are investigating
@@ -195,12 +194,13 @@ if Should_MAA:
 # sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
 
 #%% 2D Subplots
+print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
 gm.solutions_2D(techs, solutions, n_samples = 10000)
 
-# gm.solutions_heatmap2(techs, solutions)
+gm.solutions_heatmap2(techs, solutions)
 
-#%% Samples dataframe and normalize
+#%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions)
 
 d_df = pandas.DataFrame(d,
