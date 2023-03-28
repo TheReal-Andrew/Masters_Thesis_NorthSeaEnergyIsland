@@ -25,10 +25,9 @@ gm.set_plot_options()
 # Main control
 should_solve       = True
 should_export      = True
-should_plot        = True
+should_plot        = False
 should_bus_diagram = False
-should_n_diagram   = True
-
+should_n_diagram   = False
 # Main parameter series
 mp = tm.get_main_parameters()
 

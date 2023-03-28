@@ -1,29 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Mar 27 12:33:25 2023
+Created on Tue Mar 28 13:41:02 2023
 
 @author: lukas
 """
-import os
+
 import pandas as pd
-import tim as tm
 
-year = 2030
-
-connected_countries =  [
-                        "Denmark",         
-                        "Norway",          
-                        "Germany",         
-                        "Netherlands",     
-                        "Belgium",         
-                        "United Kingdom"
-                        ]
-
-# cload1 = pd.read_csv(f"../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
-# cload2 = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
-
-# cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)  
-cprice1 = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)  
-cprice2 = pd.read_csv(f"../data/market/price_{year}.csv", index_col = 0)
-# cload, cprice = tm.get_load_and_price(2030, connected_countries, 1)
-
+mp = pd.DataFrame( {2030 : [3000,  120_000],
+                    2040 : [10000, 460_000],
+                    2050 : [10000, 460_000],},
+                   index = ['wind', 'island_area'])

@@ -10,14 +10,27 @@ Created on Wed Feb 22 09:30:06 2023
 # The TIM module is used to import, process, format and return data to the main
 # model script.
 
+#%% ---- MAIN PARAMETERS ----
+def get_main_parameters():
+    import pandas as pd
+    
+    mp = pd.DataFrame( {2030 : [3000,  120_000],
+                        2040 : [10000, 460_000],
+                        2050 : [10000, 460_000],},
+                       index = ['wind', 'island_area'])
+    
+    return mp
+
 #%% ---- COUNTRY LOAD AND PRICES ----
 def get_load_and_price(year, connected_countries, n_std): # require year
     import pandas as pd
     import gorm as gm
     
     # load data
-    cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      
+    # cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      
     # cload = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
+    cprice = pd.read_csv(f"../../data/market/price_{year}.csv", index_col = 0)
+    
     cload = pd.read_csv(f"../../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
     
     # Get bus_df with selected country abbreviations
