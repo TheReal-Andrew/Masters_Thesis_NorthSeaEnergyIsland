@@ -233,6 +233,10 @@ def define_mga_constraint(n, sns, epsilon=None, with_fix=False):
     with_fix : bool, optional
         Calculation of allowed cost penalty should include cost of non-extendable components, by default None
     """
+    
+    MB = n.MB               # Load money bin capital cost
+    revenue = n.revenue     # Load the revenue from the optimal system
+    
     import pandas as pd
     from pypsa.linopf import lookup, network_lopf, ilopf
     from pypsa.pf import get_switchable_as_dense as get_as_dense
@@ -274,7 +278,7 @@ def define_mga_constraint(n, sns, epsilon=None, with_fix=False):
         rhs = (1 + epsilon) * (n.objective_optimum + ext_const + nonext_const) - nonext_const
     else:
         ext_const = objective_constant(n)
-        rhs = (1 + epsilon) * (n.objective_optimum + ext_const)
+        rhs = (1 + epsilon) * (n.objective_optimum + revenue - MB + ext_const)
 
     define_constraints(n, lhs, "<=", rhs, "GlobalConstraint", "mu_epsilon")
     
