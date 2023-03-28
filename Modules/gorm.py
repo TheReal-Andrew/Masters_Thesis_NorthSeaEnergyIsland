@@ -30,11 +30,7 @@ def get_annuity(i, n):
 
 def get_annuity_snap(i, n, n_hrs):
     
-    i = i / (8760 / n_hrs)
-    
-    n = n * (8760 / n_hrs) # convert years to snapshots
-    
-    annuity = i/(1.-1./(1.+i)**n)
+    annuity = ( i/(1.-1./(1.+i)**n) ) * n_hrs/8760
     
     return annuity
 

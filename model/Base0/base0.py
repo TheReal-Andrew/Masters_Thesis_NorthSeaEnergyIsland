@@ -29,16 +29,19 @@ should_plot        = True
 should_bus_diagram = False
 should_n_diagram   = True
 
+# Main parameter series
+mp = tm.get_main_parameters()
+
 # Main parameters
-year     = 2030        # Choose year
-r        = 0.07        # Discount rate
-wind_cap = 3000        # [MW] Installed wind capacity
-n_hrs    = 24*7*4*6        # [hrs] Choose number of hours to simulate
-island_area = 120_000*0.6  # [m^2] total island area
+year        = 2030             # Choose year
+r           = 0.07             # Discount rate
+n_hrs       = 8760             # [hrs] Choose number of hours to simulate
+wind_cap    = mp[year]['wind'] # [MW] Installed wind capacity
+island_area = mp[year]['island_area']  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
 link_sum_max    = wind_cap      # Total allowed link capacity
-link_p_nom_min  = 0           # Minimum allowed capacity for one link
+link_p_nom_min  = 0             # Minimum allowed capacity for one link
 link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
 
 filename = "/base0_opt.nc" # Choose filename for export
@@ -53,8 +56,6 @@ connected_countries =  [
                         "United Kingdom"
                         ]
 
-jiggle = [0, 0]
-
 # Component control
 add_storage = True # Add storage on island
 add_data    = True # Add datacenter on island
@@ -65,14 +66,14 @@ add_c_loads = True # Add country demand
 #%% ------- IMPORT DATA -----------------------------------
 
 # ----- Wind capacity factor data ---------
-wind_cf         = pd.read_csv(r'data\wind_formatted.csv',
+wind_cf         = pd.read_csv(r'../../data/wind/wind_formatted.csv',
                        index_col = [0], sep=",").iloc[:n_hrs,:]
 
 # ----- Country demand and price ---------
 # Import price and demand for each country for the year, and remove outliers
 cprice, cload   = tm.get_load_and_price(year, connected_countries, n_std = 1)
-cprice = cprice.iloc[:n_hrs,:]
-cload  = cload.iloc[:n_hrs,:] 
+cprice = cprice.iloc[:n_hrs,:] # Cut off to match number of snapshots
+cload  = cload.iloc[:n_hrs,:]  # Cut off to match number of snapshots
 
 # ----- Dataframe with bus data ---------
 # Get dataframe with bus info, only for the connected countries.
@@ -129,7 +130,6 @@ for country in country_df['Bus name']:
                     p_nom_extendable = True,
                     p_nom_max     = link_limit, # [MW]
                     p_nom_min     = link_p_nom_min,
-                    bus_shift     = jiggle,
                     )
     
 # Add list of main links to network to differetniate
@@ -210,18 +210,6 @@ if add_data:
             capital_cost      = tech_df['capital cost']['datacenter'],
             marginal_cost     = tech_df['marginal cost']['datacenter'],
             )
-
-# Add the Money Bin
-n.add("Generator",
-      "MoneyBin",
-      bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
-      carrier           = "MoneyBin",
-      p_nom_min         = 1,
-      p_nom_max         = 1,
-      p_nom             = 1,
-      capital_cost      = island_area*n.area_use['data']*tech_df['marginal cost']['datacenter'],
-      marginal_cost     = island_area*n.area_use['data']*tech_df['marginal cost']['datacenter'],
-      )
 
 #%% Extra functionality
 def extra_functionalities(n, snapshots):

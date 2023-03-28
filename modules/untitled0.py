@@ -22,6 +22,8 @@ connected_countries =  [
 # cload1 = pd.read_csv(f"../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
 # cload2 = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
 
-
-cload, cprice = tm.get_load_and_price(2030, connected_countries, 1)
+# cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)  
+cprice1 = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)  
+cprice2 = pd.read_csv(f"../data/market/price_{year}.csv", index_col = 0)
+# cload, cprice = tm.get_load_and_price(2030, connected_countries, 1)
 

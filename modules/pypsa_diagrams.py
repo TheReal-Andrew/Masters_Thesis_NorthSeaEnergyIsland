@@ -330,7 +330,9 @@ def draw_network(n, spacing = 2,
                   .color(link_color)
                   .at(n.links['start'][link].center)
                   .to(n.links['end'][link].center)
-                  .label('p: ' + str(n.links.p_nom_opt[link]), fontsize = fontsize)
+                  .label('p: ' + str(round(n.links.p_nom_opt[link],2)), 
+                         fontsize = title_fontsize,
+                         color = bus_color)
                   .zorder(0.1)
                   .linewidth(w_link)
                   )
