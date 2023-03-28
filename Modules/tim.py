@@ -72,7 +72,7 @@ def get_area_use():
     
     area_use = pd.Series( data = {'storage':0.9,  #[m^2/MWh] Capacity
                                   'hydrogen':12,  #3.7, #[m^2/MW] capacity
-                                  'data':33,      #[m^2/MW] IT output
+                                  'data':18.5,      #[m^2/MW] IT output
                                   })
     
     return area_use
@@ -160,10 +160,10 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     
     # ----- datacenter -----
     cc_datacenter = (gm.get_annuity_snap(r, 5, n_hrs)
-                        * 38.117e6
+                        * (1.88e7)
                         * (1 + 0.02)
                         ) # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
-    mc_datacenter = 3.914e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
+    mc_datacenter = 1.118e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
