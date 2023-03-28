@@ -25,9 +25,9 @@ gm.set_plot_options()
 # Main control
 should_solve       = True
 should_export      = True
-should_plot        = False
-should_bus_diagram = False
-should_n_diagram   = False
+should_plot        = True
+should_bus_diagram = True
+should_n_diagram   = True
 # Main parameter series
 mp = tm.get_main_parameters()
 
@@ -209,6 +209,15 @@ if add_data:
             capital_cost      = tech_df['capital cost']['datacenter'],
             marginal_cost     = tech_df['marginal cost']['datacenter'],
             )
+
+n.add("Generator",
+      "MoneyBin",
+      bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
+      carrier           = "MoneyBin",
+      p_nom             = 1,
+      capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
+      marginal_cost     = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
+      )
 
 #%% Extra functionality
 def extra_functionalities(n, snapshots):
