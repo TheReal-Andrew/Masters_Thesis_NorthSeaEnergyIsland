@@ -97,7 +97,7 @@ cut_wind_ninja = pd.DataFrame(0, index=np.arange(len(wind_data.index)), columns=
 cut_wind_ninja.set_index("time", inplace = True)
 cut_wind_ninja.index = pd.to_datetime(wind_data.index)
 
-#%%
+#%% Split Renewable Ninja into DEA timeframe
 
 for i in wind_data.index:
     for j in full_wind_ninja.index:
