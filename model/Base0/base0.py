@@ -33,8 +33,8 @@ should_n_diagram   = True
 year     = 2030        # Choose year
 r        = 0.07        # Discount rate
 wind_cap = 3000        # [MW] Installed wind capacity
-n_hrs    = 24*7        # [hrs] Choose number of hours to simulate
-island_area = 120_000  # [m^2] total island area
+n_hrs    = 24*7*4*6        # [hrs] Choose number of hours to simulate
+island_area = 120_000*0.6  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
 link_sum_max    = wind_cap      # Total allowed link capacity
@@ -210,6 +210,18 @@ if add_data:
             capital_cost      = tech_df['capital cost']['datacenter'],
             marginal_cost     = tech_df['marginal cost']['datacenter'],
             )
+
+# Add the Money Bin
+n.add("Generator",
+      "MoneyBin",
+      bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
+      carrier           = "MoneyBin",
+      p_nom_min         = 1,
+      p_nom_max         = 1,
+      p_nom             = 1,
+      capital_cost      = island_area*n.area_use['data']*tech_df['marginal cost']['datacenter'],
+      marginal_cost     = island_area*n.area_use['data']*tech_df['marginal cost']['datacenter'],
+      )
 
 #%% Extra functionality
 def extra_functionalities(n, snapshots):
