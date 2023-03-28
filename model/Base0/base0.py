@@ -41,7 +41,7 @@ island_area = mp[year]['island_area']  # [m^2] total island area
 
 link_efficiency = 0.95          # Efficiency of links
 link_sum_max    = wind_cap      # Total allowed link capacity
-link_p_nom_min  = 0           # Minimum allowed capacity for one link
+link_p_nom_min  = 0             # Minimum allowed capacity for one link
 link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
 
 filename = "/base0_opt.nc" # Choose filename for export
