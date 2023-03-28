@@ -10,20 +10,34 @@ Created on Wed Feb 22 09:30:06 2023
 # The TIM module is used to import, process, format and return data to the main
 # model script.
 
+#%% ---- MAIN PARAMETERS ----
+
+def get_main_parameters():
+    # DataFrame containing installed wind capacity and island areas
+    import pandas as pd
+    
+    mp = pd.DataFrame( {2030 : [3000,  120_000],
+                        2040 : [10000, 420_000],
+                        2050 : [10000, 420_000], },
+                        index = ['wind', 'island_area'])
+    return mp
+    
+
 #%% ---- COUNTRY LOAD AND PRICES ----
 def get_load_and_price(year, connected_countries, n_std): # require year
     import pandas as pd
     import gorm as gm
     
-    # load data
-    cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      
+    # ---- load data
+    # cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      
     # cload = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/load_%d.csv'%year, index_col = 0)
     cload = pd.read_csv(f"../../data/market/el_demand_adjusted_{year}.csv", index_col = 0)
+    cprice = pd.read_csv(f"../../data/market/price_{year}.csv", index_col = 0)
     
-    # Get bus_df with selected country abbreviations
+    # ---- Get bus_df with selected country abbreviations
     bus_df      = get_bus_df(connected_countries)
 
-    # Get only data for the selected countries
+    # ---- Get only data for the selected countries
     cprice = cprice[bus_df['Abbreviation'].values[1:]]
     cload  = cload[bus_df['Abbreviation'].values[1:]]
     
@@ -163,7 +177,7 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
                         * 38.117e6
                         * (1 + 0.02)
                         ) # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
-    mc_datacenter = 3.914e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
+    mc_datacenter = 1.204e6 # 3.914e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
