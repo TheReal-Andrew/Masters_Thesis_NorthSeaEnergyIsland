@@ -21,6 +21,9 @@ import tim as tm
 from ttictoc import tic,toc
 gm.set_plot_options()
 
+# ----- Dataframe with tech data ---------
+tech_df         = tm.get_tech_data(2030, 0.07)
+
 #%% Control
 
 Should_solve = True
@@ -28,7 +31,7 @@ Should_MAA   = True
 
 input_name = 'base0_opt.nc'
 
-n_snapshots   = 24*7 # Snapshots MUSt be the same as in the optimal solution!
+n_snapshots   = 24*7*4*6 # Snapshots MUSt be the same as in the optimal solution!
 link_sum_max  = 3000 # Must be the same as in the optimal solution!
 
 # MAA control
@@ -38,7 +41,7 @@ mga_slack     = 0.1   # 10%
 variables = {
                 'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
-                # 'x3':('Store',     'Store1'),
+                'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_Denmark'),
                 # 'x5':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
@@ -57,6 +60,10 @@ n.snapshots = n.snapshots[:n_snapshots]
 n.snapshot_weightings = n.snapshot_weightings[:n_snapshots] 
 
 n_optimum = n.copy() # Save copy of optimum system
+
+n.MB        = n_optimum.generators.loc['MoneyBin'].capital_cost
+n.revenue   = abs(n_optimum.generators_t.p['Data'].sum())*tech_df['marginal cost']['datacenter'] + abs(n.generators_t.p['P2X'].sum())*tech_df['marginal cost']['hydrogen']
+
 n_objective = n.objective
 
 #%% Load data
