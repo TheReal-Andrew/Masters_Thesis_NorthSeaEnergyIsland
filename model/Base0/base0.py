@@ -25,8 +25,8 @@ gm.set_plot_options()
 # Main control
 should_solve       = True
 should_export      = True
-should_plot        = True
-should_bus_diagram = True
+should_plot        = False
+should_bus_diagram = False
 should_n_diagram   = True
 # Main parameter series
 mp = tm.get_main_parameters()
@@ -258,13 +258,15 @@ if should_n_diagram:
           ]
     
     pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
-                       bus_color = 'azure',
-                       filename = 'graphics/pypsa_diagram_3_2.svg')
+                       # bus_color = 'azure',
+                       line_length = 2,
+                       filename = 'graphics/pypsa_diagram_3_2.pdf')
     
 if should_bus_diagram:
     pdiag.draw_bus(n, 'Energy Island', bus_color = 'azure',
-                   handle_bi = True, link_line_length = 1.1,
-                   filename = 'graphics/bus_diagram1.svg')
+                   handle_bi = True, 
+                   link_line_length = 1.1,
+                   filename = 'graphics/bus_diagram1.pdf')
     
 
 # t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')

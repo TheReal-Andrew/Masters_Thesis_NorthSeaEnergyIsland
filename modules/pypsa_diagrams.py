@@ -143,12 +143,17 @@ def draw_bus(n, bus, show = True,
         
     return d
 
+
+#%% DRAW NETWORK --------------------------------------------------------------
 def draw_network(n, spacing = 2, 
                  line_length = 1.5, link_line_length = 0.75, 
                  headwidth = 0.45, headlength = 0.75,
-                 arrow_color = 'darkorange',
                  fontsize = 8, title_fontsize = 12,
-                 bus_color = 'steelblue', link_color = 'darkorange', 
+                 bus_color = 'steelblue', 
+                 component_color = 'black',
+                 link_color = 'darkorange', 
+                 arrow_color = 'darkorange',
+                 theme = 'default',
                  pos = None, filename = 'graphics/pypsa_diagram.pdf',
                  handle_bi = False):
     import pandas as pd
@@ -158,22 +163,22 @@ def draw_network(n, spacing = 2,
     import schemdraw.elements as elm
     import matplotlib.pyplot as plt
     
-    schemdraw.theme('monokai')
+    schemdraw.theme(theme)
     
     plt.figure()
     n = n.copy()
     
-    # It = 'Island to '
+    It = 'Island to '
     
-    # index1 = [
-    #           It+'United Kingdom',
-    #           It+'Norway',
-    #           It+'Belgium',
-    #           It+'Netherlands',
-    #           It+'Germany',
-    #           It+'Denmark']
+    index1 = [
+              It+'United Kingdom',
+              It+'Norway',
+              It+'Belgium',
+              It+'Netherlands',
+              It+'Germany',
+              It+'Denmark']
     
-    # n.links = n.links.reindex(index1)
+    n.links = n.links.reindex(index1)
     
     
     # ----- Handle bidirectional links -----
@@ -290,7 +295,7 @@ def draw_network(n, spacing = 2,
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push()
                 label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
-                d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
+                d += MyStore().up().label(label, loc = 'right', fontsize = fontsize).color(component_color)
                 d.pop()
                 
             for load in loads.index:
@@ -300,7 +305,7 @@ def draw_network(n, spacing = 2,
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push()
                 label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
-                d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
+                d += MyLoad().right().label(label, loc='top', fontsize = fontsize).color(component_color)
                 d.pop()
                 
             for link in n.links.index:
