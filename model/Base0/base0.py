@@ -48,19 +48,20 @@ filename = "/base0_opt.nc" # Choose filename for export
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
                         "Denmark",         
-                        "Norway",          
-                        "Germany",         
-                        "Netherlands",     
-                        "Belgium",         
-                        "United Kingdom"
+                        # "Norway",          
+                        # "Germany",         
+                        # "Netherlands",     
+                        # "Belgium",         
+                        # "United Kingdom"
                         ]
 
 # Component control
-add_storage = True # Add storage on island
-add_data    = True # Add datacenter on island
-add_hydrogen= True # Add hydrogen production on island
-add_c_gens  = True # Add country generators
-add_c_loads = True # Add country demand
+add_storage  = True # Add storage on island
+add_data     = False # Add datacenter on island
+add_hydrogen = False # Add hydrogen production on island
+add_c_gens   = True # Add country generators
+add_c_loads  = True # Add country demand
+add_moneybin = False
 
 #%% ------- IMPORT DATA -----------------------------------
 
@@ -210,16 +211,17 @@ if add_data:
             marginal_cost     = tech_df['marginal cost']['datacenter'],
             )
 
-n.add("Generator",
-      "MoneyBin",
-      bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
-      carrier           = "MoneyBin",
-      p_nom             = 1,
-      capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
-      marginal_cost     = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
-      )
+if add_moneybin:
+    n.add("Generator",
+          "MoneyBin",
+          bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
+          carrier           = "MoneyBin",
+          p_nom             = 1,
+          capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
+          marginal_cost     = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
+          )
 
-#%% Extra functionality
+# %% Extra functionality
 def extra_functionalities(n, snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
@@ -230,7 +232,7 @@ if should_solve:
            solver_name = 'gurobi',
            keep_shadowprices = True,
            keep_references = True,
-           extra_functionality = extra_functionalities,
+           # extra_functionality = extra_functionalities,
            )
     
     if should_export:
@@ -249,21 +251,43 @@ if should_n_diagram:
     
     pos = [
            [0, 0],    #Island
-           [20, -1],  #Denmark
-           [15, 8],   #Norway
-           [18, -10], #DE
-           [6, -11],  #NE
-           [-4, -12], #BE
-           [-10, 1],  #UK
+           [20, 0.1],   #Denmark
+           # [15, 8],   #Norway
+           # [18, -10], #DE
+           # [6, -11],  #NE
+           # [-4, -12], #BE
+           # [-10, 2],  #UK
           ]
     
+    It = 'Island to '
+    
+    index1 = [
+              It+'United Kingdom',
+              It+'Norway',
+              It+'Belgium',
+              It+'Netherlands',
+              It+'Germany',
+              It+'Denmark']
+    
+    index2 = [
+              It+'Germany',
+              It+'Norway',
+              It+'Denmark',
+              It+'Netherlands',
+              It+'Belgium',
+              It+'United Kingdom',
+              ]
+    
+    
     pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
+                       index1 = None,
                        # bus_color = 'azure',
                        line_length = 2,
                        filename = 'graphics/pypsa_diagram_3_2.pdf')
     
 if should_bus_diagram:
-    pdiag.draw_bus(n, 'Energy Island', bus_color = 'azure',
+    pdiag.draw_bus(n, 'Energy Island', 
+                   # bus_color = 'azure',
                    handle_bi = True, 
                    link_line_length = 1.1,
                    filename = 'graphics/bus_diagram1.pdf')
