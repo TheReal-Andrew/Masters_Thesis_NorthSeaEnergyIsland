@@ -21,20 +21,22 @@ from matplotlib.colors import LightSource
 from mpl_toolkits.mplot3d import axes3d
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
+n_points = 15
+
 #%% Data
 def sample_spherical(npoints, ndim=3):
-    np.random.seed(0)
+    # np.random.seed(0)
     vec = np.random.randn(ndim, npoints)
     vec /= np.linalg.norm(vec, axis=0)
     return vec
 
-phi = np.linspace(0, np.pi, 20)
-theta = np.linspace(0, 2 * np.pi, 40)
-x = np.outer(np.sin(theta), np.cos(phi))
-y = np.outer(np.sin(theta), np.sin(phi))
-z = np.outer(np.cos(theta), np.ones_like(phi))
+# phi = np.linspace(0, np.pi, 20)
+# theta = np.linspace(0, 2 * np.pi, 40)
+# x = np.outer(np.sin(theta), np.cos(phi))
+# y = np.outer(np.sin(theta), np.sin(phi))
+# z = np.outer(np.cos(theta), np.ones_like(phi))
 
-xi, yi, zi = sample_spherical(8)
+xi, yi, zi = sample_spherical(n_points)
 
 p = np.array([xi, yi, zi]).T
 
@@ -90,11 +92,11 @@ for line in ax.zaxis.get_ticklines():
     line.set_visible(False)
 
 # Bonus: To get rid of the grid as well:
-# ax.grid(False)
+ax.grid(False)
 
 # Points
 # ax.scatter(xi, yi, zi, s=50, c = colors[1], zorder=10)
-ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
+# ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
 
 
 # Define Hull & Edhes
@@ -106,9 +108,11 @@ ls = LightSource(azdeg=225.0, altdeg=45.0)
 
 ss = ax.plot_trisurf(xi, yi, zi, triangles=hull.simplices,
                      alpha=0.8, color = colors[0],
-                     edgecolor = colors[2], linewidth = 3)
+                     edgecolor = colors[2], linewidth = 1)
 
 # plt.colorbar(ss, shrink=0.7)
+
+ax.plot(xi, yi, zi, 'o', c = colors[1])
     
 fig.savefig('hull_plot_test1.svg', format = 'pdf', bbox_inches='tight')
 

@@ -251,7 +251,7 @@ if should_n_diagram:
     
     pos = [
            [0, 0],    #Island
-           [20, 0.1],   #Denmark
+           [-7, 3],   #Denmark
            # [15, 8],   #Norway
            # [18, -10], #DE
            # [6, -11],  #NE
@@ -279,8 +279,8 @@ if should_n_diagram:
               ]
     
     
-    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
-                       index1 = None,
+    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = pos,
+                       # index1 = None,
                        # bus_color = 'azure',
                        line_length = 2,
                        filename = 'graphics/pypsa_diagram_3_2.pdf')
