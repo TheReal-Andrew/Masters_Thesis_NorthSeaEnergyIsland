@@ -1,4 +1,4 @@
-Prices are sourced from PyPSA-Eur-Sec-path, a model of the european power system for 2020 to 2050 in 5-year intervals. 
+Prices in [Euro/MW] are sourced from PyPSA-Eur-Sec-path, a model of the european power system for 2020 to 2050 in 5-year intervals. 
 Prices are a result of the optimization, and are found as the lagrange multipliers of the energy balance on each bus.
 They are found by opening the solved network in python and exporting the time series of marginal_price for the buses.
 

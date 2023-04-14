@@ -19,10 +19,12 @@ def get_main_parameters():
                         2050 : [10000, 460_000],},
                        index = ['wind', 'island_area'])
     
+    # Source: https://kefm.dk/Media/4/A/faktaark%20om%20Energi%C3%B8.pdf
+    
     return mp
 
 #%% ---- COUNTRY LOAD AND PRICES ----
-def get_load_and_price(year, connected_countries, n_std): # require year
+def get_load_and_price(year = 2030, connected_countries = ['Denmark'], n_std = 1): # require year
     import pandas as pd
     import gorm as gm
     
@@ -46,7 +48,7 @@ def get_load_and_price(year, connected_countries, n_std): # require year
     return cprice, cload
 
 #%% ----- BUS DATAFRAME -----
-def get_bus_df(connected_countries):
+def get_bus_df(connected_countries = ['Denmark']):
     import pandas as pd
     
     #Create dataframe with info on buses. Names, x (Longitude) and y (Latitude) 
@@ -83,8 +85,8 @@ def get_area_use():
     # containerized versions of these technologies.
     import pandas as pd
     
-    area_use = pd.Series( data = {'storage':0.9,  #[m^2/MWh] Capacity
-                                  'hydrogen':12,  #3.7, #[m^2/MW] capacity
+    area_use = pd.Series( data = {'storage':0.894,  #[m^2/MWh] Capacity
+                                  'hydrogen': 2.973,  #[m^2/MW] capacity
                                   'data':18.5,      #[m^2/MW] IT output
                                   })
     
