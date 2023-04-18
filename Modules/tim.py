@@ -180,10 +180,11 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
-    cc_link       = float( gm.get_annuity_snap(r, link_data['lifetime'], n_hrs) # [euro/MW/km]  
-                                 * link_data['investment']
-                                 * DR
-                                 ) 
+    cc_link       = float(gm.get_annuity_snap(r, link_data['lifetime'], n_hrs) # [euro/MW/km]  
+                          * link_data['investment']
+                          * (1 + link_data['FOM']/100)
+                          * DR #Detour factor
+                          ) 
     mc_link       = 0.001 #38 [euro/MWh] 
     
     # ---- Assemble tech dataframe
