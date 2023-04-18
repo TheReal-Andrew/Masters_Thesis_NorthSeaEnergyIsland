@@ -13,7 +13,7 @@ from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
 lotn = 2
 lot  = 'Lot ' + str(lotn)
-h = '138m' # Chosen height
+h = '140m' # Chosen height
 
 #%% Get list with folders in working directory
 folder = os.getcwd() + "/data/energinet/"
@@ -35,8 +35,7 @@ for i in sub_folders:
     
 # folder = sub_folders[0]
 
-    # Get the file(s) in the folder which are files and have "WindStatus" in 
-    # the name
+    # Get the file(s) in the folder which are files and have "WindStatus" in the name
     file_name = [file for file in os.listdir(folder + i) 
                       if os.path.isfile(os.path.join(folder + i, file)) 
                       and 'WindSpeed' in file]
@@ -88,23 +87,17 @@ for file in os.listdir(folder):
         break
 
 full_wind_ninja = pd.read_csv(folder + file_name,
-                          sep = ',',
+                          sep = ';',
                           index_col = 0,
-                          usecols = [0,3],
                           comment = '#',
                           )
+
 cut_wind_ninja = pd.DataFrame(0, index=np.arange(len(wind_data.index)), columns=['time','wind_speed'])
 cut_wind_ninja.set_index("time", inplace = True)
 cut_wind_ninja.index = pd.to_datetime(wind_data.index)
 
-#%% Split Renewable Ninja into DEA timeframe
-
-for i in wind_data.index:
-    for j in full_wind_ninja.index:
-        if str(j)[5:-3] == str(i)[5:-12]:
-            cut_wind_ninja["wind_speed"][i] = full_wind_ninja.loc[j].values
-        else:
-            continue
+# Split Renewable Ninja into DEA timeframe
+cut_wind_ninja['wind_speed'] = full_wind_ninja[0:len(wind_data)]['wind_speed'].values
 
 #%% Linear interpolation
 
@@ -116,8 +109,14 @@ x1 = 120
 y1 = wind_data['120m']
 x2 = 150
 y2 = wind_data['150m']
-x  = 138
-wind_data['138m'] = y1+(x-x1)*((y2-y1)/(x2-x1))
+
+num = ""
+for c in h:
+    if c.isdigit():
+        num = num + c
+x = int(num)        
+
+wind_data[h] = y1+(x-x1)*((y2-y1)/(x2-x1))
 
 #%% Plot time-series
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
@@ -161,16 +160,13 @@ ax.text(1.01, 0.70,
 #%% Mean correction
 full_wind_mean = full_wind_ninja/full_wind_ninja.mean() * wind_data[h].mean()
 
+#Initialize new dataframe for mean_cut time series
 cut_wind_ninja_mean = pd.DataFrame(0, index=np.arange(len(wind_data.index)), columns=['time','wind_speed'])
 cut_wind_ninja_mean.set_index("time", inplace = True)
 cut_wind_ninja_mean.index = pd.to_datetime(wind_data.index)
 
-for i in wind_data.index:
-    for j in full_wind_mean.index:
-        if str(j)[5:-3] == str(i)[5:-12]:
-            cut_wind_ninja_mean["wind_speed"][i] = full_wind_mean.loc[j].values
-        else:
-            continue
+# Split Renewable Ninja into DEA timeframe
+cut_wind_ninja_mean['wind_speed'] = full_wind_mean[0:len(wind_data)]['wind_speed'].values
 
 #%% Mean correction histogram
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
@@ -252,16 +248,21 @@ class Wind_Turbine:
         return integrate.quad_vec(lambda v: self.single_pc(v)*gaussian(v,v0), -np.inf, np.inf)[0]
     
 # Vestas V164/8000
-P = [0,40,100,370,650,895,1150,1500,1850,2375,2900,3525,4150,4875,5600,6350,7100,7580,7800,7920,8000] # kW
-v = np.arange(3,13.5,0.5) # m/s
-vestas = Wind_Turbine(8000,3,13,25,P,v)
+# P = [0,40,100,370,650,895,1150,1500,1850,2375,2900,3525,4150,4875,5600,6350,7100,7580,7800,7920,8000] # kW
+# v = np.arange(3,13.5,0.5) # m/s
+# vestas = Wind_Turbine(8000,3,13,25,P,v)
+
+# Vestas V164/9500
+P = [0,115,249,430,613,900,1226,1600,2030,2570,3123,3784,4444,5170,5900,6600,7299,7960,8601,9080,9272,9410,9500] # kW
+v = np.arange(3,14.5,0.5) # m/s
+vestas = Wind_Turbine(9500,3,14,25,P,v)
 
 # Renewables.ninja mean corrected
 v = full_wind_mean['wind_speed'].values
 P = vestas.multi_pc(v)
 cf_wind = P/vestas.rated_power
     
-pd.Series(cf_wind).to_csv('data/renewableninja/wind_cf_'+ lot +'.csv')
+pd.Series(cf_wind).to_csv('data/renewableninja/wind_cf.csv')
 
 #%% Plot power curves
 x = np.linspace(0,36,100)
@@ -274,10 +275,10 @@ ax.set_xlabel('Wind speed [m/s]')
 ax.set_ylabel('Power output [MW]')
 
 ax.set_xlim([0,35])
-ax.set_ylim([0,9])
+ax.set_ylim([0,10])
 
 plt.xticks(np.arange(0,38,2))
-plt.yticks(np.arange(0,10,1))
+plt.yticks(np.arange(0,11,1))
 
 ax.xaxis.set_minor_locator(MultipleLocator(0.5))
 ax.yaxis.set_minor_locator(MultipleLocator(0.2))
