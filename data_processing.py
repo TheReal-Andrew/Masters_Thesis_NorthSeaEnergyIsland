@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import modules.island_plt as ip
+import datetime
 ip.set_plot_options()
 from scipy import integrate
 from scipy import interpolate
@@ -99,6 +100,21 @@ cut_wind_ninja.index = pd.to_datetime(wind_data.index)
 # Split Renewable Ninja into DEA timeframe
 cut_wind_ninja['wind_speed'] = full_wind_ninja[0:len(wind_data)]['wind_speed'].values
 
+#%% Re-arrange Renewable.Ninja to fit DEA data range for a full year
+# initializing date
+time_range = pd.Series(pd.date_range(start='2021-11-15 15:00:00', end='2022-11-15 14:00:00', freq='H'))
+
+wind_ninja_re_arranged = pd.DataFrame(0, index=np.arange(len(full_wind_ninja.index)), columns=['time','wind_speed'])
+wind_ninja_re_arranged.set_index("time", inplace = True)
+wind_ninja_re_arranged.index = pd.to_datetime(time_range)
+
+for i in time_range:
+    for j in full_wind_ninja.index:
+        if str(j)[5:-3] == str(i)[5:-6]:
+            wind_ninja_re_arranged["wind_speed"][i] = full_wind_ninja.loc[j].values
+        else:
+            continue
+
 #%% Linear interpolation
 
 #Fill Nan with mean value
@@ -167,6 +183,10 @@ cut_wind_ninja_mean.index = pd.to_datetime(wind_data.index)
 
 # Split Renewable Ninja into DEA timeframe
 cut_wind_ninja_mean['wind_speed'] = full_wind_mean[0:len(wind_data)]['wind_speed'].values
+
+#%%
+wind_ninja_re_arranged[0:len(wind_data)] = (wind_ninja_re_arranged[0:len(wind_data)]/wind_ninja_re_arranged[0:len(wind_data)].mean() * wind_data[h].mean()).values
+wind_ninja_re_arranged[len(wind_data)+1:] = (wind_ninja_re_arranged[len(wind_data)+1:]/wind_ninja_re_arranged[len(wind_data)+1:].mean() * wind_data[h].mean()).values
 
 #%% Mean correction histogram
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
@@ -258,7 +278,7 @@ v = np.arange(3,14.5,0.5) # m/s
 vestas = Wind_Turbine(9500,3,14,25,P,v)
 
 # Renewables.ninja mean corrected
-v = full_wind_mean['wind_speed'].values
+v = wind_ninja_re_arranged['wind_speed'].values
 P = vestas.multi_pc(v)
 cf_wind = P/vestas.rated_power
     

@@ -143,14 +143,21 @@ def draw_bus(n, bus, show = True,
         
     return d
 
+
+#%% DRAW NETWORK --------------------------------------------------------------
 def draw_network(n, spacing = 2, 
                  line_length = 1.5, link_line_length = 0.75, 
                  headwidth = 0.45, headlength = 0.75,
-                 arrow_color = 'darkorange',
                  fontsize = 8, title_fontsize = 12,
-                 bus_color = 'steelblue', link_color = 'darkorange', 
+                 bus_color = 'steelblue', 
+                 component_color = 'black',
+                 link_color = 'darkorange', 
+                 arrow_color = 'darkorange',
+                 theme = 'default',
                  pos = None, filename = 'graphics/pypsa_diagram.pdf',
-                 handle_bi = False):
+                 handle_bi = False,
+                 index1 = None,
+                 ):
     import pandas as pd
     pd.options.mode.chained_assignment = None #Disable warning (For line 218)
     import numpy as np
@@ -158,22 +165,14 @@ def draw_network(n, spacing = 2,
     import schemdraw.elements as elm
     import matplotlib.pyplot as plt
     
-    schemdraw.theme('monokai')
+    schemdraw.theme(theme)
     
     plt.figure()
     n = n.copy()
     
-    # It = 'Island to '
-    
-    # index1 = [
-    #           It+'United Kingdom',
-    #           It+'Norway',
-    #           It+'Belgium',
-    #           It+'Netherlands',
-    #           It+'Germany',
-    #           It+'Denmark']
-    
-    # n.links = n.links.reindex(index1)
+    if not index1 == None:
+        
+        n.links = n.links.reindex(index1)
     
     
     # ----- Handle bidirectional links -----
@@ -279,7 +278,9 @@ def draw_network(n, spacing = 2,
                 
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push() # Save position
-                label = gen.replace(' ', ' \n') + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
+                label = (gen.replace(' ', ' \n') 
+                         # + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
+                         )
                 d += MyGen().up().label(label, loc='right', fontsize = fontsize)
                 d.pop()  # Return to saved position
             
@@ -289,8 +290,10 @@ def draw_network(n, spacing = 2,
                 
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push()
-                label = store.replace(' ', ' \n') + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
-                d += MyStore().up().label(label, loc = 'right', fontsize = fontsize)
+                label = (store.replace(' ', ' \n') 
+                         # + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
+                         )
+                d += MyStore().up().label(label, loc = 'right', fontsize = fontsize).color(component_color)
                 d.pop()
                 
             for load in loads.index:
@@ -299,8 +302,10 @@ def draw_network(n, spacing = 2,
                 
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push()
-                label = load.replace(' ', ' \n') + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
-                d += MyLoad().right().label(label, loc='top', fontsize = fontsize)
+                label = (load.replace(' ', ' \n') 
+                         # + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
+                         )
+                d += MyLoad().right().label(label, loc='top', fontsize = fontsize).color(component_color)
                 d.pop()
                 
             for link in n.links.index:
@@ -322,7 +327,9 @@ def draw_network(n, spacing = 2,
             
             # n.links.reindex(index1)
             
-            w_link = w[link]
+            # w_link = w[link]
+            
+            w_link = 1
             
             style = 'N'
             
@@ -330,9 +337,9 @@ def draw_network(n, spacing = 2,
                   .color(link_color)
                   .at(n.links['start'][link].center)
                   .to(n.links['end'][link].center)
-                  .label('p: ' + str(round(n.links.p_nom_opt[link],2)), 
-                         fontsize = title_fontsize,
-                         color = bus_color)
+                  # .label('p: ' + str(round(n.links.p_nom_opt[link],2)), 
+                         # fontsize = title_fontsize,
+                         # color = bus_color)
                   .zorder(0.1)
                   .linewidth(w_link)
                   )
