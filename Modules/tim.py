@@ -164,7 +164,7 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
                      * (1+ (hydrogen_data['Fixed O&M (% of specific investment / year) ']*0.01))
                      ) # [euro/MW]  From Energistyrelsen
     
-    mc_hydrogen   = 42 # [euro/MWh] Revenue - Lazard LCOE / H2_LHV
+    mc_hydrogen   = 40.772 # [euro/MWh] Revenue - Lazard LCOE converted using H2 LHV
     
     # ----- storage -----
     cc_storage    = (gm.get_annuity_snap(r, storage_data['Technical lifetime (years)'], n_hrs) # Annuity
