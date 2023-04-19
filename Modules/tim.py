@@ -98,8 +98,6 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     import pandas as pd 
     import gorm as gm
     
-    DR = 1.3 # Detour factor for links
-    
     # ------------------- Raw Data Import --------------------------
     # ----- Pypsa Technology Data -----
     # Load data from pypsa tech data, and set multiindex.
@@ -185,7 +183,6 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     cc_link       = float(gm.get_annuity_snap(r, link_data['lifetime'], n_hrs) # [euro/MW/km]  
                           * link_data['investment']
                           * (1 + link_data['FOM']/100)
-                          * DR #Detour factor
                           ) 
     mc_link       = 0.001 #38 [euro/MWh] 
     

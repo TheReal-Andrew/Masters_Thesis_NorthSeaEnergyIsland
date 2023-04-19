@@ -46,7 +46,7 @@ def remove_outliers(df,columns,n_std):
 
 def get_earth_distance(lat1,lat2,lon1,lon2):
     import numpy as np
-    R = 6378.1  #Earths radius
+    R = 6378.1  #Earths radius [km]
     dlon = (lon2 - lon1) * np.pi/180
     dlat = (lat2 - lat1) * np.pi/180
     
@@ -182,9 +182,11 @@ def area_constraint(n, snapshots):
     vars_store = get_var(n, 'Store', 'e_nom')
     
     # Apply area use on variable and create linear expression 
-    lhs = linexpr((n.area_use['hydrogen'], vars_gen["P2X"]), 
-                  (n.area_use['data'],     vars_gen["Data"]), 
-                  (n.area_use['storage'],  vars_store['Island_store']))
+    lhs = linexpr(
+                   (n.area_use['hydrogen'], vars_gen["P2X"]), 
+                   (n.area_use['data'],     vars_gen["Data"]), 
+                   (n.area_use['storage'],  vars_store['Island_store'])
+                  )
     
     # Define area use limit
     rhs = n.total_area #[m^2]

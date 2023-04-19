@@ -39,10 +39,10 @@ DR          = 1.3              # Detour factor
 wind_cap    = mp[year]['wind'] # [MW] Installed wind capacity
 island_area = mp[year]['island_area']  # [m^2] total island area
 
-link_efficiency = 1-(3.5/(1000*100)) # Efficiency of links (loss/km)
-link_sum_max    = wind_cap           # Total allowed link capacity
-link_p_nom_min  = 0                  # Minimum allowed capacity for one link
-link_limit      = float('inf')       # [MW] Limit links to countries. float('inf')
+link_efficiency = 3.5/(1000*100)   # Link efficency per km (per unit loss/km). 
+link_sum_max    = wind_cap             # Total allowed link capacity
+link_p_nom_min  = 0                    # Minimum allowed capacity for one link
+link_limit      = float('inf')     # [MW] Limit links to countries. float('inf')
 
 filename = "/base0_opt.nc" # Choose filename for export
 
@@ -124,10 +124,10 @@ for country in country_df['Bus name']:
                     bus0          = bus_df.loc['Energy Island']['Bus name'],   # From Energy island
                     bus1          = country,                        # To country bus
                     link_name     = "Island to " + country,         # Link name
-                    efficiency    = link_efficiency,
+                    efficiency    = 1 - (link_efficiency * distance * DR),
                     capital_cost  = tech_df['capital cost']['link'] * distance * DR,
                     marginal_cost = tech_df['marginal cost']['link'],
-                    carrier       = 'link_' + country,
+                    carrier       = 'link_sum',
                     p_nom_extendable = True,
                     p_nom_max     = link_limit, # [MW]
                     p_nom_min     = link_p_nom_min,
@@ -165,7 +165,10 @@ n.add("Generator",
       "Wind",
       bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
       carrier           = "wind",
-      p_nom             = wind_cap, # Ensure that capacity is pre-built
+      p_nom_extendable  = True,
+      p_nom_max         = wind_cap, # Ensure that capacity is pre-built
+      p_nom_min         = wind_cap, # Ensure that capacity is pre-built
+      p_max_pu          = wind_cf['electricity'].values,
       marginal_cost     = tech_df['marginal cost']['wind turbine'],
        )
 
@@ -213,8 +216,10 @@ if add_moneybin:
           "MoneyBin",
           bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
           carrier           = "MoneyBin",
-          p_nom             = 1,
-          capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
+          p_nom_extendable  = True,
+          p_nom_min         = 1,
+          p_nom_max         = 1,
+          capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter']*n_hrs,
           marginal_cost     = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
           )
 
