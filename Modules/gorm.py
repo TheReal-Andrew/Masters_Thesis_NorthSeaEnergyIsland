@@ -34,7 +34,7 @@ def get_annuity_snap(i, n, n_hrs):
     
     return annuity
 
-# Remove outliers from dataframe, and replace with n standard deviations.
+# Remove outliers from dataframe, and replace with mean + n standard deviations.
 def remove_outliers(df,columns,n_std):
     for col in columns:
         print('Removing outliers - Working on column: {}'.format(col))
