@@ -35,6 +35,7 @@ mp = tm.get_main_parameters()
 year        = 2030             # Choose year
 r           = 0.07             # Discount rate
 n_hrs       = 8760             # [hrs] Choose number of hours to simulate
+DR          = 1.3              # Detour factor
 wind_cap    = mp[year]['wind'] # [MW] Installed wind capacity
 island_area = mp[year]['island_area']  # [m^2] total island area
 
@@ -57,11 +58,11 @@ connected_countries =  [
 
 # Component control
 add_storage  = True # Add storage on island
-add_data     = False # Add datacenter on island
-add_hydrogen = False # Add hydrogen production on island
+add_data     = True # Add datacenter on island
+add_hydrogen = True # Add hydrogen production on island
 add_c_gens   = True # Add country generators
 add_c_loads  = True # Add country demand
-add_moneybin = False
+add_moneybin = True
 
 #%% ------- IMPORT DATA -----------------------------------
 
@@ -90,7 +91,7 @@ area_use        = tm.get_area_use()
 
 # ----- initialize network ---------
 n = pypsa.Network()
-t = pd.date_range('2030-01-01 00:00', '2030-12-31 23:00', freq = 'H')[:n_hrs]
+t = pd.date_range(f'{year}-01-01 00:00', f'{year}-12-31 23:00', freq = 'H')[:n_hrs]
 n.set_snapshots(t)
 
 # Add data to network for easier access when creating constraints
@@ -124,7 +125,7 @@ for country in country_df['Bus name']:
                     bus1          = country,                        # To country bus
                     link_name     = "Island to " + country,         # Link name
                     efficiency    = link_efficiency,
-                    capital_cost  = tech_df['capital cost']['link'] * distance,
+                    capital_cost  = tech_df['capital cost']['link'] * distance * DR,
                     marginal_cost = tech_df['marginal cost']['link'],
                     carrier       = 'link_' + country,
                     p_nom_extendable = True,
@@ -164,13 +165,9 @@ n.add("Generator",
       "Wind",
       bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
       carrier           = "wind",
-      p_nom_extendable  = True,
-      p_nom_min         = wind_cap, # Ensure that capacity is pre-built
-      p_nom_max         = wind_cap, # Ensure that capacity is pre-built
-      p_max_pu          = wind_cf['electricity'].values,
-      capital_cost      = tech_df['capital cost']['wind turbine'],
+      p_nom             = wind_cap, # Ensure that capacity is pre-built
       marginal_cost     = tech_df['marginal cost']['wind turbine'],
-      )
+       )
 
 # ----- Add battery storage --------------------
 if add_storage:
@@ -232,7 +229,7 @@ if should_solve:
            solver_name = 'gurobi',
            keep_shadowprices = True,
            keep_references = True,
-           # extra_functionality = extra_functionalities,
+           extra_functionality = extra_functionalities,
            )
     
     if should_export:
