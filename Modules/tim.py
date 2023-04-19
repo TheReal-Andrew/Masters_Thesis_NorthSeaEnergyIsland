@@ -7,16 +7,16 @@ Created on Wed Feb 22 09:30:06 2023
 
 #%%
 # ----- Technology Information Module (TIM) -----
-# The TIM module is used to import, process, format and return data to the main
-# model script.
+# The TIM module is used to import, process, 
+# format and return data to the main model script.
 
 #%% ---- MAIN PARAMETERS ----
 def get_main_parameters():
     import pandas as pd
     
-    mp = pd.DataFrame( {2030 : [3000,  120_000],
-                        2040 : [10000, 460_000],
-                        2050 : [10000, 460_000],},
+    mp = pd.DataFrame( {2030 : [3000,  0.5*120_000],
+                        2040 : [10000, 0.5*120_000 + 0.8*340_000],
+                        2050 : [10000, 0.5*120_000 + 0.8*340_000],},
                        index = ['wind', 'island_area'])
     
     # Source: https://kefm.dk/Media/4/A/faktaark%20om%20Energi%C3%B8.pdf
@@ -85,9 +85,9 @@ def get_area_use():
     # containerized versions of these technologies.
     import pandas as pd
     
-    area_use = pd.Series( data = {'storage':0.894,  #[m^2/MWh] Capacity
-                                  'hydrogen': 2.973,  #[m^2/MW] capacity
-                                  'data':18.5,      #[m^2/MW] IT output
+    area_use = pd.Series( data = {'storage':  01.0,    #[m^2/MWh] Capacity
+                                  'hydrogen': 02.1,  #[m^2/MW] capacity
+                                  'data':     27.3,      #[m^2/MW] IT output
                                   })
     
     return area_use
@@ -98,7 +98,7 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     import pandas as pd 
     import gorm as gm
     
-    DR = 1.2 # Detour factor for links
+    DR = 1.3 # Detour factor for links
     
     # ------------------- Raw Data Import --------------------------
     # ----- Pypsa Technology Data -----
@@ -164,7 +164,7 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
                      * (1+ (hydrogen_data['Fixed O&M (% of specific investment / year) ']*0.01))
                      ) # [euro/MW]  From Energistyrelsen
     
-    mc_hydrogen   = 40.772 # [euro/MWh] Revenue - Lazard LCOE converted using H2 LHV
+    mc_hydrogen   = 42.6 # [euro/MWh] Revenue - Lazard LCOE converted using H2 LHV
     
     # ----- storage -----
     cc_storage    = (gm.get_annuity_snap(r, storage_data['Technical lifetime (years)'], n_hrs) # Annuity
@@ -174,11 +174,11 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [euro/MWh]  From Energistyrelsen
     
     # ----- datacenter -----
-    cc_datacenter = (gm.get_annuity_snap(r, 5, n_hrs)
-                        * (1.88e7)
+    cc_datacenter = (gm.get_annuity_snap(r, 5, n_hrs) #Lifetime: https://blog.cirkla.tech/2022/05/13/taking-a-look-at-the-lifespan-of-a-data-centre/
+                        * (3.8e7)
                         * (1 + 0.02)
                         ) # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
-    mc_datacenter = 1.118e3  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
+    mc_datacenter = 2023.6  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
