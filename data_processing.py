@@ -262,8 +262,10 @@ vestas = Wind_Turbine(9500,3,14,25,P,v)
 v = full_wind_mean['wind_speed'].values
 P = vestas.multi_pc(v)
 cf_wind = P/vestas.rated_power
+cf_wind = pd.Series(cf_wind)
+cf_wind.name = "electricity"
     
-pd.Series(cf_wind).to_csv('data/renewableninja/wind_cf.csv')
+cf_wind.to_csv('data/wind/wind_cf.csv')
 
 #%% Plot power curves
 x = np.linspace(0,36,100)

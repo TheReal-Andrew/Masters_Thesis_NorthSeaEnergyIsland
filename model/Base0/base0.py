@@ -38,21 +38,21 @@ n_hrs       = 8760             # [hrs] Choose number of hours to simulate
 wind_cap    = mp[year]['wind'] # [MW] Installed wind capacity
 island_area = mp[year]['island_area']  # [m^2] total island area
 
-link_efficiency = 0.95          # Efficiency of links
-link_sum_max    = wind_cap      # Total allowed link capacity
-link_p_nom_min  = 0             # Minimum allowed capacity for one link
-link_limit      = float('inf')  # [MW] Limit links to countries. float('inf')
+link_efficiency = 1-(3.5/(1000*100)) # Efficiency of links (loss/km)
+link_sum_max    = wind_cap           # Total allowed link capacity
+link_p_nom_min  = 0                  # Minimum allowed capacity for one link
+link_limit      = float('inf')       # [MW] Limit links to countries. float('inf')
 
 filename = "/base0_opt.nc" # Choose filename for export
 
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
                         "Denmark",         
-                        # "Norway",          
-                        # "Germany",         
-                        # "Netherlands",     
-                        # "Belgium",         
-                        # "United Kingdom"
+                        "Norway",          
+                        "Germany",         
+                        "Netherlands",     
+                        "Belgium",         
+                        "United Kingdom"
                         ]
 
 # Component control
@@ -66,7 +66,7 @@ add_moneybin = False
 #%% ------- IMPORT DATA -----------------------------------
 
 # ----- Wind capacity factor data ---------
-wind_cf         = pd.read_csv(r'../../data/wind/wind_formatted.csv',
+wind_cf         = pd.read_csv(r'../../data/wind/wind_cf.csv',
                        index_col = [0], sep=",").iloc[:n_hrs,:]
 
 # ----- Country demand and price ---------
