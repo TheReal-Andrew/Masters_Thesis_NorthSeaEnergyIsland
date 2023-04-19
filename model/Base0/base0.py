@@ -276,9 +276,8 @@ if should_n_diagram:
               ]
     
     
-    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = pos,
-                       # index1 = None,
-                       # bus_color = 'azure',
+    pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
+                        index1 = index2,
                        line_length = 2,
                        filename = 'graphics/pypsa_diagram_3_2.pdf')
     
