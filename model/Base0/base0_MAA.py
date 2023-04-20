@@ -31,7 +31,7 @@ Should_MAA   = True
 
 input_name = 'base0_opt.nc'
 
-n_snapshots   = 24*7*4*6 # Snapshots MUSt be the same as in the optimal solution!
+n_snapshots   = 8760 # Snapshots MUSt be the same as in the optimal solution!
 link_sum_max  = 3000 # Must be the same as in the optimal solution!
 
 # MAA control
@@ -40,10 +40,10 @@ mga_slack     = 0.1   # 10%
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
                 'x1':('Generator', 'P2X'),
-                'x2':('Generator', 'Data'),
-                'x3':('Store',     'Store1'),
-                # 'x4':('Link',      'link_Denmark'),
-                # 'x5':('Link',      'link_Germany'),
+                # 'x2':('Generator', 'Data'),
+                # 'x3':('Store',     'Store1'),
+                # 'x4':('Link',      'link_sum'),
+                'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
             }
 direction     = [1] * len(variables) # Create liste of ones the size of variables. 1 means minimize, -1 means maximize 
@@ -166,7 +166,7 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            # n.export_to_netcdf('case_1a_res_' + str(i) + '.nc')
+            n.export_to_netcdf('base0_MAA' + str(i) + '.nc')
     
         try:
             hull = ConvexHull(solutions)

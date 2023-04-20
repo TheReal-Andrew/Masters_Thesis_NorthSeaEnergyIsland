@@ -127,7 +127,7 @@ for country in country_df['Bus name']:
                     efficiency    = 1 - (link_efficiency * distance * DR),
                     capital_cost  = tech_df['capital cost']['link'] * distance * DR,
                     marginal_cost = tech_df['marginal cost']['link'],
-                    carrier       = 'link_sum',
+                    carrier       = 'link_' + country,
                     p_nom_extendable = True,
                     p_nom_max     = link_limit, # [MW]
                     p_nom_min     = link_p_nom_min,
