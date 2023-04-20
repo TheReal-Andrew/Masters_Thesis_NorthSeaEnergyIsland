@@ -11,15 +11,21 @@ Created on Wed Feb 15 20:21:54 2023
 #%% -------GENERAL FUNCTIONS -----------------------------------
 
 # Play sound from folder
-def its_britney_bitch(path):
+def its_britney_bitch(path = r'../../data/Sounds'):
     import os
     import random 
 
     files_in_path   = os.listdir(path) # Get files in directory
     file_to_play    = random.choice(files_in_path) # Choose random file to play
     
+    # # Play file
+    # os.startfile(path + '/' + file_to_play)
+    
+    # Construct full path to file
+    full_path = os.path.join(path, file_to_play)
+    
     # Play file
-    os.startfile(path + '/' + file_to_play)
+    os.startfile(full_path)
     
 #%% ------- CALCULATION / OPERATION FUNCTIONS ---------------------------------
 
