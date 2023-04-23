@@ -282,4 +282,4 @@ if Should_MAA and solutions.shape[1] >= 3:
 # fig.savefig('hull_plot_test1.svg', format = 'pdf', bbox_inches='tight')
 
 #%%
-gm.its_britney_bitch(r'C:\Users\lukas\Documents\GitHub\Masters_Thesis_NorthSeaEnergyIsland\data\Sounds')
+gm.its_britney_bitch()
