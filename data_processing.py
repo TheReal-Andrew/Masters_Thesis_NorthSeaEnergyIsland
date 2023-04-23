@@ -8,7 +8,7 @@ import datetime
 ip.set_plot_options()
 from scipy import integrate
 from scipy import interpolate
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from matplotlib.ticker import (MultipleLocator)
 
 #%% Choose lot
 
@@ -102,7 +102,11 @@ cut_wind_ninja['wind_speed'] = full_wind_ninja[0:len(wind_data)]['wind_speed'].v
 
 #%% Linear interpolation
 
-#Fill Nan with mean value
+# wind_speeds = wind_data['120m']
+# for i in range(len(wind_speeds)):
+#     if np.isnan(wind_speeds[i]):
+
+# #Fill Nan with mean value
 wind_data['120m'] = wind_data['120m'].replace(np.nan,wind_data['120m'].mean())
 wind_data['150m'] = wind_data['150m'].replace(np.nan,wind_data['150m'].mean())
 
@@ -277,7 +281,7 @@ ax.plot(x, vestas.multi_pc(x)/10**3, label = 'Multiple turbines')
 ax.set_xlabel('Wind speed [m/s]')
 ax.set_ylabel('Power output [MW]')
 
-ax.set_xlim([0,35])
+ax.set_xlim([0,36])
 ax.set_ylim([0,10])
 
 plt.xticks(np.arange(0,38,2))
