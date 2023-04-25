@@ -83,7 +83,7 @@ def sample_in_hull(points, n = 1000):
     #### Find number of samples pr. simplex from their volume
     sample_pr_simplex = [None] * vols.shape[-1]
     for k in range(vols.shape[-1]):    
-        sample_pr_simplex[k] = int(np.round(vols[k]/vols.sum()*1000))
+        sample_pr_simplex[k] = int(np.round(vols[k]/vols.sum()*n))
     
     #### Find random samples
     samples = np.zeros(shape=(n,dims))

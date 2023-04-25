@@ -21,21 +21,13 @@ import tim as tm
 from ttictoc import tic,toc
 gm.set_plot_options()
 
-# ----- Dataframe with tech data ---------
-tech_df         = tm.get_tech_data(2030, 0.07)
-
 #%% Control
 
-Should_solve = True
 Should_MAA   = True
 
 input_name = 'v_2030_preliminary_opt.nc'
 
-n_snapshots   = 8760 # Snapshots MUSt be the same as in the optimal solution!
-link_sum_max  = 3000 # Must be the same as in the optimal solution!
-
-# MAA control
-mga_slack     = 0.1   # 10%
+mga_slack     = 0.1   # MAA slack control
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
@@ -46,39 +38,35 @@ variables = {
                 # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
             }
-direction     = [1] * len(variables) # Create liste of ones the size of variables. 1 means minimize, -1 means maximize 
-mga_variables = list(variables.keys())
-
-techs = [variables[x][1] for x in mga_variables]
 
 #%% Load and copy network
 
 n = pypsa.Network(input_name) #Load network from netcdf file
 
-# Reduce snapshots used for faster computing
-n.snapshots = n.snapshots[:n_snapshots]
-n.snapshot_weightings = n.snapshot_weightings[:n_snapshots] 
+n_optimum   = n.copy() # Save copy of optimum system
+n_objective = n.objective # Save optimum objective
 
-n_optimum = n.copy() # Save copy of optimum system
+#%% Load data
+# ----- Dataframe with tech data ---------
+tech_df         = tm.get_tech_data(2030, 0.07)
 
+# ----- Save data in network ---------
+n.area_use      = tm.get_area_use()
+n.link_sum_max  = n.generators.p_nom_max['Wind']
+n.main_links    = n.links[~n.links.index.str.contains("bus")].index
+n.variables_set = variables
+
+# Save variables for objective function modification
 n.MB        = n_optimum.generators.loc['MoneyBin'].capital_cost
 n.revenue   = abs(n_optimum.generators_t.p['Data'].sum())*tech_df['marginal cost']['datacenter'] + abs(n.generators_t.p['P2X'].sum())*tech_df['marginal cost']['hydrogen']
 
-n_objective = n.objective
-
-#%% Load data
-# ----- Area use data ---------
-area_use        = tm.get_area_use()
-n.area_use      = area_use
-
-n.link_sum_max  = link_sum_max
-
-n.main_links    = n.links[~n.links.index.str.contains("bus")].index
-
-n.variables_set = variables
-
 
 #%% MAA setup
+
+direction     = [1] * len(variables) # Create liste of ones the size of variables. 1 means minimize, -1 means maximize 
+mga_variables = list(variables.keys())
+
+techs = [variables[x][1] for x in mga_variables]
 
 n.objective_optimum = n_objective
 
@@ -121,10 +109,8 @@ def search_direction(direction,mga_variables):
     options = dict(mga_slack = mga_slack,
                     mga_variables = [variables[v] for v in mga_variables])
 
-    res = n.lopf(pyomo=False,
+    n.lopf(pyomo=False,
             solver_name='gurobi',
-            #keep_references=True,
-            #keep_shadowprices=True,
             skip_objective=True,
             solver_options={'LogToConsole':0,
                     'crossover':0,
@@ -179,26 +165,7 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-#%% Seaborn heatmap
-# import numpy as np
-# from numpy.linalg import det
-# from scipy.stats import dirichlet
-# from scipy.spatial import Delaunay
-
-# d = gm.sample_in_hull(solutions, 10000)
-
-# d_df = pandas.DataFrame(d,
-#                         columns = techs)
-
-# d_corr = d_df.corr()
-
-
-# # Seaborn
-# mask = np.triu(d_corr)
-# # np.fill_diagonal(mask, False)
-# import seaborn as sns
-
-# sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
+    np.save('MAA_solutions', solutions)
 
 #%% 2D Subplots
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
@@ -206,6 +173,44 @@ print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variabl
 gm.solutions_2D(techs, solutions, n_samples = 10000)
 
 gm.solutions_heatmap2(techs, solutions)
+
+#%%
+
+d = gm.sample_in_hull(solutions, n = 10)
+
+d_df = pandas.DataFrame(d,
+                        columns = techs)
+
+ds = d_df.sort_values('Data')
+
+ds2 = d_df.sort_values('P2X')
+
+ds3 = d_df.sort_values('Store1')
+
+plt.figure()
+plt.plot(ds['Data'], ds['Store1'])
+plt.xlabel('Data')
+plt.ylabel('Store')
+
+plt.figure()
+plt.plot(ds['Data'], ds['P2X'])
+plt.xlabel('Data')
+plt.ylabel('P2X')
+
+plt.figure()
+plt.plot(ds2['P2X'], ds2['Store1'])
+plt.xlabel('P2X')
+plt.ylabel('Store')
+
+plt.figure()
+plt.plot(ds3['Store1'], ds['Data'])
+plt.xlabel('Store')
+plt.ylabel('Data')
+
+plt.figure()
+plt.plot(ds3['Store1'], ds['P2X'])
+plt.xlabel('Store')
+plt.ylabel('P2X')
 
 #%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions)
