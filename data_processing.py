@@ -126,8 +126,8 @@ wind_data[h] = y1+(x-x1)*((y2-y1)/(x2-x1))
 #%% Plot time-series
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
 
-ax.plot(wind_data[h], label = '2021 Energinet (LiDAR buoy)')
-ax.plot(cut_wind_ninja,   label = '2019 RenewableNinja')
+ax.plot(wind_data[h], label = 'DEA (LiDAR buoy)')
+ax.plot(cut_wind_ninja,   label = 'Renewables.Ninja')
 
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
 ax.yaxis.set_minor_locator(MultipleLocator(1))
@@ -153,7 +153,7 @@ ax.text(1.01, 1,
                 )
 
 ax.text(1.01, 0.70, 
-                str('Energinet:\n'
+                str('DEA:\n'
                     + 'Std = ' + str(round(wind_data[h].std(), 1)) +'m/s\n'
                     + 'Min = ' + str(round(wind_data[h].min(), 1)) +'m/s\n'
                     + 'Mean = '+ str(round(wind_data[h].mean(),1)) +'m/s\n'
@@ -181,7 +181,7 @@ ax.hist([wind_data[h].values,
         cut_wind_ninja_mean['wind_speed'].values],
         bins = np.arange(0,27,1), 
         rwidth=0.9,
-        label = ['Energinet',
+        label = ['DEA',
                  'Renewables.Ninja',
                  'Mean corrected'])
 
