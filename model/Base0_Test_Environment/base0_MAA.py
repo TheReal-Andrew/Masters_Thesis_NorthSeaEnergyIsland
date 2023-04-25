@@ -40,10 +40,10 @@ mga_slack     = 0.1   # 10%
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
                 'x1':('Generator', 'P2X'),
-                # 'x2':('Generator', 'Data'),
+                'x2':('Generator', 'Data'),
                 # 'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_sum'),
-                'x4':('Link',      'link_Germany'),
+                # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
             }
 direction     = [1] * len(variables) # Create liste of ones the size of variables. 1 means minimize, -1 means maximize 

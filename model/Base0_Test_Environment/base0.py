@@ -44,7 +44,8 @@ link_sum_max    = wind_cap             # Total allowed link capacity
 link_p_nom_min  = 0                    # Minimum allowed capacity for one link
 link_limit      = float('inf')     # [MW] Limit links to countries. float('inf')
 
-filename = "/base0_opt.nc" # Choose filename for export
+filename  = "/base0_opt.nc" # Choose filename for export
+modelname = "/base0_linopy_model.nc"
 
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
@@ -223,24 +224,54 @@ if add_moneybin:
           marginal_cost     = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
           )
 
-# %% Extra functionality
+#%% Extra functionality for in-house model
 def extra_functionalities(n, snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
 
+#%% Set up Linopy model
+
+m = n.optimize.create_model()
+
+# Area use constraint
+area = n.area_use
+
+vars_gen   = m.variables['Generator-p_nom']
+vars_store = m.variables['Store-e_nom']
+lsh = area['hydrogen']*vars_gen['P2X'] + area['data']*vars_gen['Data'] + area['storage']*vars_store['Island_store']
+rhs = n.total_area
+m.add_constraints( lsh <= rhs, name = 'area_use_constraint')
+
+# Sum of link capacity constraint
+lhs = m.variables['Link-p_nom'][n.main_links[0]]
+for link in n.main_links[1:]:
+    
+    link_var = m.variables['Link-p_nom'][link]
+    
+    lhs = lhs + link_var
+    
+rhs = wind_cap
+
+m.add_constraints(lhs <= rhs, name = 'Link_sum_constraint')
+
 #%% Solve
 if should_solve:
-    n.lopf(pyomo = False,
-           solver_name = 'gurobi',
-           keep_shadowprices = True,
-           keep_references = True,
-           extra_functionality = extra_functionalities,
-           )
+    # n.lopf(pyomo = False,
+    #        solver_name = 'gurobi',
+    #        keep_shadowprices = True,
+    #        keep_references = True,
+    #        extra_functionality = extra_functionalities,
+    #        )
+    
+    n.optimize.solve_model(solver_name = 'gurobi')
     
     if should_export:
-        filename = filename
-        export_path = os.getcwd() + filename
-        n.export_to_netcdf(export_path)
+
+        export_res = os.getcwd() + filename
+        n.export_to_netcdf(export_res)
+        
+        export_model = os.getcwd() + modelname
+        m.to_netcdf(export_model)
     
 #%% Plot
 

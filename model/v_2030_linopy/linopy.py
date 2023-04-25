@@ -24,7 +24,7 @@ gm.set_plot_options()
 
 # Main control
 should_solve       = True
-should_export      = False
+should_export      = True
 should_plot        = False
 should_bus_diagram = False
 should_n_diagram   = False
@@ -229,26 +229,45 @@ def extra_functionalities(n, snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
 
+#%% Create model
+
+m = n.optimize.create_model()
+
+area = n.area_use
+
+vars_gen   = m.variables['Generator-p_nom']
+vars_store = m.variables['Store-e_nom']
+lsh = area['hydrogen']*vars_gen['P2X'] + area['data']*vars_gen['Data'] + area['storage']*vars_store['Island_store']
+rhs = n.total_area
+m.add_constraints( lsh <= rhs, name = 'area_use_constraint')
+
+
+lhs = m.variables['Link-p_nom'][n.main_links[0]]
+for link in n.main_links[1:]:
+    
+    link_var = m.variables['Link-p_nom'][link]
+    
+    lhs = lhs + link_var
+    
+rhs = wind_cap
+
+m.add_constraints(lhs <= rhs, name = 'Link_sum_constraint')
+
 #%% Solve
 if should_solve:
-    res = n.lopf(pyomo = False,
-           solver_name = 'gurobi',
-           keep_shadowprices = True,
-           keep_references = True,
-           extra_functionality = extra_functionalities,
-           )
+    
+    n.optimize.solve_model(solver_name = 'gurobi')
     
     if should_export:
-        filename = filename
-        export_path = os.getcwd() + filename
-        n.export_to_netcdf(export_path)
-        
-        
-#%% Linopy optimization
 
-# n.optimize()
+        export_res = os.getcwd() + filename
+        n.export_to_netcdf(export_res)
         
+        export_model = os.getcwd() + modelname
+        m.to_netcdf(export_model)
     
+    
+        
 #%% Plot
 
 gm.set_plot_options()
