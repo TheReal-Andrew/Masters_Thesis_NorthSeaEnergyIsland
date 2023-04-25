@@ -23,8 +23,6 @@ gm.set_plot_options()
 
 #%% Control
 
-Should_solve = True
-
 year = 2030
 mga_slack     = 0.1   # 10%
 
