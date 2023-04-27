@@ -8,6 +8,7 @@ Created on Wed Feb 22 09:29:02 2023
 import os
 import sys
 # Add modules folder to path
+os.chdir(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa

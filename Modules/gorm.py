@@ -65,7 +65,7 @@ def get_earth_distance(lat1,lat2,lon1,lon2):
     
     return d
 
-def sample_in_hull(points, n = 1000):
+def sample_in_hull(points, n_samples = 1000):
     # From https://stackoverflow.com/questions/59073952/how-to-get-uniformly-distributed-points-in-convex-hull
     import random
     import numpy as np
@@ -81,15 +81,15 @@ def sample_in_hull(points, n = 1000):
     vols = np.abs(det(deln[:, :dims, :] - deln[:, dims:, :])) / np.math.factorial(dims) # Calculate volume of simplexes   
     
     #### Find number of samples pr. simplex from their volume
-    sample_pr_simplex = [None] * vols.shape[-1]
+    samples_pr_simplex = [None] * vols.shape[-1]
     for k in range(vols.shape[-1]):    
-        sample_pr_simplex[k] = int(np.round(vols[k]/vols.sum()*n))
+        samples_pr_simplex[k] = int(np.round(vols[k]/vols.sum()*n_samples))
     
     #### Find random samples
-    samples = np.zeros(shape=(n,dims))
+    samples = np.zeros(shape=(sum(samples_pr_simplex),dims))
     counter = 0
     for l in range(vols.shape[-1]):
-            for ll in range(sample_pr_simplex[l]):
+            for ll in range(samples_pr_simplex[l]):
                
                 #### Find random vector which == 1
                 a_list = [0,1]
@@ -405,149 +405,137 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
         projection=ccrs.EqualEarth()    #Choose cartopy.crs projection
         )
     
-def solutions_2D(techs, solutions, n_samples = 1000):
+def solutions_2D(techs, solutions, n_samples = 1000,
+                 title = 'MAA_plot',
+                 filename = None):
+    # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
+    # Plot the polyhedron shape, samples within and correlations.
     import pandas
     import matplotlib
     import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
-    
+
+    pad = 5
+
+    # Sample polyhedron
     d = sample_in_hull(solutions, n_samples)
-    
-    d_df = pandas.DataFrame(d,
-                            columns = techs)
 
+    # -------- create correlation matrix --------------------------
+    # Create dataframe from samples
+    d_df = pandas.DataFrame(d, columns = techs)
+
+    # Calculate correlation and normalize
     d_corr = d_df.corr()
-    d_corr2 = d_corr + abs(d_corr.min().min())
-    d_norm = d_corr2 / d_corr2.max().max()
 
-    
+    # Calculate normalized correlation, used to color heatmap.
+    d_temp = d_corr + abs(d_corr.min().min())
+    d_norm = d_temp / d_temp.max().max()
+
+    # -------- Set up plot ----------------------------------------
     set_plot_options()
-    cmap = matplotlib.cm.get_cmap('Spectral')
-    
-    n_vars = len(techs)
-    
+
+    cmap = matplotlib.cm.get_cmap('Spectral') # Create colormap for correlations
+
+    # Initialize and adjust figure
     plt.figure()
-    fig, axs = plt.subplots(n_vars, n_vars, figsize = (20,10))
+    fig, axs = plt.subplots(len(techs), len(techs), figsize = (22,10))
     fig.subplots_adjust(wspace = 0.4, hspace = 0.4)
-    
+
+    # Set titles
     for ax, col in zip(axs[0], techs):
         ax.set_title(col + '\n')
-        
-        
-    pad = 5
-    
+
     for ax, row in zip(axs[:,0], techs):
         ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
                     xycoords=ax.yaxis.label, textcoords='offset points',
                     size='large', ha='right', va='center')
-    
-    # Create hull
-    hull = ConvexHull(solutions)
-    
-    for i in range(0,len(techs)):
-        
-        for j in range(0,len(techs)):
+
+    # -------- Plotting and creating hull -------------------------------
+
+    for j in range(0, len(techs)):
+        for i in range(0,len(techs)):
             
             ax = axs[j][i]
             
-            corr = d_norm[techs[i]][techs[j]]
-            num  = d_corr[techs[i]][techs[j]]
-            
-            if i == j:
-                # ax.axis('off')
-                ax.text(1, 1, str(round(num,2)), ha='left', va='bottom', 
-                        bbox={'facecolor': cmap(corr), 'alpha': 1, 'pad': 5})
-                
+            if i == j: # If plotting on diagonal, skip
+                ax.set_xticks([])
+                ax.set_yticks([])
                 continue
+            
+            corr = d_norm[techs[i]][techs[j]] # Is only used for coloring
+            num  = d_corr[techs[i]][techs[j]] # Is shown
             
             x = solutions[:,i]
             y = solutions[:,j]
             
-            for simplex in hull.simplices:
+            hull = ConvexHull(solutions[:,[i,j]])
             
-                ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', zorder = 0)
+            # plot simplexes
+            for simplex in hull.simplices:
+                l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', 
+                        label = 'faces', zorder = 0)
                 
-            ax.plot(x, y,
+            # Plot vertices from solutions
+            l1, = ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)
             
-            ax.plot(d[:,i], d[:,j], 'o', label = 'samples', zorder = 1)
+            # Plot samples
+            l2, = ax.plot(d[:,i], d[:,j], 'o', label = 'samples', zorder = 1)
             
-            # text_box = ax.text(x.max(), y.max(), "Text in a Box", ha='left', va='top', bbox={'facecolor': 'yellow', 'alpha': 0.5, 'pad': 10})
-            
+            # Add correlation box
             ax.text(x.max(), y.max(), str(round(num,2)), ha='left', va='bottom', 
                     bbox={'facecolor': cmap(corr), 'alpha': 1, 'pad': 5})
-            
-            # ax.set_xlabel(techs[i])
-            # ax.set_ylabel(techs[j])
-            
-def solutions_heatmap2(techs, solutions, n_samples = 1000):
-    import pandas
-    import matplotlib
+
+    # Place legend in upper-left subplot
+    ax = axs[0, 0]  
+    ax.legend([l0, l1, l2], ['Polyhedron Faces', 'Near-optimal MAA points', 'Samples'], loc = 'center')
+    
+    fig.suptitle(title, fontsize = 24)
+    
+    if not filename == None:
+        fig.savefig(filename, format = 'pdf', bbox_inches='tight')
+        
+def solutions_3D(techs, solutions, filename = None):
     import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
     
-    d = sample_in_hull(solutions, n_samples)
-    
-    d_df = pandas.DataFrame(d,
-                            columns = techs)
-
-    d_corr = d_df.corr()
-    
-    d_corr2 = d_corr + abs(d_corr.min().min())
-    
-    d_norm = d_corr2 / d_corr2.max().max()
-    
-    # Figure setup
     set_plot_options()
-    plt.figure()
-    n_vars = len(techs)
-    fig, axs = plt.subplots(n_vars, n_vars, figsize = (20,10))
-    fig.subplots_adjust(wspace = 0.4, hspace = 0.4)
-    pad = 5
     
-    cmap = matplotlib.cm.get_cmap('Spectral')
+    if not solutions.shape[1] == 3: # Check if solutions are 3D.
+        print('Solutions are not 3-dimensional. Cannot plot. \n')
+        return
     
-    for ax, col in zip(axs[0], techs):
-        ax.set_title(col + '\n')
-        
-    for ax, row in zip(axs[:,0], techs):
-        ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
-                    xycoords=ax.yaxis.label, textcoords='offset points',
-                    size='large', ha='right', va='center')
+    xi = solutions[:,0]
+    yi = solutions[:,1]
+    zi = solutions[:,2]
     
+    fig = plt.figure(figsize = (10,10))
     
-    # Fill figure
-    for i in range(0,len(techs)):
-        
-        for j in range(0,len(techs)):
+    # Set colors and plot projection
+    colors = ['tab:blue', 'tab:red', 'aliceblue']
+    ax = plt.axes(projection = '3d')
+    
+    # Set axis labels
+    ax.set_xlabel(techs[0])
+    ax.set_ylabel(techs[1])
+    ax.set_zlabel(techs[2])
+    
+    # Define hull and edges
+    hull = ConvexHull(solutions)
+    
+    # Plot surfaces and lines  
+    ax.plot_trisurf(xi, yi, zi, 
+                    triangles=hull.simplices,
+                    alpha=0.8, color = colors[0],
+                    edgecolor = colors[2], linewidth = 3)
+    
+    # Plot MAA points
+    ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
+    
+    if not filename == None:
+        fig.savefig(filename, format = 'pdf', bbox_inches='tight')
             
-            ax = axs[j][i]
-            
-            ax.grid(False)
-            
-            corr = d_norm[techs[i]][techs[j]]
-            num  = d_corr[techs[i]][techs[j]]
-            
-            # Turn off tick labels
-            # ax.set_yticklabels([])
-            # ax.set_xticklabels([])
-            # ax.set_xticks([])
-            # ax.set_yticks([])
-            
-            x_min, x_max = ax.get_xlim()
-            y_min, y_max = ax.get_ylim()
-            center_x = (x_min + x_max) / 2
-            center_y = (y_min + y_max) / 2
-            ax.text(center_x, center_y, str(round(num,2)), 
-                    fontsize = 20,
-                    ha='center', va='center')
-            
-            color = cmap(corr)
-            
-            ax.set_facecolor(color)
-            
-            
-def solutions_heatmap(techs, solutions, triangular = False, n_samples = 1000):
+def sns_heatmap(techs, solutions, triangular = False, n_samples = 1000):
     import pandas
     import numpy as np
     import seaborn as sns
@@ -569,6 +557,86 @@ def solutions_heatmap(techs, solutions, triangular = False, n_samples = 1000):
         np.fill_diagonal(mask, False)
 
     sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
+    
+def bake_local_area_pie(n, title, exportname = None):
+    # Create a piechart, showing the area used by each local technology on
+    # the Energy Island.
+    
+    import matplotlib.pyplot as plt
+    
+    def autopct_format(values, k):
+        def my_format(pct):
+            total = sum(values)
+            val = int(round(pct*total/100.0))
+            return '{:.1f}%\n({v:d} m$^2$)'.format(pct, v=val)
+        return my_format
+    
+    P2X_a   = n.generators.p_nom_opt["P2X"] * n.area_use['hydrogen']
+    Data_a  = n.generators.p_nom_opt["Data"] * n.area_use['data']
+    Store_a = n.stores.e_nom_opt["Island_store"] * n.area_use['storage']
+    
+    total_A = P2X_a + Data_a + Store_a
+    
+    pie_data = [P2X_a, Data_a, Store_a]
+    k        = [n.area_use['hydrogen'], n.area_use['data'], n.area_use['storage']] 
+    labels   =  "P2X", "Data", "Store"
+    
+    fig, ax = plt.subplots(figsize = (6,6))
+    ax.pie(pie_data, 
+           autopct = autopct_format(pie_data, k),
+           textprops={'fontsize': 10},
+           startangle=90)
+    
+    ax.axis('equal')
+    ax.margins(0, 0)
+    plt.suptitle(title, fontsize = 18)
+    plt.title(f'Area used: {total_A:.0f} m$^2$',
+              fontsize = 10,
+              pad = 6)
+    plt.legend(labels = labels)
+    
+    if not exportname == None:
+        fig.savefig(exportname, format = 'pdf', bbox_inches='tight')
+        
+def bake_capacity_pie(n, title, exportname = None):
+    # Create a piechart, showing the capacity of all links and local demand.
+    
+    import matplotlib.pyplot as plt
+    
+    def autopct_format(values):
+        def my_format(pct):
+            total = sum(values)
+            val = int(round(pct*total/100.0))
+            return '{:.1f}%\n({v:d} m$^2$)'.format(pct, v=val)
+        return my_format
+    
+    P2X_capacity   = n.generators.p_nom_opt["P2X"]      # [MW]
+    data_capacity  = n.generators.p_nom_opt["Data"]     # [MW]
+    store_capacity = n.stores.e_nom_opt["Island_store"] # [MWh]
+    
+    links_capacity = n.links.p_nom_opt[n.main_links].sum() # [MW]
+    
+    total_capacity = P2X_capacity + data_capacity + store_capacity + links_capacity
+    
+    pie_data = [P2X_capacity, data_capacity, store_capacity, links_capacity]
+    labels   =  "P2X", "Data", "Store", 'links'
+    
+    fig, ax = plt.subplots(figsize = (6,6))
+    ax.pie(pie_data, 
+           autopct = autopct_format(pie_data),
+           textprops={'fontsize': 10},
+           startangle=90)
+    
+    ax.axis('equal')
+    ax.margins(0, 0)
+    plt.suptitle(title, fontsize = 18)
+    plt.title(f'Total installed capacity: {total_capacity:.0f} MW/MWh',
+              fontsize = 10,
+              pad = 6)
+    plt.legend(labels = labels)
+    
+    if not exportname == None:
+        fig.savefig(exportname, format = 'pdf', bbox_inches='tight')
     
     
     

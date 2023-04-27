@@ -25,13 +25,15 @@ gm.set_plot_options()
 
 Should_MAA   = True
 
-input_name = 'v_2030_preliminary_opt.nc'
+input_name      = 'v_2030_preliminary_opt.nc'
+MAA_export_name = 'v_2030_preliminary_2MAA_1p_'
 
-mga_slack     = 0.1   # MAA slack control
+year       = 2030
+mga_slack  = 0.01   # MAA slack control
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
-                'x1':('Generator', 'P2X'),
+                # 'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
                 'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_sum'),
@@ -48,7 +50,7 @@ n_objective = n.objective # Save optimum objective
 
 #%% Load data
 # ----- Dataframe with tech data ---------
-tech_df         = tm.get_tech_data(2030, 0.07)
+tech_df         = tm.get_tech_data(year, 0.07)
 
 # ----- Save data in network ---------
 n.area_use      = tm.get_area_use()
@@ -152,7 +154,7 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            n.export_to_netcdf('preliminary_MAA' + str(i) + '.nc')
+            n.export_to_netcdf(MAA_export_name + str(i) + '.nc')
     
         try:
             hull = ConvexHull(solutions)
@@ -174,56 +176,18 @@ gm.solutions_2D(techs, solutions, n_samples = 10000)
 
 gm.solutions_heatmap2(techs, solutions)
 
-#%%
-
-d = gm.sample_in_hull(solutions, n = 10)
-
-d_df = pandas.DataFrame(d,
-                        columns = techs)
-
-ds = d_df.sort_values('Data')
-
-ds2 = d_df.sort_values('P2X')
-
-ds3 = d_df.sort_values('Store1')
-
-plt.figure()
-plt.plot(ds['Data'], ds['Store1'])
-plt.xlabel('Data')
-plt.ylabel('Store')
-
-plt.figure()
-plt.plot(ds['Data'], ds['P2X'])
-plt.xlabel('Data')
-plt.ylabel('P2X')
-
-plt.figure()
-plt.plot(ds2['P2X'], ds2['Store1'])
-plt.xlabel('P2X')
-plt.ylabel('Store')
-
-plt.figure()
-plt.plot(ds3['Store1'], ds['Data'])
-plt.xlabel('Store')
-plt.ylabel('Data')
-
-plt.figure()
-plt.plot(ds3['Store1'], ds['P2X'])
-plt.xlabel('Store')
-plt.ylabel('P2X')
-
-#%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions)
 
 d_df = pandas.DataFrame(d,
                         columns = techs)
 
-d_corr = d_df.corr()
+#%% Samples dataframe and normalization
+d = gm.sample_in_hull(solutions, n = 100000)
 
-d_corr2 = d_corr + abs(d_corr.min().min())
+d_df = pandas.DataFrame(d,
+                        columns = techs)
 
-d_norm = d_corr2 / d_corr2.max().max()
-
+d_df.hist(bins = 50)
 
 #%% 2D Plot
 

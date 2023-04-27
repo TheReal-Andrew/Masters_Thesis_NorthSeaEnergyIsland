@@ -27,7 +27,8 @@ should_solve       = True
 should_export      = True
 should_plot        = False
 should_bus_diagram = False
-should_n_diagram   = False
+should_n_diagram   = True
+
 # Main parameter series
 mp = tm.get_main_parameters()
 
@@ -251,25 +252,7 @@ if should_plot:
 
 if should_n_diagram:
     
-    pos = [
-           [0, 0],    #Island
-           [-7, 3],   #Denmark
-           # [15, 8],   #Norway
-           # [18, -10], #DE
-           # [6, -11],  #NE
-           # [-4, -12], #BE
-           # [-10, 2],  #UK
-          ]
-    
     It = 'Island to '
-    
-    index1 = [
-              It+'United Kingdom',
-              It+'Norway',
-              It+'Belgium',
-              It+'Netherlands',
-              It+'Germany',
-              It+'Denmark']
     
     index2 = [
               It+'Germany',
@@ -293,26 +276,17 @@ if should_bus_diagram:
                    link_line_length = 1.1,
                    filename = 'graphics/bus_diagram1.pdf')
     
+gm.bake_local_area_pie(n, 
+         title = 'Piechart',
+         exportname = 'pie1',
+         )
 
-# t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
-# ax = n.generators_t.p['Data'][t2].abs().plot(figsize = (15,5))
-# fig = plt.gcf()
-# ax.set_xlabel('Time [hr]')
-# ax.set_ylabel('Power consumed [MW]')
-# ax.set_title('Data')
-# fig.savefig('Data_timeseries.svg', format = 'svg', bbox_inches='tight')
+gm.bake_capacity_pie(n,
+                     title = 'yolo')
+    
 
-
-# Extra
-# linkz = n.links_t.p0
-
-# linkz2 = n.links[~n.links.index.str.contains("bus")]
-
-# country = 'Denmark'
-# linkz_country = n.links[n.links.index.str.contains(country)]
-
-# linkz2['p_nom_opt'].hist(bins = 12, figsize = (10,5))
-# linkz2['p_nom_opt'].plot(figsize = (10,5))
+#%%
+gm.its_britney_bitch(r'C:\Users\lukas\Documents\GitHub\Masters_Thesis_NorthSeaEnergyIsland\data\Sounds')
 
 
 
