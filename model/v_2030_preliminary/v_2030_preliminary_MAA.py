@@ -157,7 +157,7 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            n.export_to_netcdf(MAA_export_name + str(i) + '.nc')
+            n.export_to_netcdf(MAA_network_names + str(i) + '.nc')
     
         try:
             hull = ConvexHull(solutions)
@@ -170,19 +170,21 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-    np.save('MAA_solutions', solutions)
+    np.save(MAA_solutions + 'solutions.npy', solutions)
 
-#%% 2D Subplots
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
-gm.solutions_2D(techs, solutions, n_samples = 10000)
+#%% 2D Subplots
 
-gm.solutions_heatmap2(techs, solutions)
+gm.solutions_2D(techs, solutions, n_samples = 10000,
+                alpha = 0.1)
 
-d = gm.sample_in_hull(solutions)
+# gm.solutions_heatmap2(techs, solutions)
 
-d_df = pandas.DataFrame(d,
-                        columns = techs)
+# d = gm.sample_in_hull(solutions)
+
+# d_df = pandas.DataFrame(d,
+#                         columns = techs)
 
 #%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions, n = 100000)

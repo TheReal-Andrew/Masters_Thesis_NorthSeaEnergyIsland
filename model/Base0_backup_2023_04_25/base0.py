@@ -226,9 +226,9 @@ if add_moneybin:
           )
 
 #%% Extra functionality for in-house model
-# def extra_functionalities(n, snapshots):
-#     gm.area_constraint(n, snapshots)
-#     gm.link_constraint(n, snapshots)
+def extra_functionalities(n, snapshots):
+    gm.area_constraint(n, snapshots)
+    gm.link_constraint(n, snapshots)
 
 #%% Set up Linopy model
 

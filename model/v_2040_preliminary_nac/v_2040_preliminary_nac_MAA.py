@@ -170,7 +170,7 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-    np.save(MAA_solutions + 'solutions.nc', solutions)
+    np.save(MAA_solutions + 'solutions.npy', solutions)
 
 #%% 2D Subplots
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )

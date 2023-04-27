@@ -170,88 +170,88 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-    np.save(MAA_solutions + 'solutions.nc', solutions)
+    np.save(MAA_solutions + 'solutions.npy', solutions)
 
 #%% 2D Subplots
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
-gm.solutions_2D(techs, solutions, n_samples = 10000)
+# gm.solutions_2D(techs, solutions, n_samples = 10000)
 
-gm.solutions_heatmap2(techs, solutions)
+# gm.solutions_heatmap2(techs, solutions)
 
-d = gm.sample_in_hull(solutions)
+# d = gm.sample_in_hull(solutions)
 
-d_df = pandas.DataFrame(d,
-                        columns = techs)
+# d_df = pandas.DataFrame(d,
+#                         columns = techs)
 
 #%% Samples dataframe and normalization
-d = gm.sample_in_hull(solutions, n = 100000)
+# d = gm.sample_in_hull(solutions, n = 100000)
 
-d_df = pandas.DataFrame(d,
-                        columns = techs)
+# d_df = pandas.DataFrame(d,
+#                         columns = techs)
 
-d_df.hist(bins = 50)
+# d_df.hist(bins = 50)
 
 #%% 2D Plot
 
-if Should_MAA and solutions.shape[1] == 2:
-    hull = ConvexHull(solutions)
+# if Should_MAA and solutions.shape[1] == 2:
+#     hull = ConvexHull(solutions)
     
-    plt.figure(figsize = (8,4))
+#     plt.figure(figsize = (8,4))
     
-    x = solutions[:,0]
-    y = solutions[:,1]
+#     x = solutions[:,0]
+#     y = solutions[:,1]
     
-    for simplex in hull.simplices:
+#     for simplex in hull.simplices:
     
-        plt.plot(solutions[simplex, 0], solutions[simplex, 1], 'k-')
+#         plt.plot(solutions[simplex, 0], solutions[simplex, 1], 'k-')
     
-    plt.plot(x, y,
-              'o', label = "Near-optimal")
+#     plt.plot(x, y,
+#               'o', label = "Near-optimal")
     
-    plt.plot(d[:,0], d[:,1], 'o', label = 'samples')
+#     plt.plot(d[:,0], d[:,1], 'o', label = 'samples')
     
-    #Plot optimal
-    plt.plot(n_optimum.generators.p_nom_opt["P2X"], 
-              n_optimum.generators.p_nom_opt["Data"],
-              '.', markersize = 20, label = "Optimal")
-    plt.xlabel("P2X capacity [MW]")
-    plt.ylabel("Data capacity [MW]")
-    plt.suptitle('MAA Analysis', fontsize = 18)
-    plt.title(f'With MGA slack = {mga_slack}', fontsize = 10)
+#     #Plot optimal
+#     plt.plot(n_optimum.generators.p_nom_opt["P2X"], 
+#               n_optimum.generators.p_nom_opt["Data"],
+#               '.', markersize = 20, label = "Optimal")
+#     plt.xlabel("P2X capacity [MW]")
+#     plt.ylabel("Data capacity [MW]")
+#     plt.suptitle('MAA Analysis', fontsize = 18)
+#     plt.title(f'With MGA slack = {mga_slack}', fontsize = 10)
     
-    plt.legend()
+#     plt.legend()
 
 
 #%% 3D plot
 
-if Should_MAA and solutions.shape[1] >= 3:
-    xi = solutions[:,0]
-    yi = solutions[:,1]
-    zi = solutions[:,2]
+# if Should_MAA and solutions.shape[1] >= 3:
+#     xi = solutions[:,0]
+#     yi = solutions[:,1]
+#     zi = solutions[:,2]
     
-    fig = plt.figure()
+#     fig = plt.figure()
     
-    colors = ['tab:blue', 'tab:red', 'aliceblue']
-    ax = plt.axes(projection = '3d')
+#     colors = ['tab:blue', 'tab:red', 'aliceblue']
+#     ax = plt.axes(projection = '3d')
     
-    ax.set_xlabel(variables[list(variables)[0]][1])
-    ax.set_ylabel(variables[list(variables)[1]][1])
-    ax.set_zlabel(variables[list(variables)[2]][1])
+#     ax.set_xlabel(variables[list(variables)[0]][1])
+#     ax.set_ylabel(variables[list(variables)[1]][1])
+#     ax.set_zlabel(variables[list(variables)[2]][1])
     
-    # Points
-    ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
+#     # Points
+#     ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
     
-    # Define hull and edges
-    hull = ConvexHull(solutions)
-    edges = zip(*solutions)
+#     # Define hull and edges
+#     hull = ConvexHull(solutions)
+#     edges = zip(*solutions)
     
-    # Plot trisurface  
-    trisurface = ax.plot_trisurf(xi, yi, zi, triangles=hull.simplices,
-                          alpha=0.8, color = colors[0],
-                          edgecolor = colors[2], linewidth = 3)
+#     # Plot trisurface  
+#     trisurface = ax.plot_trisurf(xi, yi, zi, triangles=hull.simplices,
+#                           alpha=0.8, color = colors[0],
+#                           edgecolor = colors[2], linewidth = 3)
     
 # fig.savefig('hull_plot_test1.svg', format = 'pdf', bbox_inches='tight')
 
 #%%
-gm.its_britney_bitch(r'C:\Users\lukas\Documents\GitHub\Masters_Thesis_NorthSeaEnergyIsland\data\Sounds')
+gm.its_britney_bitch()

@@ -407,13 +407,16 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
     
 def solutions_2D(techs, solutions, n_samples = 1000,
                  title = 'MAA_plot',
-                 filename = None):
+                 filename = None,
+                 alpha = 1):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
     # Plot the polyhedron shape, samples within and correlations.
     import pandas
     import matplotlib
     import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
+    import numpy as np
+    from scipy.stats import gaussian_kde
 
     pad = 5
 
@@ -434,7 +437,15 @@ def solutions_2D(techs, solutions, n_samples = 1000,
     # -------- Set up plot ----------------------------------------
     set_plot_options()
 
-    cmap = matplotlib.cm.get_cmap('Spectral') # Create colormap for correlations
+    import matplotlib.colors as mcolors
+
+    # define the endpoints of the colormap
+    red    = (1.0, 0.7, 0.6)  # light red
+    yellow = (1.0, 1.0, 0.8)  # light yellow
+    green  = (0.6, 1.0, 0.6)  # light green
+
+    # define the colormap
+    cmap = mcolors.LinearSegmentedColormap.from_list('my_colormap', [red, yellow, green])
 
     # Initialize and adjust figure
     plt.figure()
@@ -450,20 +461,52 @@ def solutions_2D(techs, solutions, n_samples = 1000,
                     xycoords=ax.yaxis.label, textcoords='offset points',
                     size='large', ha='right', va='center')
 
-    # -------- Plotting and creating hull -------------------------------
+    # -------- Plotting -------------------------------
 
-    for j in range(0, len(techs)):
-        for i in range(0,len(techs)):
-            
-            ax = axs[j][i]
-            
-            if i == j: # If plotting on diagonal, skip
-                ax.set_xticks([])
-                ax.set_yticks([])
-                continue
+    # Upper triangle of subplots
+    for i in range(0, len(techs)):
+        for j in range(0, i):
             
             corr = d_norm[techs[i]][techs[j]] # Is only used for coloring
             num  = d_corr[techs[i]][techs[j]] # Is shown
+            
+            ax = axs[j][i]
+            
+            ax.set_xticks([])
+            ax.set_yticks([])
+            
+            # Write correlation
+            corr_text = str(round(num,2))
+            ax.text(0.5, 0.5, corr_text, ha='center', va='center', fontsize=20)
+            
+            ax.text(0.5, 1.1, 'Correlation', ha='center', va='top',
+                    transform=ax.transAxes, fontsize = 16, color = 'gray')
+            
+            # Change bg color according to correlation
+            ax.patch.set_facecolor(cmap(corr))
+
+
+    # Diagonal plotting
+    for j in range(0, len(techs)):
+        
+        ax = axs[j][j]
+        
+        d_df[techs[j]].hist(bins = 50, ax = ax,
+                            color = 'tab:purple', rwidth = 0.9,
+                            label = 'histogram')
+        
+        ax.text(0.5, 1.1, 'Histogram', ha='center', va='top', 
+                transform=ax.transAxes, fontsize = 16, color = 'gray')
+
+
+    # lower traingle of subplots
+    for j in range(0, len(techs)):
+        for i in range(0, j):
+            
+            ax = axs[j][i]
+            
+            ax.text(0.5, 1.1, 'Scatter plot with vertices', ha='center', va='top',
+                    transform=ax.transAxes, fontsize=16, color = 'gray')
             
             x = solutions[:,i]
             y = solutions[:,j]
@@ -479,19 +522,26 @@ def solutions_2D(techs, solutions, n_samples = 1000,
             l1, = ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)
             
-            # Plot samples
-            l2, = ax.plot(d[:,i], d[:,j], 'o', label = 'samples', zorder = 1)
+            x1 = d[:,i]
+            y1 = d[:,j]
+            
+            l2, = ax.plot(x1, y1, 'o', label = 'samples',
+                          alpha = alpha, zorder = 1,
+                          )
             
             # Add correlation box
-            ax.text(x.max(), y.max(), str(round(num,2)), ha='left', va='bottom', 
-                    bbox={'facecolor': cmap(corr), 'alpha': 1, 'pad': 5})
+            # ax.text(x.max(), y.max(), str(round(num,2)), ha='left', va='bottom', 
+            #         bbox={'facecolor': cmap(corr), 'alpha': 1, 'pad': 5})
 
-    # Place legend in upper-left subplot
-    ax = axs[0, 0]  
-    ax.legend([l0, l1, l2], ['Polyhedron Faces', 'Near-optimal MAA points', 'Samples'], loc = 'center')
-    
+
+    # Place legend below subplots
+    ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
+    ax.legend([l0, l1, l2, ], ['Polyhedron Faces', 'Near-optimal MAA points', 'Samples', 'histogram'], 
+              loc = 'center', ncol = 3,
+              bbox_to_anchor=(0.5, -0.45),fancybox=False, shadow=False,)
+
     fig.suptitle(title, fontsize = 24)
-    
+
     if not filename == None:
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
         
