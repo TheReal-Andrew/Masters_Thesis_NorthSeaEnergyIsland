@@ -8,6 +8,7 @@ Created on Mon Mar 20 13:06:40 2023
 import os
 import sys
 # Add modules folder to path
+os.chdir(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
@@ -25,10 +26,9 @@ gm.set_plot_options()
 
 Should_MAA   = True
 
-input_name = 'v_2040_preliminary_opt.nc'
-
 year       = 2040
 mga_slack  = 0.1   # MAA slack control
+study_name = 'preliminary'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
@@ -39,6 +39,10 @@ variables = {
                 # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
             }
+
+input_name        = f'v_{year}_{study_name}_opt.nc'
+MAA_network_names = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
+MAA_solutions     = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 
 #%% Load and copy network
 
@@ -153,7 +157,7 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            n.export_to_netcdf('preliminary_MAA' + str(i) + '.nc')
+            n.export_to_netcdf(MAA_network_names + str(i) + '.nc')
     
         try:
             hull = ConvexHull(solutions)
@@ -166,7 +170,7 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-    np.save('MAA_solutions', solutions)
+    np.save(MAA_solutions + 'solutions.nc', solutions)
 
 #%% 2D Subplots
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
@@ -175,56 +179,18 @@ gm.solutions_2D(techs, solutions, n_samples = 10000)
 
 gm.solutions_heatmap2(techs, solutions)
 
-#%%
-
-d = gm.sample_in_hull(solutions, n = 10)
-
-d_df = pandas.DataFrame(d,
-                        columns = techs)
-
-ds = d_df.sort_values('Data')
-
-ds2 = d_df.sort_values('P2X')
-
-ds3 = d_df.sort_values('Store1')
-
-plt.figure()
-plt.plot(ds['Data'], ds['Store1'])
-plt.xlabel('Data')
-plt.ylabel('Store')
-
-plt.figure()
-plt.plot(ds['Data'], ds['P2X'])
-plt.xlabel('Data')
-plt.ylabel('P2X')
-
-plt.figure()
-plt.plot(ds2['P2X'], ds2['Store1'])
-plt.xlabel('P2X')
-plt.ylabel('Store')
-
-plt.figure()
-plt.plot(ds3['Store1'], ds['Data'])
-plt.xlabel('Store')
-plt.ylabel('Data')
-
-plt.figure()
-plt.plot(ds3['Store1'], ds['P2X'])
-plt.xlabel('Store')
-plt.ylabel('P2X')
-
-#%% Samples dataframe and normalization
 d = gm.sample_in_hull(solutions)
 
 d_df = pandas.DataFrame(d,
                         columns = techs)
 
-d_corr = d_df.corr()
+#%% Samples dataframe and normalization
+d = gm.sample_in_hull(solutions, n = 100000)
 
-d_corr2 = d_corr + abs(d_corr.min().min())
+d_df = pandas.DataFrame(d,
+                        columns = techs)
 
-d_norm = d_corr2 / d_corr2.max().max()
-
+d_df.hist(bins = 50)
 
 #%% 2D Plot
 

@@ -8,6 +8,7 @@ Created on Mon Mar 20 13:06:40 2023
 import os
 import sys
 # Add modules folder to path
+os.chdir(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
@@ -25,21 +26,23 @@ gm.set_plot_options()
 
 Should_MAA   = True
 
-input_name      = 'v_2030_preliminary_opt.nc'
-MAA_export_name = 'v_2030_preliminary_2MAA_1p_'
-
 year       = 2030
-mga_slack  = 0.01   # MAA slack control
+mga_slack  = 0.1   # MAA slack control
+study_name = 'preliminary'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
-                # 'x1':('Generator', 'P2X'),
+                'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
                 'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_sum'),
                 # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
             }
+
+input_name        = f'v_{year}_{study_name}_opt.nc'
+MAA_network_names = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
+MAA_solutions     = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 
 #%% Load and copy network
 
