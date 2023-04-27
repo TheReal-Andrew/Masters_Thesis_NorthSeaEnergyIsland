@@ -184,6 +184,10 @@ gm.solutions_2D(techs, solutions, n_samples = 1000,
 
 #%% 3D plot
 
+gm.solutions_3D(techs, solutions)
+
+#%%
+
 if solutions.shape[1] == 3:
     xi = solutions[:,0]
     yi = solutions[:,1]
