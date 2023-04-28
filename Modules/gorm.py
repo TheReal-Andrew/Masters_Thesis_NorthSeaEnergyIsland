@@ -34,7 +34,7 @@ def get_annuity(i, n):
     annuity = i/(1.-1./(1.+i)**n)
     return annuity
 
-def get_annuity_snap(i, n, n_hrs):
+def get_annuity_snap(i, n, n_hrs = 8760):
     
     annuity = ( i/(1.-1./(1.+i)**n) ) * n_hrs/8760
     
@@ -417,6 +417,7 @@ def solutions_2D(techs, solutions, n_samples = 1000,
     from scipy.spatial import ConvexHull
     import numpy as np
     from scipy.stats import gaussian_kde
+    import matplotlib.colors as mcolors
 
     pad = 5
 
@@ -436,8 +437,6 @@ def solutions_2D(techs, solutions, n_samples = 1000,
 
     # -------- Set up plot ----------------------------------------
     set_plot_options()
-
-    import matplotlib.colors as mcolors
 
     # define the endpoints of the colormap
     red    = (1.0, 0.7, 0.6)  # light red

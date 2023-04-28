@@ -172,10 +172,11 @@ if Should_MAA:
 
     np.save(MAA_solutions + 'solutions.npy', solutions)
 
-#%% 2D Subplots
+
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
-# gm.solutions_2D(techs, solutions, n_samples = 10000)
+#%% 2D Subplots
+gm.solutions_2D(techs, solutions, n_samples = 10000)
 
 # gm.solutions_heatmap2(techs, solutions)
 

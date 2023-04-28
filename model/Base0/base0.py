@@ -8,10 +8,10 @@ Created on Wed Feb 22 09:29:02 2023
 import os
 import sys
 # Add modules folder to path
-sys.path.append(os.path.abspath('../../modules')) 
+os.chdir(os.path.join(os.path.dirname(__file__))) # Change working directory
+sys.path.append(os.path.abspath('../../modules')) # Add modules to path
 
 import pypsa
-from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
 import pandas as pd
 
 import gorm as gm
@@ -27,24 +27,11 @@ should_solve       = True
 should_export      = True
 should_plot        = False
 should_bus_diagram = False
-should_n_diagram   = True
-# Main parameter series
-mp = tm.get_main_parameters()
+should_n_diagram   = False
 
-# Main parameters
-year        = 2030             # Choose year
-r           = 0.07             # Discount rate
-n_hrs       = 8760             # [hrs] Choose number of hours to simulate
-DR          = 1.3              # Detour factor
-wind_cap    = mp[year]['wind'] # [MW] Installed wind capacity
-island_area = mp[year]['island_area']  # [m^2] total island area
-
-link_efficiency = 3.5/(1000*100)   # Link efficency per km (per unit loss/km). 
-link_sum_max    = wind_cap             # Total allowed link capacity
-link_p_nom_min  = 0                    # Minimum allowed capacity for one link
-link_limit      = float('inf')     # [MW] Limit links to countries. float('inf')
-
-filename = "/base0_opt.nc" # Choose filename for export
+# ---- User parameters - change this ------------------
+project_name = 'base0'
+year         = 2030             # Choose year
 
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
@@ -64,17 +51,30 @@ add_c_gens   = True # Add country generators
 add_c_loads  = True # Add country demand
 add_moneybin = True
 
+# ---- Main parameters loaded from tim module --------
+mp, mp_gen = tm.get_main_parameters()
+
+wind_cap     = mp[year]['wind']        # [MW] Installed wind capacity
+island_area  = mp[year]['island_area'] # [m^2] total island area
+r            = mp_gen['discount_rate'] # Discount rate
+DR           = mp_gen['detour_factor'] # Detour factor
+
+link_efficiency = 3.5/(1000*100)   # Link efficency per km (per unit loss/km). 
+link_sum_max    = wind_cap         # Total allowed link capacity
+link_p_nom_min  = 0                # Minimum allowed capacity for one link
+link_limit      = float('inf')     # [MW] Limit links to countries. float('inf')
+
+filename = f"/v_{year}_{project_name}_opt.nc" # Choose filename for export
+
 #%% ------- IMPORT DATA -----------------------------------
 
 # ----- Wind capacity factor data ---------
 wind_cf         = pd.read_csv(r'../../data/wind/wind_cf.csv',
-                       index_col = [0], sep=",").iloc[:n_hrs,:]
+                       index_col = [0], sep=",")[:8760]
 
 # ----- Country demand and price ---------
 # Import price and demand for each country for the year, and remove outliers
 cprice, cload   = tm.get_load_and_price(year, connected_countries, n_std = 1)
-cprice = cprice.iloc[:n_hrs,:] # Cut off to match number of snapshots
-cload  = cload.iloc[:n_hrs,:]  # Cut off to match number of snapshots
 
 # ----- Dataframe with bus data ---------
 # Get dataframe with bus info, only for the connected countries.
@@ -91,7 +91,7 @@ area_use        = tm.get_area_use()
 
 # ----- initialize network ---------
 n = pypsa.Network()
-t = pd.date_range(f'{year}-01-01 00:00', f'{year}-12-31 23:00', freq = 'H')[:n_hrs]
+t = pd.date_range(f'{year}-01-01 00:00', f'{year}-12-31 23:00', freq = 'H')
 n.set_snapshots(t)
 
 # Add data to network for easier access when creating constraints
@@ -219,7 +219,7 @@ if add_moneybin:
           p_nom_extendable  = True,
           p_nom_min         = 1,
           p_nom_max         = 1,
-          capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter']*n_hrs,
+          capital_cost      = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter']*8760,
           marginal_cost     = island_area/n.area_use['data']*tech_df['marginal cost']['datacenter'],
           )
 
@@ -236,40 +236,19 @@ if should_solve:
            keep_references = True,
            extra_functionality = extra_functionalities,
            )
-    
+    #%%
     if should_export:
-        filename = filename
         export_path = os.getcwd() + filename
         n.export_to_netcdf(export_path)
     
 #%% Plot
-
-gm.set_plot_options()
 
 if should_plot:
     gm.plot_geomap(n)
 
 if should_n_diagram:
     
-    pos = [
-           [0, 0],    #Island
-           [-7, 3],   #Denmark
-           # [15, 8],   #Norway
-           # [18, -10], #DE
-           # [6, -11],  #NE
-           # [-4, -12], #BE
-           # [-10, 2],  #UK
-          ]
-    
     It = 'Island to '
-    
-    index1 = [
-              It+'United Kingdom',
-              It+'Norway',
-              It+'Belgium',
-              It+'Netherlands',
-              It+'Germany',
-              It+'Denmark']
     
     index2 = [
               It+'Germany',
@@ -279,7 +258,6 @@ if should_n_diagram:
               It+'Belgium',
               It+'United Kingdom',
               ]
-    
     
     pdiag.draw_network(n, spacing = 1, handle_bi = True, pos = None,
                         index1 = index2,
@@ -292,27 +270,6 @@ if should_bus_diagram:
                    handle_bi = True, 
                    link_line_length = 1.1,
                    filename = 'graphics/bus_diagram1.pdf')
-    
-
-# t2 = pd.date_range('2030-01-01 00:00', '2030-01-07 00:00', freq = 'H')
-# ax = n.generators_t.p['Data'][t2].abs().plot(figsize = (15,5))
-# fig = plt.gcf()
-# ax.set_xlabel('Time [hr]')
-# ax.set_ylabel('Power consumed [MW]')
-# ax.set_title('Data')
-# fig.savefig('Data_timeseries.svg', format = 'svg', bbox_inches='tight')
-
-
-# Extra
-# linkz = n.links_t.p0
-
-# linkz2 = n.links[~n.links.index.str.contains("bus")]
-
-# country = 'Denmark'
-# linkz_country = n.links[n.links.index.str.contains(country)]
-
-# linkz2['p_nom_opt'].hist(bins = 12, figsize = (10,5))
-# linkz2['p_nom_opt'].plot(figsize = (10,5))
 
 
 

@@ -20,12 +20,10 @@ hydrogen_transport = (pd.read_excel(r'../../data/costs/energy_transport_datashee
          
 hydrogen_transport = hydrogen_transport[year]   
 
-hydrogen_transport['Investment costs; single line, 1000-4000 MW (EUR/MW/m)']*1000*100 
-
 cost = (gm.get_annuity(0.07, hydrogen_transport['Technical life time (years)']) 
-        * hydrogen_transport['Investment costs; single line, 1000-4000 MW (EUR/MW/m)']*1600 
-        +  (hydrogen_transport['Fixed O&M (EUR/km/year/MW)']*1600)
-        )
+        * hydrogen_transport['Investment costs; single line, 1000-4000 MW (EUR/MW/m)']*1000*100 
+        +  (hydrogen_transport['Fixed O&M (EUR/km/year/MW)']*100)
+        ) # [Eur/MW]
     
 
 
