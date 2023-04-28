@@ -14,17 +14,13 @@ sys.path.append(os.path.abspath('../../modules'))
 import pypsa
 import numpy as np
 from scipy.spatial import ConvexHull
-import pandas
 
 import gorm as gm
 import tim as tm
 from ttictoc import tic,toc
+
 gm.set_plot_options()
 
-# ----- Dataframe with tech data ---------
-tech_df         = tm.get_tech_data(2030, 0.07)
-
-mp, mp_gen = tm.get_main_parameters()
 
 #%% Control
 
