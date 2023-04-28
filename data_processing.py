@@ -123,6 +123,20 @@ x = int(num)
 
 wind_data[h] = y1+(x-x1)*((y2-y1)/(x2-x1))
 
+#%% Cross validate
+
+chunk_list = [24, 24*7, 24*7*4]
+result_dict = {key: [] for key in chunk_list}
+
+#%%
+for chunk_size in chunk_list:
+    for i in range(len(wind_data[h])):
+
+        dea_chunk   = wind_data[h][i*chunk_size:i*chunk_size+chunk_size].values
+        ninja_chunk = cut_wind_ninja['wind_speed'][i*chunk_size:i*chunk_size+chunk_size].values
+        mean_factor = dea_chunk.mean() / ninja_chunk.mean()
+        result_dict[chunk_size].append(mean_factor)
+    
 #%% Plot time-series
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
 

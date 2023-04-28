@@ -31,8 +31,13 @@ should_n_diagram   = True
 # Main parameter series
 mp = tm.get_main_parameters()
 
+from pytictoc import TicToc
+timer = TicToc() #create instance of time class
+
+timer.tic()
+
 # Main parameters
-year        = 2030             # Choose year
+year        = 2040             # Choose year
 r           = 0.07             # Discount rate
 n_hrs       = 8760             # [hrs] Choose number of hours to simulate
 DR          = 1.3              # Detour factor
@@ -44,7 +49,7 @@ link_sum_max    = wind_cap             # Total allowed link capacity
 link_p_nom_min  = 0                    # Minimum allowed capacity for one link
 link_limit      = float('inf')     # [MW] Limit links to countries. float('inf')
 
-filename = "/base0_opt.nc" # Choose filename for export
+filename = "/" + str(year) + "_base0_opt.nc" # Choose filename for export
 
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
@@ -241,7 +246,7 @@ if should_solve:
         filename = filename
         export_path = os.getcwd() + filename
         n.export_to_netcdf(export_path)
-    
+timer.toc()    
 #%% Plot
 
 gm.set_plot_options()
