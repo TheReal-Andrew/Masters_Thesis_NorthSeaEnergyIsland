@@ -45,3 +45,4 @@ gm.solutions_2D(techs, solutions, n_samples = 100000,
 
 
 
+
