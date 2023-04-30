@@ -34,7 +34,7 @@ def get_annuity(i, n):
     annuity = i/(1.-1./(1.+i)**n)
     return annuity
 
-def get_annuity_snap(i, n, n_hrs):
+def get_annuity_snap(i, n, n_hrs = 8760):
     
     annuity = ( i/(1.-1./(1.+i)**n) ) * n_hrs/8760
     
@@ -407,6 +407,9 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
     
 def solutions_2D(techs, solutions, n_samples = 1000,
                  title = 'MAA_plot',
+                 plot_samples = False,
+                 plot_heatmap = True,
+                 bins = 25,
                  filename = None,
                  alpha = 1):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
@@ -417,6 +420,8 @@ def solutions_2D(techs, solutions, n_samples = 1000,
     from scipy.spatial import ConvexHull
     import numpy as np
     from scipy.stats import gaussian_kde
+    import matplotlib.colors as mcolors
+    import matplotlib.patches as mpatches
 
     pad = 5
 
@@ -437,8 +442,6 @@ def solutions_2D(techs, solutions, n_samples = 1000,
     # -------- Set up plot ----------------------------------------
     set_plot_options()
 
-    import matplotlib.colors as mcolors
-
     # define the endpoints of the colormap
     red    = (1.0, 0.7, 0.6)  # light red
     yellow = (1.0, 1.0, 0.8)  # light yellow
@@ -449,8 +452,9 @@ def solutions_2D(techs, solutions, n_samples = 1000,
 
     # Initialize and adjust figure
     plt.figure()
-    fig, axs = plt.subplots(len(techs), len(techs), figsize = (22,10))
+    fig, axs = plt.subplots(len(techs), len(techs), figsize = (20,15))
     fig.subplots_adjust(wspace = 0.4, hspace = 0.4)
+
 
     # Set titles
     for ax, col in zip(axs[0], techs):
@@ -511,6 +515,26 @@ def solutions_2D(techs, solutions, n_samples = 1000,
             x = solutions[:,i]
             y = solutions[:,j]
             
+            # Set x and y as samples for this dimension
+            x1 = d[:,i]
+            y1 = d[:,j]
+            
+            if plot_heatmap:
+                # ax.hexbin(x1, y1, gridsize = 25, cmap = 'Blues')
+                # Create 2D histogram
+                hist, xedges, yedges = np.histogram2d(x1, y1, bins = bins)
+
+                # Create grid for pcolormesh
+                X, Y = np.meshgrid(xedges, yedges)
+
+                # Create pcolormesh plot with square bins
+                ax.pcolormesh(X, Y, hist.T, cmap='Blues', zorder = 0)
+                
+                # Create patch to serve as hexbin label
+                hb = mpatches.Patch(color = 'tab:blue')
+                
+                ax.grid('on')
+            
             hull = ConvexHull(solutions[:,[i,j]])
             
             # plot simplexes
@@ -522,21 +546,18 @@ def solutions_2D(techs, solutions, n_samples = 1000,
             l1, = ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)
             
-            x1 = d[:,i]
-            y1 = d[:,j]
+            # plot samples
+            if plot_samples:
+                ax.plot(x1, y1, 'o', label = 'samples',
+                              alpha = alpha, zorder = 1,
+                              )
             
-            l2, = ax.plot(x1, y1, 'o', label = 'samples',
-                          alpha = alpha, zorder = 1,
-                          )
             
-            # Add correlation box
-            # ax.text(x.max(), y.max(), str(round(num,2)), ha='left', va='bottom', 
-            #         bbox={'facecolor': cmap(corr), 'alpha': 1, 'pad': 5})
 
 
     # Place legend below subplots
     ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
-    ax.legend([l0, l1, l2, ], ['Polyhedron Faces', 'Near-optimal MAA points', 'Samples', 'histogram'], 
+    ax.legend([l0, l1, hb], ['Polyhedron Faces', 'Near-optimal MAA points', 'Sample density'], 
               loc = 'center', ncol = 3,
               bbox_to_anchor=(0.5, -0.45),fancybox=False, shadow=False,)
 
@@ -608,7 +629,7 @@ def sns_heatmap(techs, solutions, triangular = False, n_samples = 1000):
 
     sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
     
-def bake_local_area_pie(n, title, exportname = None):
+def bake_local_area_pie(n, plot_title, exportname = None, ax = None):
     # Create a piechart, showing the area used by each local technology on
     # the Energy Island.
     
@@ -616,6 +637,10 @@ def bake_local_area_pie(n, title, exportname = None):
     
     def autopct_format(values, k):
         def my_format(pct):
+            
+            if pct == 0:
+                return ''
+            
             total = sum(values)
             val = int(round(pct*total/100.0))
             return '{:.1f}%\n({v:d} m$^2$)'.format(pct, v=val)
@@ -629,35 +654,48 @@ def bake_local_area_pie(n, title, exportname = None):
     
     pie_data = [P2X_a, Data_a, Store_a]
     k        = [n.area_use['hydrogen'], n.area_use['data'], n.area_use['storage']] 
-    labels   =  "P2X", "Data", "Store"
+    labels   =  None
     
-    fig, ax = plt.subplots(figsize = (6,6))
+    
+    if ax == None:
+        fig, ax  = plt.subplots(figsize = (6,6))
+        labels   =  ["P2X", "Data", "Store", "Links"]
+        
     ax.pie(pie_data, 
-           autopct = autopct_format(pie_data, k),
-           textprops={'fontsize': 10},
-           startangle=90)
+             autopct = autopct_format(pie_data, k),
+             textprops = {'fontsize': 10},
+             startangle = 90)
     
     ax.axis('equal')
     ax.margins(0, 0)
-    plt.suptitle(title, fontsize = 18)
-    plt.title(f'Area used: {total_A:.0f} m$^2$',
-              fontsize = 10,
-              pad = 6)
-    plt.legend(labels = labels)
+    ax.text(0, 1.05, f'Area used: {total_A:.0f} m$^2$', ha='center', fontsize=10)
     
-    if not exportname == None:
+    ax.set_title(plot_title,
+              fontsize = 16,
+              pad = 20)
+    
+    if not labels == None:
+       ax.legend(labels = labels, 
+                 loc = 'center', ncol = 3,
+                 bbox_to_anchor=(0.5, -0.1), fancybox=False, shadow=False,)
+    
+    if not exportname == None and ax == None:
         fig.savefig(exportname, format = 'pdf', bbox_inches='tight')
         
-def bake_capacity_pie(n, title, exportname = None):
+def bake_capacity_pie(n, plot_title, exportname = None, ax = None):
     # Create a piechart, showing the capacity of all links and local demand.
     
     import matplotlib.pyplot as plt
     
     def autopct_format(values):
         def my_format(pct):
+            
+            if pct == 0:
+                return ''
+            
             total = sum(values)
-            val = int(round(pct*total/100.0))
-            return '{:.1f}%\n({v:d} m$^2$)'.format(pct, v=val)
+            val   = int(round(pct*total/100.0))
+            return '{:.1f}% \n ({v:d} MW)'.format(pct, v=val)
         return my_format
     
     P2X_capacity   = n.generators.p_nom_opt["P2X"]      # [MW]
@@ -669,9 +707,12 @@ def bake_capacity_pie(n, title, exportname = None):
     total_capacity = P2X_capacity + data_capacity + store_capacity + links_capacity
     
     pie_data = [P2X_capacity, data_capacity, store_capacity, links_capacity]
-    labels   =  "P2X", "Data", "Store", 'links'
+    labels   =  None
     
-    fig, ax = plt.subplots(figsize = (6,6))
+    if ax == None:
+        fig, ax  = plt.subplots(figsize = (6,6))
+        labels   =  ["P2X", "Data", "Store", "Links"]
+        
     ax.pie(pie_data, 
            autopct = autopct_format(pie_data),
            textprops={'fontsize': 10},
@@ -679,11 +720,16 @@ def bake_capacity_pie(n, title, exportname = None):
     
     ax.axis('equal')
     ax.margins(0, 0)
-    plt.suptitle(title, fontsize = 18)
-    plt.title(f'Total installed capacity: {total_capacity:.0f} MW/MWh',
-              fontsize = 10,
-              pad = 6)
-    plt.legend(labels = labels)
+    ax.text(0, 1.05, f'Total capacity: {round(total_capacity,2)} MW', ha='center', fontsize=10)
+    
+    ax.set_title(plot_title,
+              fontsize = 16,
+              pad = 20)
+    
+    if not labels == None:
+       ax.legend(labels = labels, 
+                 loc = 'center', ncol = 4,
+                 bbox_to_anchor=(0.5, -0.1), fancybox=False, shadow=False,)
     
     if not exportname == None:
         fig.savefig(exportname, format = 'pdf', bbox_inches='tight')

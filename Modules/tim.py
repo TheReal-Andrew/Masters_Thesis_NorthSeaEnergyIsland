@@ -19,9 +19,13 @@ def get_main_parameters():
                         2050 : [10000, 0.5*120_000 + 0.8*340_000],},
                        index = ['wind', 'island_area'])
     
+    mp_gen  = pd.Series( {'discount_rate': 0.07,
+                          'detour_factor': 1.3,
+                          } )
+    
     # Source: https://kefm.dk/Media/4/A/faktaark%20om%20Energi%C3%B8.pdf
     
-    return mp
+    return mp, mp_gen
 
 #%% ---- COUNTRY LOAD AND PRICES ----
 def get_load_and_price(year = 2030, connected_countries = ['Denmark'], n_std = 1): # require year
@@ -135,6 +139,18 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     hydrogen_data = hydrogen_data[2:29]             # Get only relevant data
     hydrogen_data = hydrogen_data[year]
     
+    # Hydrogen pipe
+    hydrogen_transport = (pd.read_excel(r'../../data/costs/energy_transport_datasheet.xlsx',
+                          sheet_name = 'H2 140',
+                          skiprows = [0, 1], # Drop initial empty columns
+                          usecols = 'B:E')
+                          .dropna(axis = 1, how = 'all').dropna(axis = 0, how = 'all')
+                          .set_index('Technology') # set index
+                          )
+    
+    # Get data for desired year
+    hydrogen_transport = hydrogen_transport[year]   
+    
     # ----- Wind -----
     wind_data = (pd.read_excel(r'../../data/costs/technology_data_for_el_and_dh.xlsx',
                                  sheet_name = '21 Offshore turbines',
@@ -157,10 +173,16 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
     mc_wind       = wind_data['Financial data']['Variable O&M (*total) [2020-EUR/MWh_e]']   # [euro/MWh] From Energistyrelsen
     
     # ----- hydrogen -----
+    cc_hydrogen_pipe = (gm.get_annuity(0.07, hydrogen_transport['Technical life time (years)']) 
+                        * hydrogen_transport['Investment costs; single line, 1000-4000 MW (EUR/MW/m)']*1000*100 
+                        +  (hydrogen_transport['Fixed O&M (EUR/km/year/MW)']*100)
+                        ) # [Eur/MW]
+    
     cc_hydrogen   = (gm.get_annuity_snap(r, hydrogen_data['Technical lifetime (years)'], n_hrs)
                      * hydrogen_data['Specific investment (€ / kW of total input_e)'] * 1e3
                      * (1+ (hydrogen_data['Fixed O&M (% of specific investment / year) ']*0.01))
-                     ) # [euro/MW]  From Energistyrelsen
+                      + cc_hydrogen_pipe 
+                     ) # [Eur/MW]  From Energistyrelsen
     
     mc_hydrogen   = 42.6 # [euro/MWh] Revenue - Lazard LCOE converted using H2 LHV
     
@@ -169,14 +191,16 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
                           * storage_data['Specific investment (M€2015 per MWh)'] * 1e6 # Investment
                           + storage_data['Fixed O&M (k€2015/MW/year)'] * 1e3 # O&M
                           ) # [euro/MWh] From Energistyrelsen
-    mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [euro/MWh]  From Energistyrelsen
+    mc_storage    = (storage_data['Variable O&M (€2015/MWh)']) # [Eur/MWh]  From Energistyrelsen
     
     # ----- datacenter -----
+    
     cc_datacenter = (gm.get_annuity_snap(r, 5, n_hrs) #Lifetime: https://blog.cirkla.tech/2022/05/13/taking-a-look-at-the-lifespan-of-a-data-centre/
-                        * (3.8e7)
-                        * (1 + 0.02)
-                        ) # [euro/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
-    mc_datacenter = 2023.6  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr
+                        * (3.8e7)      # [Eur/MW] Hardware: https://www.thinkmate.com/system/gigabyte-h273-z82-(rev.-aaw1)
+                        * (1 + 0.02)   # Assumed 2% fixed O&M
+                        ) # [Eur/MW]
+    
+    mc_datacenter = 2023.6  # [euro/MWh] https://genome.au.dk/ gives DKK/CPUhr, see report for full method.
     
     # ----- link -----
     # Link, based on pypsa tech data. cc returns capital cost per km!
