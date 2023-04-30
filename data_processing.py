@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
+# Add modules folder to path
+os.chdir(os.path.join(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath('modules')) 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import modules.island_plt as ip
+import island_plt as ip
 import datetime
 ip.set_plot_options()
 from scipy import integrate
@@ -124,19 +128,36 @@ x = int(num)
 wind_data[h] = y1+(x-x1)*((y2-y1)/(x2-x1))
 
 #%% Cross validate
+from sklearn.metrics import mean_squared_error
 
-chunk_list = [24, 24*7, 24*7*4]
-result_dict = {key: [] for key in chunk_list}
+data1 = wind_data[h].copy()
+data2 = cut_wind_ninja.copy()
 
-#%%
-for chunk_size in chunk_list:
-    for i in range(len(wind_data[h])):
+step_sizes = np.arange(1,len(wind_data[h]))
 
-        dea_chunk   = wind_data[h][i*chunk_size:i*chunk_size+chunk_size].values
-        ninja_chunk = cut_wind_ninja['wind_speed'][i*chunk_size:i*chunk_size+chunk_size].values
-        mean_factor = dea_chunk.mean() / ninja_chunk.mean()
-        result_dict[chunk_size].append(mean_factor)
+# step_sizes = [24,168,672]
+mse = []
+coef = []
+
+for step_size in step_sizes:
+    print("Chunk size = " + str(step_size))
+    chunks_dea   = [data1[x:x+step_size] for x in range(0, len(data1), step_size)]
+    chunks_ninja = [data2[x:x+step_size] for x in range(0, len(data2), step_size)]
     
+    for i in range(len(chunks_dea)):
+        filtered_dea = data1.copy().drop(chunks_dea[i].index)
+        filtered_ninja = data2.copy().drop(chunks_ninja[i].index)
+        
+        coef.append(chunks_dea[i].mean()/chunks_ninja[i].mean())
+        
+        predict = filtered_ninja * coef[i]
+        
+        mse.append(mean_squared_error(filtered_dea, predict))
+    
+coef_opt = coef[mse.index(min(mse))]
+print("Coef_opt = " + str(coef_opt))
+print("MSE index = " + str(mse.index(min(mse))) + ", MSE = " + str(min(mse)))
+
 #%% Plot time-series
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
 
@@ -177,7 +198,8 @@ ax.text(1.01, 0.70,
                 )
 
 #%% Mean correction
-full_wind_mean = full_wind_ninja/full_wind_ninja.mean() * wind_data[h].mean()
+# full_wind_mean = full_wind_ninja/full_wind_ninja.mean() * wind_data[h].mean()
+full_wind_mean = coef_opt * full_wind_ninja
 
 #Initialize new dataframe for mean_cut time series
 cut_wind_ninja_mean = pd.DataFrame(0, index=np.arange(len(wind_data.index)), columns=['time','wind_speed'])
