@@ -133,7 +133,7 @@ from sklearn.metrics import mean_squared_error
 data1 = wind_data[h].copy()
 data2 = cut_wind_ninja.copy()
 
-step_sizes = np.arange(1,len(wind_data[h]))
+step_sizes = np.arange(24,int(len(np.ceil(wind_data[h])/2)))
 
 # step_sizes = [24,168,672]
 mse = []
@@ -199,7 +199,8 @@ ax.text(1.01, 0.70,
 
 #%% Mean correction
 # full_wind_mean = full_wind_ninja/full_wind_ninja.mean() * wind_data[h].mean()
-full_wind_mean = coef_opt * full_wind_ninja
+full_wind_mean =  coef_opt * full_wind_ninja
+# full_wind_mean =  1.04 * full_wind_ninja
 
 #Initialize new dataframe for mean_cut time series
 cut_wind_ninja_mean = pd.DataFrame(0, index=np.arange(len(wind_data.index)), columns=['time','wind_speed'])
