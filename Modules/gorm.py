@@ -405,10 +405,12 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
         projection=ccrs.EqualEarth()    #Choose cartopy.crs projection
         )
     
-def solutions_2D(techs, solutions, n_samples = 1000,
+def solutions_2D(techs, solutions,
+                 n_samples = 1000,
                  title = 'MAA_plot',
                  plot_samples = False,
                  plot_heatmap = True,
+                 cmap = 'Blues',
                  bins = 25,
                  filename = None,
                  alpha = 1):
@@ -441,7 +443,9 @@ def solutions_2D(techs, solutions, n_samples = 1000,
 
     # -------- Set up plot ----------------------------------------
     set_plot_options()
-
+    
+    text_lift = 1.075
+    
     # define the endpoints of the colormap
     red    = (1.0, 0.7, 0.6)  # light red
     yellow = (1.0, 1.0, 0.8)  # light yellow
@@ -454,7 +458,6 @@ def solutions_2D(techs, solutions, n_samples = 1000,
     plt.figure()
     fig, axs = plt.subplots(len(techs), len(techs), figsize = (20,15))
     fig.subplots_adjust(wspace = 0.4, hspace = 0.4)
-
 
     # Set titles
     for ax, col in zip(axs[0], techs):
@@ -483,7 +486,7 @@ def solutions_2D(techs, solutions, n_samples = 1000,
             corr_text = str(round(num,2))
             ax.text(0.5, 0.5, corr_text, ha='center', va='center', fontsize=20)
             
-            ax.text(0.5, 1.1, 'Correlation', ha='center', va='top',
+            ax.text(0.5, text_lift, 'Correlation', ha='center', va='top',
                     transform=ax.transAxes, fontsize = 16, color = 'gray')
             
             # Change bg color according to correlation
@@ -499,7 +502,7 @@ def solutions_2D(techs, solutions, n_samples = 1000,
                             color = 'tab:purple', rwidth = 0.9,
                             label = 'histogram')
         
-        ax.text(0.5, 1.1, 'Histogram', ha='center', va='top', 
+        ax.text(0.5, text_lift, 'Histogram', ha='center', va='top', 
                 transform=ax.transAxes, fontsize = 16, color = 'gray')
 
 
@@ -509,7 +512,7 @@ def solutions_2D(techs, solutions, n_samples = 1000,
             
             ax = axs[j][i]
             
-            ax.text(0.5, 1.1, 'Scatter plot with vertices', ha='center', va='top',
+            ax.text(0.5, text_lift, 'Scatter plot with vertices', ha='center', va='top',
                     transform=ax.transAxes, fontsize=16, color = 'gray')
             
             x = solutions[:,i]
@@ -526,14 +529,20 @@ def solutions_2D(techs, solutions, n_samples = 1000,
 
                 # Create grid for pcolormesh
                 X, Y = np.meshgrid(xedges, yedges)
-
+                
                 # Create pcolormesh plot with square bins
-                ax.pcolormesh(X, Y, hist.T, cmap='Blues', zorder = 0)
+                ax.pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
                 
                 # Create patch to serve as hexbin label
                 hb = mpatches.Patch(color = 'tab:blue')
                 
                 ax.grid('on')
+                
+            # plot samples
+            if plot_samples:
+                 ax.plot(x1, y1, 'o', label = 'samples',
+                               alpha = alpha, zorder = 1,
+                               )
             
             hull = ConvexHull(solutions[:,[i,j]])
             
@@ -546,20 +555,12 @@ def solutions_2D(techs, solutions, n_samples = 1000,
             l1, = ax.plot(x, y,
                       'o', label = "Near-optimal", zorder = 2)
             
-            # plot samples
-            if plot_samples:
-                ax.plot(x1, y1, 'o', label = 'samples',
-                              alpha = alpha, zorder = 1,
-                              )
-            
-            
-
 
     # Place legend below subplots
     ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
     ax.legend([l0, l1, hb], ['Polyhedron Faces', 'Near-optimal MAA points', 'Sample density'], 
               loc = 'center', ncol = 3,
-              bbox_to_anchor=(0.5, -0.45),fancybox=False, shadow=False,)
+              bbox_to_anchor=(0.5, -0.25),fancybox=False, shadow=False,)
 
     fig.suptitle(title, fontsize = 24)
 

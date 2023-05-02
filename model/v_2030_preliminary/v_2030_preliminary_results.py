@@ -29,9 +29,9 @@ solutions = np.load('v_2030_preliminary_3MAA_10p_solutions.npy')
 techs = ['P2X', 'Data', 'Store1']
 
 gm.solutions_2D(techs, solutions, n_samples = 100000,
-                alpha = 0.005,
                 title = '2D plot of 3D MAA space',
-                filename = 'v_2030_preliminary_3MAA_10p_plot_2D_MAA.pdf')
+                filename = 'v_2030_preliminary_3MAA_10p_plot_2D_MAA.pdf'
+                )
 
 
 
