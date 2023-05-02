@@ -9,7 +9,7 @@ import os
 import sys
 # Add modules folder to path
 os.chdir(os.path.join(os.path.dirname(__file__)))
-sys.path.append(os.path.abspath('../../modules')) 
+sys.path.append(os.path.abspath('../../../modules')) 
 
 import pypsa
 import numpy as np
@@ -28,7 +28,7 @@ Should_MAA   = True
 
 year       = 2040
 mga_slack  = 0.1   # MAA slack control
-study_name = 'preliminary'
+study_name = 'preliminary_nac'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
@@ -40,9 +40,9 @@ variables = {
                 # 'x6':('Link',      'link_Belgium'),
             }
 
-input_name        = f'v_{year}_{study_name}_nac_opt.nc'
-MAA_network_names = f'v_{year}_{study_name}_{len(variables)}MAA_nac_{int(mga_slack*100)}p_'
-MAA_solutions     = f'v_{year}_{study_name}_{len(variables)}MAA_nac_{int(mga_slack*100)}p_'
+input_name        = f'v_{year}_{study_name}_opt.nc'
+MAA_network_names = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
+MAA_solutions     = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 
 #%% Load and copy network
 
@@ -172,86 +172,17 @@ if Should_MAA:
 
     np.save(MAA_solutions + 'solutions.npy', solutions)
 
-#%% 2D Subplots
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
-gm.solutions_2D(techs, solutions, n_samples = 10000)
+#%% 2D Subplots
 
-gm.solutions_heatmap2(techs, solutions)
+dim = str(solutions.shape[1])
 
-d = gm.sample_in_hull(solutions)
+gm.solutions_2D(techs, solutions, n_samples = 100000,
+                title = '2D plot of '+dim+'D MAA space, for model without area constraint',
+                filename = '2D_MAA_plot.pdf',
+                )
 
-d_df = pandas.DataFrame(d,
-                        columns = techs)
-
-#%% Samples dataframe and normalization
-d = gm.sample_in_hull(solutions, n = 100000)
-
-d_df = pandas.DataFrame(d,
-                        columns = techs)
-
-d_df.hist(bins = 50)
-
-#%% 2D Plot
-
-if Should_MAA and solutions.shape[1] == 2:
-    hull = ConvexHull(solutions)
-    
-    plt.figure(figsize = (8,4))
-    
-    x = solutions[:,0]
-    y = solutions[:,1]
-    
-    for simplex in hull.simplices:
-    
-        plt.plot(solutions[simplex, 0], solutions[simplex, 1], 'k-')
-    
-    plt.plot(x, y,
-              'o', label = "Near-optimal")
-    
-    plt.plot(d[:,0], d[:,1], 'o', label = 'samples')
-    
-    #Plot optimal
-    plt.plot(n_optimum.generators.p_nom_opt["P2X"], 
-              n_optimum.generators.p_nom_opt["Data"],
-              '.', markersize = 20, label = "Optimal")
-    plt.xlabel("P2X capacity [MW]")
-    plt.ylabel("Data capacity [MW]")
-    plt.suptitle('MAA Analysis', fontsize = 18)
-    plt.title(f'With MGA slack = {mga_slack}', fontsize = 10)
-    
-    plt.legend()
-
-
-#%% 3D plot
-
-if Should_MAA and solutions.shape[1] >= 3:
-    xi = solutions[:,0]
-    yi = solutions[:,1]
-    zi = solutions[:,2]
-    
-    fig = plt.figure()
-    
-    colors = ['tab:blue', 'tab:red', 'aliceblue']
-    ax = plt.axes(projection = '3d')
-    
-    ax.set_xlabel(variables[list(variables)[0]][1])
-    ax.set_ylabel(variables[list(variables)[1]][1])
-    ax.set_zlabel(variables[list(variables)[2]][1])
-    
-    # Points
-    ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
-    
-    # Define hull and edges
-    hull = ConvexHull(solutions)
-    edges = zip(*solutions)
-    
-    # Plot trisurface  
-    trisurface = ax.plot_trisurf(xi, yi, zi, triangles=hull.simplices,
-                          alpha=0.8, color = colors[0],
-                          edgecolor = colors[2], linewidth = 3)
-    
-# fig.savefig('hull_plot_test1.svg', format = 'pdf', bbox_inches='tight')
 
 #%%
 gm.its_britney_bitch(r'C:\Users\lukas\Documents\GitHub\Masters_Thesis_NorthSeaEnergyIsland\data\Sounds')

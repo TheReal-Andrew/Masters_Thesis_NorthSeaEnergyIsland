@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 26 09:23:17 2023
+Created on Wed Apr 26 13:19:05 2023
 
 @author: lukas
 """
+
+#%% Import
 
 import os
 import sys
@@ -12,36 +14,28 @@ os.chdir(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
-from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
-import pandas as pd
 import numpy as np
+import pandas as pd
+from scipy.spatial import ConvexHull
+import matplotlib.pyplot as plt
 
 import gorm as gm
 import tim as tm
-import pypsa_diagrams as pdiag
-import matplotlib.pyplot as plt
-
+from ttictoc import tic,toc
 gm.set_plot_options()
 
-#%%
+#%% Results
 
-solutions2 = np.load('MAA_solutions.npy')
-techs2 = ['P2X', 'Data', 'Store1']
+solutions = np.load('v_2030_preliminary_nac_3MAA_10p_solutions.npy')
 
-d = gm.sample_in_hull(solutions2, n = 10000)
+n_opt = pypsa.Network('v_2030_preliminary_nac_opt.nc')
 
-# d_df = pd.DataFrame(d,
-#                     columns = techs2)
-
-# ds = d_df.sort_values('Data')
-
-# ds2 = d_df.sort_values('P2X')
-
-# ds3 = d_df.sort_values('Store1')
-
-# gm.solutions_2D(techs, solutions, n_samples = 1000)
+techs = ['P2X', 'Data', 'Store1']
 
 #%%
+gm.solutions_2D(techs, solutions, n_samples = 100000,
+                title = '2D plot of 3D MAA space, without area constraint',
+                filename = 'v_2030_preliminary_nac_3MAA_10p_plot_2D_MAA.pdf',
+                )
 
-d_corr = d_df.corr()
 
