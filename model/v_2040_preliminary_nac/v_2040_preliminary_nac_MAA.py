@@ -9,7 +9,7 @@ import os
 import sys
 # Add modules folder to path
 os.chdir(os.path.join(os.path.dirname(__file__)))
-sys.path.append(os.path.abspath('../../../modules')) 
+sys.path.append(os.path.abspath('../../modules')) 
 
 import pypsa
 import numpy as np
@@ -28,7 +28,7 @@ Should_MAA   = True
 
 year       = 2040
 mga_slack  = 0.1   # MAA slack control
-study_name = 'preliminary_nac'
+study_name = 'local_nac'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
@@ -141,6 +141,7 @@ if Should_MAA:
     
     solutions = np.empty(shape=[0,dim])
     
+    j = 0
     while epsilon>MAA_convergence_tol:
     
         if len(solutions) <= 1:
@@ -157,12 +158,15 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            n.export_to_netcdf(MAA_network_names + str(i) + '.nc')
+            n.export_to_netcdf(MAA_network_names + str(j)+ '-'+ str(i) +  + '.nc')
+            print(f'\n #### Exported MAA network: {j}'-'{i} #### \n for directions: {len(directions)} \n')
     
         try:
             hull = ConvexHull(solutions)
         except Exception as e:
             print(e)
+            
+        j += 1
     
         delta_v = hull.volume - old_volume
         old_volume = hull.volume
@@ -176,12 +180,8 @@ print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variabl
 
 #%% 2D Subplots
 
-dim = str(solutions.shape[1])
-
-gm.solutions_2D(techs, solutions, n_samples = 100000,
-                title = '2D plot of '+dim+'D MAA space, for model without area constraint',
-                filename = '2D_MAA_plot.pdf',
-                )
+gm.solutions_2D(techs, solutions, n_samples = 10000,
+                alpha = 0.1)
 
 
 #%%
