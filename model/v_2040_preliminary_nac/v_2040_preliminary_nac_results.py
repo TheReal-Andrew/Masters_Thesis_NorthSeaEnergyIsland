@@ -25,23 +25,24 @@ gm.set_plot_options()
 
 #%%
 
-solutions2 = np.load('MAA_solutions.npy')
-techs2 = ['P2X', 'Data', 'Store1']
+solutions = np.load('')
+techs = ['P2X', 'Data', 'Store1']
 
-d = gm.sample_in_hull(solutions2, n = 10000)
+gm.solutions_2D(techs, solutions, n_samples = 1000,
+                title = '2D plot of 3D MAA space',
+                filename = 'v_2040_preliminary_3MAA_10p_plot_2D_MAA.pdf'
+                )
 
-# d_df = pd.DataFrame(d,
-#                     columns = techs2)
 
-# ds = d_df.sort_values('Data')
 
-# ds2 = d_df.sort_values('P2X')
 
-# ds3 = d_df.sort_values('Store1')
 
-# gm.solutions_2D(techs, solutions, n_samples = 1000)
 
-#%%
 
-d_corr = d_df.corr()
+
+
+
+
+
+
 

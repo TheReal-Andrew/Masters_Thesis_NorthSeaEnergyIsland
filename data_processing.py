@@ -133,7 +133,7 @@ from sklearn.metrics import mean_squared_error
 data1 = wind_data[h].copy()
 data2 = cut_wind_ninja.copy()
 
-step_sizes = np.arange(24,int(len(np.ceil(wind_data[h])/2)))
+step_sizes = np.arange(2000,int(len(np.ceil(wind_data[h])/2)))
 
 # step_sizes = [24,168,672]
 mse = []

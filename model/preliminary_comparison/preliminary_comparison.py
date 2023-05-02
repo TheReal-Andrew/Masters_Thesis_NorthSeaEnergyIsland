@@ -28,12 +28,12 @@ gm.set_plot_options()
 
 # Load MAA solutions
 techs = techs = ['P2X', 'Data', 'Store1']
-solutions_2030 = np.load('../v_2030_preliminary/v_2030_preliminary_3MAA_10p_solutions.npy')
+solutions_2030 = np.load('../v_2030_preliminary/OLD_results_2023_01_05/v_2030_preliminary_3MAA_10p_solutions.npy')
 solutions_2030_nac = np.load('../v_2030_preliminary_nac/v_2030_preliminary_nac_3MAA_10p_solutions.npy')
 solutions_2040 = np.load('../v_2040_preliminary/v_2040_preliminary_3MAA_10p_solutions.npy')
 
 # Load 2030 optimal networks
-n_2030     = pypsa.Network('../v_2030_preliminary/v_2030_preliminary_opt.nc')
+n_2030     = pypsa.Network('../v_2030_preliminary/OLD_results_2023_01_05/OLD_WIND__v_2030_preliminary_opt.nc')
 n_2030_nac = pypsa.Network('../v_2030_preliminary_nac/v_2030_preliminary_nac_opt.nc')
 
 #Load 2040 optimal networks
@@ -118,8 +118,8 @@ import matplotlib.patches as mpatches
 
 sol_list    = [
                 solutions_2030, 
-                # solutions_2040,
-                solutions_2030_nac
+                solutions_2040,
+                # solutions_2030_nac
                ]
 colors_list = [
                 'tab:blue', 

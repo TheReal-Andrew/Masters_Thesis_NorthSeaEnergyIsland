@@ -25,12 +25,22 @@ gm.set_plot_options()
 
 #%%
 
-solutions = np.load('v_2040_preliminary_3MAA_10p_solutions.npy')
+solutions = np.load('')
 techs = ['P2X', 'Data', 'Store1']
 
-gm.solutions_2D(techs, solutions, n_samples = 10000,
+gm.solutions_2D(techs, solutions, n_samples = 1000,
                 title = '2D plot of 3D MAA space',
-                filename = 'v_2030_preliminary_3MAA_10p_2D_MAA_plot.pdf')
+                filename = 'v_2040_preliminary_3MAA_10p_plot_2D_MAA.pdf'
+                )
+
+
+
+
+
+
+
+
+
 
 
 

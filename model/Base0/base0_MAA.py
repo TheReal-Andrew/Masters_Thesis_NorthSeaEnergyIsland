@@ -32,7 +32,7 @@ study_name = 'base0'
 variables = {
                 'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
-                # 'x3':('Store',     'Store1'),
+                'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_sum'),
                 # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
@@ -140,6 +140,7 @@ computations = 0
 
 solutions = np.empty(shape=[0,dim])
 
+j = 0
 while epsilon>MAA_convergence_tol:
 
     if len(solutions) <= 1:
@@ -152,16 +153,19 @@ while epsilon>MAA_convergence_tol:
     i = 0
     
     for direction_i in directions:
-        i = i + 1
+        i += 1
         res = search_direction(direction_i,mga_variables)
         solutions = np.append(solutions,np.array([res]),axis=0)
         
-        n.export_to_netcdf(MAA_network_names + str(i) + '.nc')
+        n.export_to_netcdf(MAA_network_names + str(j)+ '-'+ str(i) +  + '.nc')
+        print(f'\n #### Exported MAA network: Loop {j}, direction {i} #### \n Directions in this loop: {len(directions)} \n')
 
     try:
         hull = ConvexHull(solutions)
     except Exception as e:
         print(e)
+
+    j += 1
 
     delta_v = hull.volume - old_volume
     old_volume = hull.volume

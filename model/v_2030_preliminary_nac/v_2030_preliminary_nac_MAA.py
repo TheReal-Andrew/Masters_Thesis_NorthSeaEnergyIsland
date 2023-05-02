@@ -26,11 +26,9 @@ gm.set_plot_options()
 
 Should_MAA   = True
 
-input_name      = 'v_2030_preliminary_nac_opt.nc'
-MAA_export_name = 'v_2030_preliminary_nac_3MAA_10p'
-
 year       = 2030
 mga_slack  = 0.1   # MAA slack control
+study_name = 'preliminary'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
@@ -41,6 +39,10 @@ variables = {
                 # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
             }
+
+input_name        = f'v_{year}_{study_name}_opt.nc'
+MAA_network_names = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
+MAA_solutions     = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 
 #%% Load and copy network
 
@@ -155,7 +157,7 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            n.export_to_netcdf(MAA_export_name + str(i) + '.nc')
+            n.export_to_netcdf(MAA_network_names + str(i) + '.nc')
     
         try:
             hull = ConvexHull(solutions)
@@ -168,7 +170,7 @@ if Should_MAA:
         print('####### EPSILON ###############')
         print(epsilon)
 
-    np.save(MAA_export_name + '_numpy', solutions)
+    np.save(MAA_solutions + 'solutions.npy', solutions)
 
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
@@ -176,48 +178,11 @@ print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variabl
 
 dim = str(solutions.shape[1])
 
-gm.solutions_2D(techs, solutions, n_samples = 1000,
+gm.solutions_2D(techs, solutions, n_samples = 100000,
                 title = '2D plot of '+dim+'D MAA space, for model without area constraint',
                 filename = '2D_MAA_plot.pdf',
                 )
 
-
-#%% 3D plot
-
-gm.solutions_3D(techs, solutions)
-
-#%%
-
-if solutions.shape[1] == 3:
-    xi = solutions[:,0]
-    yi = solutions[:,1]
-    zi = solutions[:,2]
-    
-    fig = plt.figure()
-    
-    colors = ['tab:blue', 'tab:red', 'aliceblue']
-    ax = plt.axes(projection = '3d')
-    
-    ax.set_xlabel(techs[0])
-    ax.set_ylabel(techs[1])
-    ax.set_zlabel(techs[2])
-    
-    # Points
-    # ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
-    
-    # Define hull and edges
-    hull = ConvexHull(solutions)
-    edges = zip(*solutions)
-    
-    # Plot trisurface  
-    trisurface = ax.plot_trisurf(xi, yi, zi, 
-                                 triangles=hull.simplices,
-                                 alpha=0.8, color = colors[0],
-                                 edgecolor = colors[2], linewidth = 3)
-    
-    ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
-    
-# fig.savefig('hull_plot_test1.svg', format = 'pdf', bbox_inches='tight')
 
 #%%
 gm.its_britney_bitch(r'C:\Users\lukas\Documents\GitHub\Masters_Thesis_NorthSeaEnergyIsland\data\Sounds')

@@ -149,8 +149,8 @@ def get_tech_data(year = 2030, r = 0.07, n_hrs = 8760) :
                           )
     
     # Get data for desired year
-    hydrogen_transport = hydrogen_transport[year]   
-    
+    hydrogen_transport = hydrogen_transport[2030] # Always use 2030, since no 2040 data available
+   
     # ----- Wind -----
     wind_data = (pd.read_excel(r'../../data/costs/technology_data_for_el_and_dh.xlsx',
                                  sheet_name = '21 Offshore turbines',

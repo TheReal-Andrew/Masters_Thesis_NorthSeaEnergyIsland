@@ -14,17 +14,18 @@ ip.set_plot_options()
 from matplotlib.ticker import (MultipleLocator)
 from pytictoc import TicToc
 t = TicToc() #create instance of time class
+t_loop = TicToc() #create instance of time class
 
 #%% Control
 year       = 2040
-input_name = '../Base0/' + str(year) +'_base0_opt.nc'
+input_name = '../Base0/v_' + str(year) +'_base0_opt.nc'
 
 #%% Set up network and load in data
 n = pypsa.Network(input_name) #Load network from netcdf file
 
 # ----- data ---------
 n.area_use      = tm.get_area_use()
-n.total_area    = tm.get_main_parameters()[year]['island_area']
+n.total_area    = tm.get_main_parameters()[0][year]['island_area']
 n.link_sum_max  = n.generators.p_nom_max['Wind']
 n.main_links    = n.links[~n.links.index.str.contains("bus")].index
 
@@ -79,7 +80,7 @@ if cc_mode == True:
     for i, component in enumerate(cc_components):
         
         for cc in cc_ranges[component]:
-            
+            t_loop.tic()
             print('')
             print('########################################')
             print('CC study number: ' + str(current_cc_n_study) + ' out of ' + str(cc_n_studies))
@@ -90,7 +91,7 @@ if cc_mode == True:
             
             # ----- data ---------
             n.area_use      = tm.get_area_use()
-            n.total_area    = tm.get_main_parameters()[year]['island_area']
+            n.total_area    = tm.get_main_parameters()[0][year]['island_area']
             n.link_sum_max  = n_opt.generators.p_nom_max['Wind']
             n.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
             
@@ -127,6 +128,13 @@ if cc_mode == True:
             # Update count of the number of studies done
             current_cc_n_study = current_cc_n_study + 1
             
+            #Estimate time left
+            print('')
+            print('########################################')
+            print('Estimated time left of CC study: ' + str((cc_n_studies-current_cc_n_study)*t_loop.tocvalue()) + str(" seconds"))
+            print('########################################')
+            print('')
+            
         # save dictionary to person_data.pkl file
     with open(str(year) +'_cc_sensitivity_cap.pkl', 'wb') as fp:
         pickle.dump(cc_sensitivity_cap, fp)
@@ -150,6 +158,7 @@ if mc_mode == True:
     for i, component in enumerate(mc_components):
         
         for mc in mc_ranges[component]:
+            t_loop.tic()
             
             print('')
             print('########################################')
@@ -161,7 +170,7 @@ if mc_mode == True:
             
             # ----- data ---------
             n.area_use      = tm.get_area_use()
-            n.total_area    = tm.get_main_parameters()[year]['island_area']
+            n.total_area    = tm.get_main_parameters()[0][year]['island_area']
             n.link_sum_max  = n_opt.generators.p_nom_max['Wind']
             n.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
             
@@ -196,6 +205,16 @@ if mc_mode == True:
             
             # Store optimum system price
             mc_sensitivity_cap[component]['Optimum'].append(n.objective)
+            
+            # Update count of the number of studies done
+            current_mc_n_study = current_mc_n_study + 1
+            
+            #Estimate time left
+            print('')
+            print('########################################')
+            print('Estimated time left of MC study: ' + str((mc_n_studies-current_mc_n_study)*t_loop.tocvalue()) + str(" seconds"))
+            print('########################################')
+            print('')
             
     # save dictionary to person_data.pkl file
     with open(str(year) +'_mc_sensitivity_cap.pkl', 'wb') as fp:

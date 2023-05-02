@@ -31,7 +31,7 @@ should_n_diagram   = False
 
 # ---- User parameters - change this ------------------
 project_name = 'base0'
-year         = 2030             # Choose year
+year         = 2040             # Choose year
 
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [
@@ -87,11 +87,19 @@ tech_df         = tm.get_tech_data(year, r)
 # ----- Area use data ---------
 area_use        = tm.get_area_use()
 
+# ----- Leap year fix -----
+# 2040 is a leap year, so has 8784 hours. 2041 is used for the snapshots if the 
+# year is 2040, so there are still 8760 hours.
+if year == 2040:
+    add = 1
+else:
+    add = 0
+
 #%% ------- NETWORK -----------------------------------------------------------
 
 # ----- initialize network ---------
 n = pypsa.Network()
-t = pd.date_range(f'{year}-01-01 00:00', f'{year}-12-31 23:00', freq = 'H')
+t = pd.date_range(f'{year+add}-01-01 00:00', f'{year+add}-12-31 23:00', freq = 'H')
 n.set_snapshots(t)
 
 # Add data to network for easier access when creating constraints
