@@ -31,7 +31,7 @@ should_n_diagram   = False
 
 # ---- User parameters - change this ------------------
 project_name = 'base0'
-year         = 2030             # Choose year
+year         = 2040             # Choose year
 
 # Choose which countries to include of this list, comment unwanted out.
 connected_countries =  [

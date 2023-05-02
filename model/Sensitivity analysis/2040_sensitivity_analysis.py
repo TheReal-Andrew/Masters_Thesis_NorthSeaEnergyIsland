@@ -14,6 +14,7 @@ ip.set_plot_options()
 from matplotlib.ticker import (MultipleLocator)
 from pytictoc import TicToc
 t = TicToc() #create instance of time class
+t_loop = TicToc() #create instance of time class
 
 #%% Control
 year       = 2040
@@ -79,7 +80,7 @@ if cc_mode == True:
     for i, component in enumerate(cc_components):
         
         for cc in cc_ranges[component]:
-            
+            t_loop.tic()
             print('')
             print('########################################')
             print('CC study number: ' + str(current_cc_n_study) + ' out of ' + str(cc_n_studies))
@@ -127,6 +128,13 @@ if cc_mode == True:
             # Update count of the number of studies done
             current_cc_n_study = current_cc_n_study + 1
             
+            #Estimate time left
+            print('')
+            print('########################################')
+            print('Estimated time left of CC study: ' + str((cc_n_studies-current_cc_n_study)*t_loop.tocvalue()) + str(" seconds"))
+            print('########################################')
+            print('')
+            
         # save dictionary to person_data.pkl file
     with open(str(year) +'_cc_sensitivity_cap.pkl', 'wb') as fp:
         pickle.dump(cc_sensitivity_cap, fp)
@@ -150,6 +158,7 @@ if mc_mode == True:
     for i, component in enumerate(mc_components):
         
         for mc in mc_ranges[component]:
+            t_loop.tic()
             
             print('')
             print('########################################')
@@ -199,6 +208,13 @@ if mc_mode == True:
             
             # Update count of the number of studies done
             current_mc_n_study = current_mc_n_study + 1
+            
+            #Estimate time left
+            print('')
+            print('########################################')
+            print('Estimated time left of MC study: ' + str((mc_n_studies-current_mc_n_study)*t_loop.tocvalue()) + str(" seconds"))
+            print('########################################')
+            print('')
             
     # save dictionary to person_data.pkl file
     with open(str(year) +'_mc_sensitivity_cap.pkl', 'wb') as fp:
