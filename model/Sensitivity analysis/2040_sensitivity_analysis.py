@@ -17,14 +17,14 @@ t = TicToc() #create instance of time class
 
 #%% Control
 year       = 2040
-input_name = '../Base0/' + str(year) +'_base0_opt.nc'
+input_name = '../Base0/v_' + str(year) +'_base0_opt.nc'
 
 #%% Set up network and load in data
 n = pypsa.Network(input_name) #Load network from netcdf file
 
 # ----- data ---------
 n.area_use      = tm.get_area_use()
-n.total_area    = tm.get_main_parameters()[year]['island_area']
+n.total_area    = tm.get_main_parameters()[0][year]['island_area']
 n.link_sum_max  = n.generators.p_nom_max['Wind']
 n.main_links    = n.links[~n.links.index.str.contains("bus")].index
 
@@ -90,7 +90,7 @@ if cc_mode == True:
             
             # ----- data ---------
             n.area_use      = tm.get_area_use()
-            n.total_area    = tm.get_main_parameters()[year]['island_area']
+            n.total_area    = tm.get_main_parameters()[0][year]['island_area']
             n.link_sum_max  = n_opt.generators.p_nom_max['Wind']
             n.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
             
@@ -161,7 +161,7 @@ if mc_mode == True:
             
             # ----- data ---------
             n.area_use      = tm.get_area_use()
-            n.total_area    = tm.get_main_parameters()[year]['island_area']
+            n.total_area    = tm.get_main_parameters()[0][year]['island_area']
             n.link_sum_max  = n_opt.generators.p_nom_max['Wind']
             n.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
             
@@ -196,6 +196,9 @@ if mc_mode == True:
             
             # Store optimum system price
             mc_sensitivity_cap[component]['Optimum'].append(n.objective)
+            
+            # Update count of the number of studies done
+            current_mc_n_study = current_mc_n_study + 1
             
     # save dictionary to person_data.pkl file
     with open(str(year) +'_mc_sensitivity_cap.pkl', 'wb') as fp:
