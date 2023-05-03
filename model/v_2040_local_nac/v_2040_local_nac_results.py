@@ -45,10 +45,142 @@ for tech in techs:
         
     optimal_solutions.append(optimal_value)
     
+#%% Loop through optimal system and change parameters
+
+# ----- data ---------
+tech_df           = tm.get_tech_data(year, 0.07) # Get data
+
+area_use          = tm.get_area_use()
+n_opt.area_use      = area_use
+n_opt.link_sum_max  = n_opt.generators.p_nom_max['Wind']
+n_opt.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
 
 #%%
-gm.solutions_2D(techs, solutions, n_samples = 10000,
+# Set up network and load in data
+
+n_i = n_opt.copy()
+
+# ----- data ---------
+tech_df           = tm.get_tech_data(year, 0.07) # Get data
+
+area_use          = tm.get_area_use()
+n_i.area_use      = area_use
+n_i.link_sum_max  = n_i.generators.p_nom_max['Wind']
+n_i.main_links    = n_i.links[~n_i.links.index.str.contains("bus")].index
+n_i.total_area    = n_opt.total_area 
+
+# ---- Change parameters ------
+
+def sweep_solutions(n_opt, solutions, techs):
+    area_use          = tm.get_area_use()
+    
+    sweeps = []
+    
+    for tech in ['P2X', 'Data', 'Store1']:
+        sweep = np.empty((0, len(techs)), float)
+        
+        for coeff in np.linspace(0,1,6):
+            
+            # Reset network
+            n_i = n_opt.copy()
+    
+            solutions_df = pd.DataFrame(solutions, columns = ['P2X', 'Data', 'Store1'])
+    
+            n_i.area_use      = area_use
+            n_i.link_sum_max  = n_i.generators.p_nom_max['Wind']
+            n_i.main_links    = n_i.links[~n_i.links.index.str.contains("bus")].index
+            n_i.total_area    = n_opt.total_area 
+            
+            set_value = solutions_df[tech].max() * coeff
+            
+            if tech == 'P2X' or tech == 'Data':
+    
+                # Force capacity to be built
+                n_i.generators.p_nom_max[tech] = set_value 
+                n_i.generators.p_nom_min[tech] = set_value
+                
+            elif tech == "Store1":
+                # Force capacity to be built
+                n_i.stores.e_nom_max['Island_store'] = set_value 
+                n_i.stores.e_nom_min['Island_store'] = set_value
+            
+            # ----- Optimization ----- 
+            def extra_functionality(n,snapshots):
+                # gm.area_constraint(n, snapshots)
+                gm.link_constraint(n, snapshots)
+                
+            n_i.lopf(pyomo = False,
+                   solver_name = 'gurobi',
+                   # keep_shadowprices = True,
+                   # keep_references = True,
+                   extra_functionality = extra_functionality,
+                   )
+            
+            values = [n_i.generators.p_nom_opt['P2X'], 
+                      n_i.generators.p_nom_opt['Data'],
+                      n_i.stores.e_nom_opt['Island_store'],
+                      ]
+            
+            sweep = np.append(sweep, np.array([values]), axis=0)
+            
+        sweeps.append(sweep)
+
+
+
+gm.its_britney_bitch()
+
+#%%
+
+n_i = n_opt.copy()
+
+solutions_df = pd.DataFrame(solutions, columns = ['P2X', 'Data', 'Store1'])
+
+# ----- data ---------
+tech_df           = tm.get_tech_data(year, 0.07) # Get data
+
+area_use          = tm.get_area_use()
+n_i.area_use      = area_use
+n_i.link_sum_max  = n_i.generators.p_nom_max['Wind']
+n_i.main_links    = n_i.links[~n_i.links.index.str.contains("bus")].index
+n_i.total_area    = n_opt.total_area 
+
+set_value = solutions_df['Store1'].max() * 0
+
+# # Force capacity to be built
+# n_i.generators.p_nom_max['Data'] = set_value 
+# n_i.generators.p_nom_min['Data'] = set_value
+
+# Force capacity to be built
+n_i.stores.e_nom_max['Island_store'] = set_value 
+n_i.stores.e_nom_min['Island_store'] = set_value
+    
+# ----- Optimization ----- 
+def extra_functionality(n,snapshots):
+    # gm.area_constraint(n, snapshots)
+    gm.link_constraint(n, snapshots)
+    
+n_i.lopf(pyomo = False,
+       solver_name = 'gurobi',
+       # keep_shadowprices = True,
+       # keep_references = True,
+       extra_functionality = extra_functionality,
+       )
+
+#%%
+
+gm.bake_local_area_pie(n_i, plot_title = 'n_i')
+
+gm.bake_capacity_pie(n_i, plot_title = 'n_i')
+
+# gm.bake_local_area_pie(n_opt, plot_title = 'n_opt')
+
+# gm.bake_capacity_pie(n_opt, plot_title = 'n_opt')
+
+#%%
+gm.solutions_2D(techs, solutions, n_samples = 200000,
                 tech_titles = tech_titles,
+                bins = 35,
+                optimal_solutions = optimal_solutions,
                 title = f'MAA results - {year}, mga_slack = {int(mga_slack)*100}% \n No area constraint',
                 filename = f'graphics/v_{year}_{project_name}_{len(techs)}MAA_{mga_slack*100}p_plot_2D_MAA.pdf'
                 )
@@ -60,12 +192,16 @@ gm.solutions_3D(techs, solutions,
 
 #%%
 
+from gorm import sample_in_hull, set_plot_options
+
+n_samples = 200000
+
+opt_system = optimal_solutions
+
+bins = 35
+
 title = 'yolo'
 filename = None
-bins = 25
-
-n_samples = 1000
-from gorm import sample_in_hull, set_plot_options
 
 # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
 # Plot the polyhedron shape, samples within and correlations.
@@ -79,6 +215,7 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 
 pad = 5
+ncols = len(techs) if opt_system == None else len(techs)+1
 
 if tech_titles == None: 
     tech_titles = techs
@@ -121,8 +258,9 @@ for ax, col in zip(axs[0], tech_titles):
 
 for ax, row in zip(axs[:,0], tech_titles):
     ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
-                xycoords=ax.yaxis.label, textcoords='offset points',
-                size='large', ha='right', va='center')
+                xycoords = ax.yaxis.label, textcoords='offset points',
+                size = 24, ha = 'right', va = 'center',
+                rotation = 90)
 
 # -------- Plotting -------------------------------
 
@@ -199,24 +337,38 @@ for j in range(0, len(techs)):
         # plot simplexes
         for simplex in hull.simplices:
             l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', 
-                    label = 'faces', zorder = 0)
+                    color = 'silver', label = 'faces', zorder = 0)
             
-        # Plot vertices from solutions
-        l1, = ax.plot(x, y,
-                  'o', label = "Near-optimal",
-                  color = 'lightcoral', zorder = 2)
+        # # Plot vertices from solutions
+        # l1, = ax.plot(x, y,
+        #           'o', label = "Near-optimal",
+        #           color = 'lightcoral', zorder = 2)
         
         # list of legend handles and labels
-        l_list, l_labels   = [l0, l1, hb], ['Polyhedron face', 'Near-optimal MAA points', 'Sample density']
+        l_list, l_labels   = [l0, hb], ['Polyhedron face', 'Sample density']
+        
+        # l_list, l_labels   = [], []
         
         # optimal solutions
-        if not optimal_solutions == None:
-            x_opt, y_opt = optimal_solutions[i],   optimal_solutions[j]
+        if not opt_system == None:
+            x_opt, y_opt = opt_system[i],   opt_system[j]
+            
+            ax.plot(sweeps[0][:,i], sweeps[0][:,j], 
+                    color = 'lightcoral',
+                    marker = 'o', linestyle = '-')
+            
+            ax.plot(sweeps[1][:,i], sweeps[1][:,j], 
+                    color = 'gold',
+                    marker = 'o', linestyle = '-')
+            
+            ax.plot(sweeps[2][:,i], sweeps[2][:,j], 
+                    color = 'palegreen',
+                    marker = 'o', linestyle = '-')
             
             # Plot optimal solutions
             l2, = ax.plot(x_opt, y_opt,
                       'o', label = "Optimal", 
-                      ms = 20, color = 'tab:red',
+                      ms = 15, color = 'red',
                       zorder = 3)
             
             l_list.append(l2)
@@ -226,14 +378,13 @@ for j in range(0, len(techs)):
 ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
 ax.legend(l_list,
           l_labels, 
-          loc = 'center', ncol = 3,
+          loc = 'center', ncol = ncols,
           bbox_to_anchor=(0.5, -0.25),fancybox=False, shadow=False,)
 
 fig.suptitle(title, fontsize = 24)
 
 if not filename == None:
     fig.savefig(filename, format = 'pdf', bbox_inches='tight')
-
 
 
 

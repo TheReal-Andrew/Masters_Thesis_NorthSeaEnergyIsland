@@ -113,6 +113,71 @@ def sample_in_hull(points, n_samples = 1000):
         
     return samples
     
+def sweep_solutions(n_opt, solutions, techs,
+                    sweep_range = 6,
+                    no_constraint = False):
+    import numpy as np
+    import pandas as pd
+    import tim as tm
+    
+    area_use          = tm.get_area_use()
+    
+    sweeps = []
+    
+    for tech in techs:
+        sweep = np.empty((0, len(techs)), float)
+        
+        for coeff in np.linspace(0, 1, sweep_range):
+            
+            # Reset network
+            n_i = n_opt.copy()
+    
+            solutions_df = pd.DataFrame(solutions, columns = techs)
+    
+            n_i.area_use      = area_use
+            n_i.link_sum_max  = n_i.generators.p_nom_max['Wind']
+            n_i.main_links    = n_i.links[~n_i.links.index.str.contains("bus")].index
+            n_i.total_area    = n_opt.total_area 
+            
+            set_value = solutions_df[tech].max() * coeff
+            
+            if tech == 'P2X' or tech == 'Data':
+    
+                # Force capacity to be built
+                n_i.generators.p_nom_max[tech] = set_value 
+                n_i.generators.p_nom_min[tech] = set_value
+                
+            elif tech == "Store1":
+                # Force capacity to be built
+                n_i.stores.e_nom_max['Island_store'] = set_value 
+                n_i.stores.e_nom_min['Island_store'] = set_value
+            
+            # ----- Optimization ----- 
+            def extra_functionality(n,snapshots):
+                
+                if not no_constraint:
+                    area_constraint(n, snapshots)
+                    
+                link_constraint(n, snapshots)
+                
+            n_i.lopf(pyomo = False,
+                   solver_name = 'gurobi',
+                   # keep_shadowprices = True,
+                   # keep_references = True,
+                   extra_functionality = extra_functionality,
+                   )
+            
+            values = [n_i.generators.p_nom_opt['P2X'], 
+                      n_i.generators.p_nom_opt['Data'],
+                      n_i.stores.e_nom_opt['Island_store'],
+                      ]
+            
+            sweep = np.append(sweep, np.array([values]), axis=0)
+            
+        sweeps.append(sweep)
+        
+    return sweeps
+
 #%% ------- PyPSA FUNCTIONS -----------------------------------
 
 # Add bidirectional link with setup for losses
@@ -406,7 +471,8 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
         )
     
 def solutions_2D(techs, solutions,
-                 optimal_solutions = None,
+                 opt_system = None,
+                 sweep_solutions = None,
                  tech_titles = None,
                  n_samples = 1000,
                  title = 'MAA_plot',
@@ -428,7 +494,7 @@ def solutions_2D(techs, solutions,
     import matplotlib.patches as mpatches
     
     pad = 5
-    n_cols = len(techs)
+    ncols = len(techs) if opt_system == None else len(techs)+1
     
     if tech_titles == None: 
         tech_titles = techs
@@ -550,19 +616,21 @@ def solutions_2D(techs, solutions,
             # plot simplexes
             for simplex in hull.simplices:
                 l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', 
-                        label = 'faces', zorder = 0)
+                        color = 'silver', label = 'faces', zorder = 0)
                 
-            # Plot vertices from solutions
-            l1, = ax.plot(x, y,
-                      'o', label = "Near-optimal",
-                      color = 'lightcoral', zorder = 2)
+            # # Plot vertices from solutions
+            # l1, = ax.plot(x, y,
+            #           'o', label = "Near-optimal",
+            #           color = 'lightcoral', zorder = 2)
             
             # list of legend handles and labels
-            l_list, l_labels   = [l0, l1, hb], ['Polyhedron face', 'Near-optimal MAA points', 'Sample density']
+            l_list, l_labels   = [l0, hb], ['Polyhedron face', 'Sample density']
+            
+            # l_list, l_labels   = [], []
             
             # optimal solutions
-            if not optimal_solutions == None:
-                x_opt, y_opt = optimal_solutions[i],   optimal_solutions[j]
+            if not opt_system == None:
+                x_opt, y_opt = opt_system[i],   opt_system[j]
                 
                 # Plot optimal solutions
                 l2, = ax.plot(x_opt, y_opt,
@@ -577,7 +645,7 @@ def solutions_2D(techs, solutions,
     ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
     ax.legend(l_list,
               l_labels, 
-              loc = 'center', ncol = 3,
+              loc = 'center', ncol = ncols,
               bbox_to_anchor=(0.5, -0.25),fancybox=False, shadow=False,)
     
     fig.suptitle(title, fontsize = 24)
@@ -651,7 +719,7 @@ def sns_heatmap(techs, solutions, triangular = False, n_samples = 1000):
 
     sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
     
-def bake_local_area_pie(n, plot_title, exportname = None, ax = None):
+def bake_local_area_pie(n, plot_title = 'title', exportname = None, ax = None):
     # Create a piechart, showing the area used by each local technology on
     # the Energy Island.
     
@@ -704,7 +772,7 @@ def bake_local_area_pie(n, plot_title, exportname = None, ax = None):
     if not exportname == None and ax == None:
         fig.savefig(exportname, format = 'pdf', bbox_inches='tight')
         
-def bake_capacity_pie(n, plot_title, exportname = None, ax = None):
+def bake_capacity_pie(n, plot_title = 'Title', exportname = None, ax = None):
     # Create a piechart, showing the capacity of all links and local demand.
     
     import matplotlib.pyplot as plt
