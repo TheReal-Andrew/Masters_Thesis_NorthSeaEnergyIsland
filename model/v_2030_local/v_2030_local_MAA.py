@@ -27,14 +27,14 @@ gm.set_plot_options()
 Should_MAA   = True
 
 year       = 2030
-mga_slack  = 0.01   # MAA slack control
+mga_slack  = 0.1   # MAA slack control
 study_name = 'local'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
                 'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
-                # 'x3':('Store',     'Store1'),
+                'x3':('Store',     'Store1'),
                 # 'x4':('Link',      'link_sum'),
                 # 'x4':('Link',      'link_Germany'),
                 # 'x6':('Link',      'link_Belgium'),
@@ -141,6 +141,7 @@ if Should_MAA:
     
     solutions = np.empty(shape=[0,dim])
     
+    j = 0
     while epsilon>MAA_convergence_tol:
     
         if len(solutions) <= 1:
@@ -157,12 +158,15 @@ if Should_MAA:
             res = search_direction(direction_i,mga_variables)
             solutions = np.append(solutions,np.array([res]),axis=0)
             
-            n.export_to_netcdf(MAA_network_names + str(i) + '.nc')
+            n.export_to_netcdf('results/' + MAA_network_names + str(j)+ '-'+ str(i) +  + '.nc')
+            print(f'\n #### Exported MAA network: {j}'-'{i} #### \n for directions: {len(directions)} \n')
     
         try:
             hull = ConvexHull(solutions)
         except Exception as e:
             print(e)
+    
+        j += 1    
     
         delta_v = hull.volume - old_volume
         old_volume = hull.volume
@@ -172,87 +176,13 @@ if Should_MAA:
 
     np.save(MAA_solutions + 'solutions.npy', solutions)
 
-
 print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
 
 #%% 2D Subplots
-gm.solutions_2D(techs, solutions, n_samples = 10000)
 
-# gm.solutions_heatmap2(techs, solutions)
+gm.solutions_2D(techs, solutions, n_samples = 10000,
+                )
 
-# d = gm.sample_in_hull(solutions)
-
-# d_df = pandas.DataFrame(d,
-#                         columns = techs)
-
-#%% Samples dataframe and normalization
-# d = gm.sample_in_hull(solutions, n = 100000)
-
-# d_df = pandas.DataFrame(d,
-#                         columns = techs)
-
-# d_df.hist(bins = 50)
-
-#%% 2D Plot
-
-# if Should_MAA and solutions.shape[1] == 2:
-#     hull = ConvexHull(solutions)
-    
-#     plt.figure(figsize = (8,4))
-    
-#     x = solutions[:,0]
-#     y = solutions[:,1]
-    
-#     for simplex in hull.simplices:
-    
-#         plt.plot(solutions[simplex, 0], solutions[simplex, 1], 'k-')
-    
-#     plt.plot(x, y,
-#               'o', label = "Near-optimal")
-    
-#     plt.plot(d[:,0], d[:,1], 'o', label = 'samples')
-    
-#     #Plot optimal
-#     plt.plot(n_optimum.generators.p_nom_opt["P2X"], 
-#               n_optimum.generators.p_nom_opt["Data"],
-#               '.', markersize = 20, label = "Optimal")
-#     plt.xlabel("P2X capacity [MW]")
-#     plt.ylabel("Data capacity [MW]")
-#     plt.suptitle('MAA Analysis', fontsize = 18)
-#     plt.title(f'With MGA slack = {mga_slack}', fontsize = 10)
-    
-#     plt.legend()
-
-
-#%% 3D plot
-
-# if Should_MAA and solutions.shape[1] >= 3:
-#     xi = solutions[:,0]
-#     yi = solutions[:,1]
-#     zi = solutions[:,2]
-    
-#     fig = plt.figure()
-    
-#     colors = ['tab:blue', 'tab:red', 'aliceblue']
-#     ax = plt.axes(projection = '3d')
-    
-#     ax.set_xlabel(variables[list(variables)[0]][1])
-#     ax.set_ylabel(variables[list(variables)[1]][1])
-#     ax.set_zlabel(variables[list(variables)[2]][1])
-    
-#     # Points
-#     ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
-    
-#     # Define hull and edges
-#     hull = ConvexHull(solutions)
-#     edges = zip(*solutions)
-    
-#     # Plot trisurface  
-#     trisurface = ax.plot_trisurf(xi, yi, zi, triangles=hull.simplices,
-#                           alpha=0.8, color = colors[0],
-#                           edgecolor = colors[2], linewidth = 3)
-    
-# fig.savefig('hull_plot_test1.svg', format = 'pdf', bbox_inches='tight')
 
 #%%
 gm.its_britney_bitch()

@@ -25,46 +25,24 @@ gm.set_plot_options()
 
 #%%
 
-solutions1  = np.load('v_2030_local_2MAA_1p_solutions.npy')
-solutions10 = np.load('v_2030_local_2MAA_10p_solutions.npy')
-techs = ['P2X', 'Data']
+solutions = np.load('v_2030_local_3MAA_10p_solutions.npy')
+techs = ['P2X', 'Data', 'Store1']
 
-#%%
-
-gm.solutions_2D(techs, solutions1, n_samples = 10000,
-                title = '2D plot of 3D MAA space, mga_slack = 0.01',
-                # filename = 'v_2030_local_3MAA_1p_2D_MAA_plot.pdf',
+gm.solutions_2D(techs, solutions, n_samples = 1000,
+                title = '2D plot of 3D MAA space',
+                filename = 'graphics/v_2030_local_3MAA_10p_plot_2D_MAA.pdf'
                 )
 
-gm.solutions_2D(techs, solutions10, n_samples = 10000,
-                title = '2D plot of 3D MAA space, mga_slack = 0.1',
-                # filename = 'v_2030_local_3MAA_10p_2D_MAA_plot.pdf',
-                )
 
-#%%
-from scipy.spatial import ConvexHull
 
-sol1  = solutions1
 
-sol10 = solutions10
 
-x1, y1 = sol1[:,0], sol1[:,1]
 
-x10, y10 = sol10[:,0], sol10[:,1]
 
-fig = plt.figure(figsize = (10,5))
 
-colors = ['tab:blue', 'tab:red', 'tab:purple']
 
-i = 1
-for sol in [sol1, sol10]:
-    hull = ConvexHull(sol)
-    for simplex in hull.simplices:
-        plt.plot(sol[simplex, 0], sol[simplex, 1], colors[i])
-    i += 1
 
-plt.plot(x1, y1, 'o', label = "Near-optimal, mga = 0.01", color = 'tab:red')
-plt.plot(x10, y10, 'o', label = "Near-optimal, mga = 0.1", color = 'tab:purple')
+
 
 
 

@@ -406,6 +406,8 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
         )
     
 def solutions_2D(techs, solutions,
+                 optimal_solutions = None,
+                 tech_titles = None,
                  n_samples = 1000,
                  title = 'MAA_plot',
                  plot_samples = False,
@@ -424,23 +426,27 @@ def solutions_2D(techs, solutions,
     from scipy.stats import gaussian_kde
     import matplotlib.colors as mcolors
     import matplotlib.patches as mpatches
-
+    
     pad = 5
-
+    n_cols = len(techs)
+    
+    if tech_titles == None: 
+        tech_titles = techs
+    
     # Sample polyhedron
     d = sample_in_hull(solutions, n_samples)
-
+    
     # -------- create correlation matrix --------------------------
     # Create dataframe from samples
     d_df = pandas.DataFrame(d, columns = techs)
-
+    
     # Calculate correlation and normalize
     d_corr = d_df.corr()
-
+    
     # Calculate normalized correlation, used to color heatmap.
     d_temp = d_corr + abs(d_corr.min().min())
     d_norm = d_temp / d_temp.max().max()
-
+    
     # -------- Set up plot ----------------------------------------
     set_plot_options()
     
@@ -450,26 +456,27 @@ def solutions_2D(techs, solutions,
     red    = (1.0, 0.7, 0.6)  # light red
     yellow = (1.0, 1.0, 0.8)  # light yellow
     green  = (0.6, 1.0, 0.6)  # light green
-
+    
     # define the colormap
     cmap = mcolors.LinearSegmentedColormap.from_list('my_colormap', [red, yellow, green])
-
+    
     # Initialize and adjust figure
     plt.figure()
     fig, axs = plt.subplots(len(techs), len(techs), figsize = (20,15))
     fig.subplots_adjust(wspace = 0.4, hspace = 0.4)
-
+    
     # Set titles
-    for ax, col in zip(axs[0], techs):
+    for ax, col in zip(axs[0], tech_titles):
         ax.set_title(col + '\n')
-
-    for ax, row in zip(axs[:,0], techs):
+    
+    for ax, row in zip(axs[:,0], tech_titles):
         ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
-                    xycoords=ax.yaxis.label, textcoords='offset points',
-                    size='large', ha='right', va='center')
-
+                    xycoords = ax.yaxis.label, textcoords='offset points',
+                    size = 24, ha = 'right', va = 'center',
+                    rotation = 90)
+    
     # -------- Plotting -------------------------------
-
+    
     # Upper triangle of subplots
     for i in range(0, len(techs)):
         for j in range(0, i):
@@ -491,8 +498,8 @@ def solutions_2D(techs, solutions,
             
             # Change bg color according to correlation
             ax.patch.set_facecolor(cmap(corr))
-
-
+    
+    
     # Diagonal plotting
     for j in range(0, len(techs)):
         
@@ -504,8 +511,8 @@ def solutions_2D(techs, solutions,
         
         ax.text(0.5, text_lift, 'Histogram', ha='center', va='top', 
                 transform=ax.transAxes, fontsize = 16, color = 'gray')
-
-
+    
+    
     # lower traingle of subplots
     for j in range(0, len(techs)):
         for i in range(0, j):
@@ -515,35 +522,29 @@ def solutions_2D(techs, solutions,
             ax.text(0.5, text_lift, 'Scatter plot with vertices', ha='center', va='top',
                     transform=ax.transAxes, fontsize=16, color = 'gray')
             
-            x = solutions[:,i]
-            y = solutions[:,j]
+            # MAA solutions
+            x, y = solutions[:,i],   solutions[:,j]
             
             # Set x and y as samples for this dimension
-            x1 = d[:,i]
-            y1 = d[:,j]
+            x_samples = d[:,i]
+            y_samples = d[:,j]
             
-            if plot_heatmap:
-                # ax.hexbin(x1, y1, gridsize = 25, cmap = 'Blues')
-                # Create 2D histogram
-                hist, xedges, yedges = np.histogram2d(x1, y1, bins = bins)
-
-                # Create grid for pcolormesh
-                X, Y = np.meshgrid(xedges, yedges)
-                
-                # Create pcolormesh plot with square bins
-                ax.pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
-                
-                # Create patch to serve as hexbin label
-                hb = mpatches.Patch(color = 'tab:blue')
-                
-                ax.grid('on')
-                
-            # plot samples
-            if plot_samples:
-                 ax.plot(x1, y1, 'o', label = 'samples',
-                               alpha = alpha, zorder = 1,
-                               )
+            # --------  Create 2D histogram --------------------
+            hist, xedges, yedges = np.histogram2d(x_samples, y_samples,
+                                                  bins = bins)
+    
+            # Create grid for pcolormesh
+            X, Y = np.meshgrid(xedges, yedges)
             
+            # Create pcolormesh plot with square bins
+            ax.pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
+            
+            # Create patch to serve as hexbin label
+            hb = mpatches.Patch(color = 'tab:blue')
+            
+            ax.grid('on')
+            
+            # --------  Plot hull --------------------
             hull = ConvexHull(solutions[:,[i,j]])
             
             # plot simplexes
@@ -553,21 +554,41 @@ def solutions_2D(techs, solutions,
                 
             # Plot vertices from solutions
             l1, = ax.plot(x, y,
-                      'o', label = "Near-optimal", zorder = 2)
+                      'o', label = "Near-optimal",
+                      color = 'lightcoral', zorder = 2)
             
-
+            # list of legend handles and labels
+            l_list, l_labels   = [l0, l1, hb], ['Polyhedron face', 'Near-optimal MAA points', 'Sample density']
+            
+            # optimal solutions
+            if not optimal_solutions == None:
+                x_opt, y_opt = optimal_solutions[i],   optimal_solutions[j]
+                
+                # Plot optimal solutions
+                l2, = ax.plot(x_opt, y_opt,
+                          'o', label = "Optimal", 
+                          ms = 20, color = 'red',
+                          zorder = 3)
+                
+                l_list.append(l2)
+                l_labels.append('Optimal solution')
+    
     # Place legend below subplots
     ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
-    ax.legend([l0, l1, hb], ['Polyhedron Faces', 'Near-optimal MAA points', 'Sample density'], 
+    ax.legend(l_list,
+              l_labels, 
               loc = 'center', ncol = 3,
               bbox_to_anchor=(0.5, -0.25),fancybox=False, shadow=False,)
-
+    
     fig.suptitle(title, fontsize = 24)
-
+    
     if not filename == None:
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
         
-def solutions_3D(techs, solutions, filename = None):
+def solutions_3D(techs, solutions,
+                 figsize = (10,10),
+                 markersize = 7, linewidth = 3,
+                 filename = None):
     import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
     
@@ -581,7 +602,7 @@ def solutions_3D(techs, solutions, filename = None):
     yi = solutions[:,1]
     zi = solutions[:,2]
     
-    fig = plt.figure(figsize = (10,10))
+    fig = plt.figure(figsize = figsize)
     
     # Set colors and plot projection
     colors = ['tab:blue', 'tab:red', 'aliceblue']
@@ -597,12 +618,12 @@ def solutions_3D(techs, solutions, filename = None):
     
     # Plot surfaces and lines  
     ax.plot_trisurf(xi, yi, zi, 
-                    triangles=hull.simplices,
+                    triangles = hull.simplices,
                     alpha=0.8, color = colors[0],
-                    edgecolor = colors[2], linewidth = 3)
+                    edgecolor = colors[2], linewidth = linewidth)
     
     # Plot MAA points
-    ax.plot(xi, yi, zi, 'o', c = colors[1], ms=7)
+    ax.plot(xi, yi, zi, 'o', c = colors[1], ms = markersize)
     
     if not filename == None:
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
