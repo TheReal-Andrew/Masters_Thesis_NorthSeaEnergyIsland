@@ -167,6 +167,7 @@ def sweep_solutions(n_opt, solutions, techs,
                    extra_functionality = extra_functionality,
                    )
             
+            
             values = [n_i.generators.p_nom_opt['P2X'], 
                       n_i.generators.p_nom_opt['Data'],
                       n_i.stores.e_nom_opt['Island_store'],
@@ -183,8 +184,8 @@ def sweep_solutions(n_opt, solutions, techs,
 # Add bidirectional link with setup for losses
 def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
                capital_cost = 0, marginal_cost = 0, 
-               p_nom_extendable = True, p_nom_max = float('inf'),
-               p_nom_min = 0,
+               p_nom_extendable = True, 
+                p_nom_max = float('inf'), p_nom_min = 0,
                x = None, y = None, bus_shift = [0, 0]):
     # Function that adds a bidirectional link with efficiency and marginal cost
     # between two buses. This is done by adding additional "efficiency buses" 
@@ -215,8 +216,8 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
           p_min_pu          = -1,
           p_nom_extendable  = p_nom_extendable,
           capital_cost      = capital_cost,    #Capital cost is added here
-          p_nom_max         = p_nom_max,
-          p_nom_min         = p_nom_min,
+          # p_nom_max         = p_nom_max,
+          # p_nom_min         = p_nom_min,
           carrier           = carrier,
           )
     
@@ -229,6 +230,7 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
           efficiency    = [1,                          efficiency  ],
           marginal_cost = [0,                          marginal_cost],
           p_nom_extendable  = [True, True],
+          carrier       = [carrier, carrier],
           )
     
     # ---- Links on bus 0 ----
@@ -240,6 +242,7 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
           efficiency    = [1,                             efficiency  ],
           marginal_cost = [0,                             marginal_cost],
           p_nom_extendable  = [True, True],
+          carrier       = [carrier, carrier],
           )
     
 # CONSTRAINTS
@@ -265,6 +268,18 @@ def area_constraint(n, snapshots):
     # Define constraint
     define_constraints(n, lhs, '<=', rhs, 'Island', 'Area_Use')
     
+def marry_links(n, snapshots):
+    from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints
+    
+    vars_links   = get_var(n, 'Link', 'p_nom')
+    
+    for country in n.connected_countries:
+        
+        lhs = linexpr((1, vars_links['Island_to_' + country]),
+                      (-1, vars_links[country + '_to_Island']))
+        
+        define_constraints(n, lhs, '=', 0, 'Link', country + '_link_capacity_constraint')
+    
 def link_constraint(n, snapshots):
     # Create a constraint that limits the sum of link capacities
     from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints
@@ -282,7 +297,7 @@ def link_constraint(n, snapshots):
     lhs          = join_exprs(linexpr((1, vars_links)))
     
     #Define constraint and name it 'Total constraint'
-    define_constraints(n, lhs, '=', rhs, 'Link', 'Sum constraint')
+    define_constraints(n, lhs, '<=', rhs, 'Link', 'Sum constraint')
     
 #%% MAA FUNCTIONS
     
@@ -476,7 +491,7 @@ def solutions_2D(techs, solutions,
                  tech_titles = None,
                  n_samples = 1000,
                  title = 'MAA_plot',
-                 plot_samples = False,
+                 plot_MAA_points = False,
                  plot_heatmap = True,
                  cmap = 'Blues',
                  bins = 25,
@@ -617,16 +632,17 @@ def solutions_2D(techs, solutions,
             for simplex in hull.simplices:
                 l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', 
                         color = 'silver', label = 'faces', zorder = 0)
-                
-            # # Plot vertices from solutions
-            # l1, = ax.plot(x, y,
-            #           'o', label = "Near-optimal",
-            #           color = 'lightcoral', zorder = 2)
             
             # list of legend handles and labels
             l_list, l_labels   = [l0, hb], ['Polyhedron face', 'Sample density']
             
-            # l_list, l_labels   = [], []
+            if plot_MAA_points:
+                # Plot vertices from solutions
+                l1, = ax.plot(x, y,
+                          'o', label = "Near-optimal",
+                          color = 'lightcoral', zorder = 2)
+                l_list.append(l1)
+                l_labels.append('MAA points')
             
             # optimal solutions
             if not opt_system == None:
