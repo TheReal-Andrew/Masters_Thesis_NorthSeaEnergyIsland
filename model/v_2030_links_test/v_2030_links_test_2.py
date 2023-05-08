@@ -109,8 +109,8 @@ n.area_use       = area_use
 n.total_area     = island_area 
 n.link_sum_max   = link_sum_max
 n.link_p_nom_min = link_p_nom_min
-n.connected_countries = connected_countries
 n.filename       = filename
+n.connected_countries = connected_countries
 
 # ----- Add buses-------------------
 # Add multiple buses by passing arrays from bus_df to parameters and using madd
@@ -232,24 +232,11 @@ if add_moneybin:
           )
 
 # %% Extra functionality
-
-def marry_links(n, snapshots):
-    from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints
-    
-    vars_links   = get_var(n, 'Link', 'p_nom')
-    
-    for country in n.connected_countries:
-        
-        lhs = linexpr((1, vars_links['Island_to_' + country]),
-                      (-1, vars_links[country + '_to_Island']))
-        
-        define_constraints(n, lhs, '=', 0, 'Link', country + '_link_capacity_constraint')
-    
 def extra_functionalities(n, snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
     
-    marry_links(n, snapshots)
+    gm.marry_links(n, snapshots)
 
 #%% Solve
 if should_solve:

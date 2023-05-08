@@ -30,12 +30,15 @@ study_name = 'base0'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
-                'x1':('Generator', 'P2X'),
-                'x2':('Generator', 'Data'),
-                'x3':('Store',     'Store1'),
-                # 'x4':('Link',      'link_sum'),
-                # 'x4':('Link',      'link_Germany'),
-                # 'x6':('Link',      'link_Belgium'),
+                # 'x1':('Generator', 'P2X'),
+                # 'x2':('Generator', 'Data'),
+                # 'x3':('Store',     'Store1'),
+                'x4':('Link',      'link_Denmark'),
+                'x5':('Link',      'link_Norway'),
+                # 'x6':('Link',      'link_Germany'),
+                # 'x7':('Link',      'link_Netherlands'),
+                # 'x8':('Link',      'link_Belgium'),
+                # 'x9':('Link',      'link_United Kingdom'),
             }
 
 input_name        = f'v_{year}_{study_name}_opt.nc'
@@ -49,20 +52,30 @@ n = pypsa.Network(input_name) #Load network from netcdf file
 n_optimum   = n.copy() # Save copy of optimum system
 n_objective = n.objective # Save optimum objective
 
-#%% Load data
+#%% Load data to recreate constraints
 # ----- Dataframe with tech data ---------
 tech_df         = tm.get_tech_data(year, 0.07)
 
+# List of connected countries in the optimum solution
+connected_countries =  [
+                        "Denmark",         
+                        "Norway",          
+                        "Germany",         
+                        "Netherlands",     
+                        "Belgium",         
+                        "United Kingdom"
+                        ]
+
 # ----- Save data in network ---------
-n.area_use      = tm.get_area_use()
-n.link_sum_max  = n.generators.p_nom_max['Wind']
-n.main_links    = n.links[~n.links.index.str.contains("bus")].index
-n.variables_set = variables
+n.area_use            = tm.get_area_use()
+n.link_sum_max        = n.generators.p_nom_max['Wind']
+n.main_links          = n.links.loc[n.links.bus0 == "Energy Island"].index
+n.variables_set       = variables
+n.connected_countries = connected_countries
 
 # Save variables for objective function modification
 n.MB        = n_optimum.generators.loc['MoneyBin'].capital_cost
 n.revenue   = abs(n_optimum.generators_t.p['Data'].sum())*tech_df['marginal cost']['datacenter'] + abs(n.generators_t.p['P2X'].sum())*tech_df['marginal cost']['hydrogen']
-
 
 #%% MAA setup
 
@@ -77,6 +90,8 @@ def extra_functionality(n,snapshots,options,direction):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
     
+    gm.marry_links(n, snapshots)
+    
     gm.define_mga_constraint(n,snapshots,options['mga_slack'])
     gm.define_mga_objective(n,snapshots,direction,options)
 
@@ -90,17 +105,17 @@ mga_variables = mga_variables # The variables that we are investigating
 options = dict(mga_slack=mga_slack,
                 mga_variables=[variables[v] for v in mga_variables])
 
-res = n.lopf(pyomo=False,
-        solver_name='gurobi',
-        keep_references=True,
-        keep_shadowprices=True,
-        skip_objective=True,
-        solver_options={'LogToConsole':0,
-                'crossover':0,
-                'BarConvTol' : 1e-6,                 
-                'FeasibilityTol' : 1e-2,
-            'threads':2},
-        extra_functionality=lambda n,s: extra_functionality(n,s,options,direction)
+res = n.lopf(pyomo        = False,
+        solver_name       = 'gurobi',
+        keep_references   = True,
+        keep_shadowprices = True,
+        skip_objective    = True,
+        solver_options    = {'LogToConsole':0,
+                             'crossover':0,
+                             'BarConvTol' : 1e-6,                 
+                             'FeasibilityTol' : 1e-2,
+                             'threads':2},
+        extra_functionality = lambda n,s: extra_functionality(n,s,options,direction)
     )
 
 all_variable_values = gm.get_var_values(n,mga_variables)
@@ -113,52 +128,56 @@ def search_direction(direction,mga_variables):
     options = dict(mga_slack = mga_slack,
                     mga_variables = [variables[v] for v in mga_variables])
 
-    n.lopf(pyomo=False,
-            solver_name='gurobi',
-            skip_objective=True,
-            solver_options={'LogToConsole':0,
-                    'crossover':0,
-                    'BarConvTol' : 1e-6,                 
-                    'FeasibilityTol' : 1e-2,
-                'threads':2},
-            extra_functionality=lambda n,s: extra_functionality(n, s, options, direction)
+    n.lopf(pyomo          = False,
+           solver_name    = 'gurobi',
+           skip_objective = True,
+           solver_options = {'LogToConsole':0,
+                             'crossover':0,
+                             'BarConvTol' : 1e-6,                 
+                             'FeasibilityTol' : 1e-2,
+                             'threads':2},
+            extra_functionality = lambda n,s: extra_functionality(n, s, options, direction)
         )
 
     all_variable_values = gm.get_var_values(n, mga_variables)
+    print(all_variable_values)
 
     return [all_variable_values[v] for v in mga_variables]
 
 
 MAA_convergence_tol = 0.05 # How much the volume stops changing before we stop, in %
-dim=len(mga_variables) # number of dimensions 
-dim_fullD = len(variables)
-old_volume = 0 
-epsilon = 1
+dim                 = len(mga_variables) # number of dimensions 
+dim_fullD           = len(variables)
+old_volume          = 0 
+epsilon             = 1
 directions_searched = np.empty([0,dim])
-hull = None
-computations = 0
+hull                = None
+computations        = 0
 
-solutions = np.empty(shape=[0,dim])
+solutions           = np.empty(shape=[0,dim])
 
 j = 0
 while epsilon>MAA_convergence_tol:
 
-    if len(solutions) <= 1:
+    if len(solutions) <= 1: # If initial loop, use MGA directions
         directions = np.concatenate([np.diag(np.ones(dim)),-np.diag(np.ones(dim))],axis=0)
-    else :
+    else : # Else use hull to get new directions.
         directions = -np.array(hull.equations)[:,0:-1]
+        
     directions_searched = np.concatenate([directions_searched,directions],axis=0)
 
     # Run computations in series
     i = 0
     
     for direction_i in directions:
-        i += 1
-        res = search_direction(direction_i,mga_variables)
-        solutions = np.append(solutions,np.array([res]),axis=0)
+        i        += 1
+        res       = search_direction(direction_i, mga_variables)
+        solutions = np.append(solutions, np.array([res]), axis=0)
         
         n.export_to_netcdf('results/' + MAA_network_names + str(j)+ '-'+ str(i) + '.nc')
-        print(f'\n #### Exported MAA network: Loop {j}, direction {i} #### \n Directions in this loop: {len(directions)} \n')
+        print(f'\n #### Exported MAA network: Loop {j}, direction {i} ####    \
+                \n Directions in this loop: {len(directions)}   \
+                \n Current epsilon: {epsilon}')
 
     try:
         hull = ConvexHull(solutions)
@@ -167,11 +186,11 @@ while epsilon>MAA_convergence_tol:
 
     j += 1
 
-    delta_v = hull.volume - old_volume
+    delta_v    = hull.volume - old_volume
     old_volume = hull.volume
-    epsilon = delta_v/hull.volume
-    print('####### EPSILON ###############')
-    print(epsilon)
+    epsilon    = delta_v/hull.volume
+    print('\n ####### EPSILON ###############')
+    print(' ' + str(epsilon) + '\n')
     
 np.save(MAA_solutions + 'solutions.npy', solutions)
 

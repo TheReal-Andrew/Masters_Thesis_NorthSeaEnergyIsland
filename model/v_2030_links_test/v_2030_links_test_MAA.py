@@ -17,7 +17,7 @@ from scipy.spatial import ConvexHull
 
 import gorm as gm
 import tim as tm
-from ttictoc import tic,toc
+from ttictoc import tic, toc
 
 gm.set_plot_options()
 
@@ -79,7 +79,6 @@ connected_countries =  [
 # ----- Save data in network ---------
 n.area_use      = tm.get_area_use()
 n.link_sum_max  = n.generators.p_nom_max['Wind']
-# n.main_links    = n.links[~n.links.index.str.contains("bus")].index
 n.main_links = n.links.loc[n.links.bus0 == "Energy Island"].index
 n.variables_set = variables
 n.connected_countries = connected_countries
@@ -111,22 +110,10 @@ n.objective_optimum = n_objective
 
 #%% Extra
 
-def marry_links(n, snapshots):
-    from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints
-    
-    vars_links   = get_var(n, 'Link', 'p_nom')
-    
-    for country in n.connected_countries:
-        
-        lhs = linexpr((1, vars_links['Island_to_' + country]),
-                      (-1, vars_links[country + '_to_Island']))
-        
-        define_constraints(n, lhs, '=', 0, 'Link', country + '_link_capacity_constraint')
-
 def extra_functionality(n,snapshots,options,direction):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
-    marry_links(n, snapshots)
+    gm.marry_links(n, snapshots)
     
     gm.define_mga_constraint(n,snapshots,options['mga_slack'])
     gm.define_mga_objective(n,snapshots,direction,options)
@@ -176,6 +163,7 @@ def search_direction(direction,mga_variables):
         )
 
     all_variable_values = gm.get_var_values(n, mga_variables)
+    print(all_variable_values)
 
     return [all_variable_values[v] for v in mga_variables]
 
