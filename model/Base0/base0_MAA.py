@@ -177,7 +177,7 @@ while epsilon>MAA_convergence_tol:
         n.export_to_netcdf('results/' + MAA_network_names + str(j)+ '-'+ str(i) + '.nc')
         print(f'\n #### Exported MAA network: Loop {j}, direction {i} ####    \
                 \n Directions in this loop: {len(directions)}   \
-                \n Current epsilon: {epsilon}')
+                \n Current Epsilon: {epsilon} \n')
 
     try:
         hull = ConvexHull(solutions)
@@ -195,7 +195,7 @@ while epsilon>MAA_convergence_tol:
 np.save(MAA_solutions + 'solutions.npy', solutions)
 
 
-print('It took ' + str(toc()) + 's to do the simulation with ' + str(len(variables)) + ' variables' )
+print(f'\n It took {round(toc(), 2)} sec for a simulation with {len(variables)} variables. \n')
 
 #%%
 gm.its_britney_bitch()
