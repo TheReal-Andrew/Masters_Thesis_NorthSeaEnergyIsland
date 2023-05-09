@@ -31,7 +31,7 @@ mga_slack     = 0.1   # MAA slack control
 study_name    = 'links_G1'
 variables     = []
 
-name  = f'v_{year}_{study_name}_{len(variables)}MAA_nac_{int(mga_slack*100)}p_'
+name  = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 title = f'Model: {study_name}_{year}, for {len(variables)} MAA variables, with {int(mga_slack*100)} % slack'
 
 solutions = np.load(name + 'solutions.npy')
@@ -40,6 +40,6 @@ techs = []
 
 gm.solutions_2D(techs, solutions, n_samples = 1000,
                 title = title,
-                filename = 'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf')
+                filename = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf')
 
 
