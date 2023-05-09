@@ -28,15 +28,17 @@ gm.set_plot_options()
 solutions = np.load('v_2030_local_3MAA_10p_solutions.npy')
 techs = ['P2X', 'Data', 'Store1']
 
-gm.solutions_2D(techs, solutions, n_samples = 1000,
+axs = gm.solutions_2D(techs, solutions, n_samples = 1000,
                 title = '2D plot of 3D MAA space',
-                filename = 'graphics/v_2030_local_3MAA_10p_plot_2D_MAA.pdf'
+                # filename = 'graphics/v_2030_local_3MAA_10p_plot_2D_MAA.pdf'
                 )
 
+#%% Test code
 
+gm.MAA_density(['P2X', 'Data'], solutions = solutions[:,[0,1]])
 
-
-
+gm.MAA_density(['Data', 'Store1'], solutions = solutions[:,[1,2]],
+               tech_titles = ['IT, Storage'])
 
 
 

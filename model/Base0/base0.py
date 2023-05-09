@@ -230,7 +230,7 @@ if add_hydrogen:
           p_max_pu          = 0,
           p_min_pu          = -1,
           capital_cost      = tech_df['capital cost']['hydrogen'],
-          marginal_cost    = tech_df['marginal cost']['hydrogen'],
+          marginal_cost     = tech_df['marginal cost']['hydrogen'],
           )
 
 # ----- Add datacenter --------------------
