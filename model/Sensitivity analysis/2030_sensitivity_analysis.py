@@ -1,3 +1,4 @@
+#%% Import packages
 import os
 import sys
 os.chdir(os.path.join(os.path.dirname(__file__)))
@@ -17,16 +18,27 @@ t = TicToc() #create instance of time class
 
 #%% Control
 year       = 2030
-input_name = '../Base0/' + str(year) +'_base0_opt.nc'
+input_name = '../Base0/v_' + str(year) +'_base0_opt.nc'
+
+connected_countries =  [
+                        "Denmark",         
+                        "Norway",          
+                        "Germany",         
+                        "Netherlands",     
+                        "Belgium",         
+                        "United Kingdom"
+                        ]
 
 #%% Set up network and load in data
 n = pypsa.Network(input_name) #Load network from netcdf file
 
+
 # ----- data ---------
-n.area_use      = tm.get_area_use()
-n.total_area    = tm.get_main_parameters()[0][year]['island_area']
-n.link_sum_max  = n.generators.p_nom_max['Wind']
-n.main_links    = n.links[~n.links.index.str.contains("bus")].index
+n.area_use              = tm.get_area_use()
+n.total_area            = tm.get_main_parameters()[0][year]['island_area']
+n.link_sum_max          = n.generators.p_nom_max['Wind']
+n.main_links            = n.links[~n.links.index.str.contains("bus")].index
+n.connected_countries   = connected_countries
 
 n_opt = n.copy()
 
@@ -34,10 +46,11 @@ n_opt = n.copy()
 def extra_functionality(n,snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
+    gm.marry_links(n, snapshots)
 
 #%% Should run or not
-cc_mode = True  # Choose to run capital cost sweep or not
-mc_mode = True # Choose to run marginal cost sweep or not
+cc_mode = False # Choose to run capital cost sweep or not
+mc_mode = False # Choose to run marginal cost sweep or not
     
 #%% Set sensitivity sweep parameters
 
@@ -86,13 +99,17 @@ if cc_mode == True:
             print('########################################')
             print('')
             
+            t_cc_loop = TicToc() #create instance of time class
+            t_cc_loop.tic()
+            
             n = n_opt.copy()
             
             # ----- data ---------
-            n.area_use      = tm.get_area_use()
-            n.total_area    = tm.get_main_parameters()[0][year]['island_area']
-            n.link_sum_max  = n_opt.generators.p_nom_max['Wind']
-            n.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
+            n.area_use              = tm.get_area_use()
+            n.total_area            = tm.get_main_parameters()[0][year]['island_area']
+            n.link_sum_max          = n.generators.p_nom_max['Wind']
+            n.main_links            = n.links[~n.links.index.str.contains("bus")].index
+            n.connected_countries   = connected_countries
             
             # Change capital cost
             if component == 'Island_store':
@@ -123,9 +140,15 @@ if cc_mode == True:
             
             # Store optimum system price
             cc_sensitivity_cap[component]['Optimum'].append(n.objective)
-        
+            
             # Update count of the number of studies done
             current_cc_n_study = current_cc_n_study + 1
+            
+            print('')
+            print('########################################')
+            print('Estimated time left of CC study = ' + str(t_cc_loop.tocvalue()/60 * (cc_n_studies - current_cc_n_study)))
+            print('########################################')
+            print('')
             
         # save dictionary to person_data.pkl file
     with open(str(year) +'_cc_sensitivity_cap.pkl', 'wb') as fp:
@@ -157,13 +180,17 @@ if mc_mode == True:
             print('########################################')
             print('')
             
+            t_mc_loop = TicToc() #create instance of time class
+            t_mc_loop.tic()
+            
             n = n_opt.copy()
             
             # ----- data ---------
-            n.area_use      = tm.get_area_use()
-            n.total_area    = tm.get_main_parameters()[0][year]['island_area']
-            n.link_sum_max  = n_opt.generators.p_nom_max['Wind']
-            n.main_links    = n_opt.links[~n_opt.links.index.str.contains("bus")].index
+            n.area_use              = tm.get_area_use()
+            n.total_area            = tm.get_main_parameters()[0][year]['island_area']
+            n.link_sum_max          = n.generators.p_nom_max['Wind']
+            n.main_links            = n.links[~n.links.index.str.contains("bus")].index
+            n.connected_countries   = connected_countries
             
             # Change marginal cost
             if component == 'Island_store':
@@ -200,6 +227,12 @@ if mc_mode == True:
             # Update count of the number of studies done
             current_mc_n_study = current_mc_n_study + 1
             
+            print('')
+            print('########################################')
+            print('Estimated time left of MC study = ' + str(t_mc_loop.tocvalue()/60 * (mc_n_studies - current_mc_n_study)))
+            print('########################################')
+            print('')
+            
     # save dictionary to person_data.pkl file
     with open(str(year) +'_mc_sensitivity_cap.pkl', 'wb') as fp:
         pickle.dump(mc_sensitivity_cap, fp)
@@ -210,7 +243,7 @@ else:
         mc_sensitivity_cap = pickle.load(fp)
         
 t.toc()
-gm.its_britney_bitch()        
+# gm.its_britney_bitch()        
 #%% Plot sweep: generators + storage
 
 plot_components = []
@@ -227,29 +260,37 @@ for component in plot_components:
             
             axs[i].set_title(f'{year}: Sensitivity of\n{component} capital cost', pad = 5)
             axs[i].set_xlabel('Capital cost coefficient [-]')
-            axs[i].set_ylabel('Norm. installed capacity [-]')
+            axs[i].set_ylabel('Use of available island area [%]')
             
             axs[i].set_ylim([-0.05,1.05])
             axs[i].set_yticks(np.arange(0,1.1,0.1))
+            axs[i].set_yticklabels([0,10,20,30,40,50,60,70,80,90,100])
             
             axs_copy = axs[i].twinx()
             axs_copy.get_yaxis().set_visible(False)
             
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in cc_components]:
                 y1 = cc_sensitivity_cap[component][k].copy()
-
-                for j in range(len(y1)):
-                    try:
-                        y1[j] = y1[j] / max(y1) 
-                    except ZeroDivisionError:
-                        y1[j] = 0
+                
+                if k == "Data":
+                    for j in range(len(y1)):
+                        y1[j] = y1[j] * n.area_use['data'] / n.total_area
+                    print(str(k) + str(y1)) 
+                elif k == "P2X":
+                    for j in range(len(y1)):
+                        y1[j] = y1[j] * n.area_use['hydrogen'] / n.total_area
+                    print(str(k) + str(y1)) 
+                elif k == "Island_store":
+                    for j in range(len(y1)):
+                        y1[j] = y1[j] * n.area_use['storage'] / n.total_area
+                    print(str(k) + str(y1))                        
                         
-                axs[i].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3)
+                axs[i].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 6)
                 
             cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
             cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
             
-            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', color = 'k', label = 'Optimum', linewidth = 0.9)
+            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
             axs_copy.set_ylabel('Objective optimum [€]') 
             axs_copy.set_ylim([-0.05,1.05])   
             
@@ -275,21 +316,27 @@ for component in plot_components:
             axs_copy.set_yticks(np.arange(0,1.1,0.1))
                 
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in mc_components]:
-                y2 = mc_sensitivity_cap[component][k].copy()
+                y2 = cc_sensitivity_cap[component][k].copy()
                 
-                for j in range(len(y2)):
-                    try:
-                        y2[j] = y2[j] / max(y2) 
-                    except ZeroDivisionError:
-                        y2[j] = 0
+                if k == "Data":
+                    for j in range(len(y1)):
+                        y2[j] = y2[j] * n.area_use['data'] / n.total_area
+                    print(str(k) + str(y2))
+                elif k == "P2X":
+                    for j in range(len(y1)):
+                        y2[j] = y2[j] * n.area_use['hydrogen'] / n.total_area
+                    print(str(k) + str(y2))
+                elif k == "Island_store":
+                    for j in range(len(y1)):
+                        y2[j] = y2[j] * n.area_use['storage'] / n.total_area         
+                    print(str(k) + str(y2))
                         
-                axs[i].plot(x2, y2, linestyle='-', marker='.', label = k, linewidth = 3)
+                axs[i].plot(x2, y2, linestyle='-', marker='.', label = k, linewidth = 6)
             
             mc_optimum = mc_sensitivity_cap[component]['Optimum'].copy()
             mc_optimum[:] = [x / max(mc_optimum) for x in mc_optimum]
             
-            axs_copy.plot(x2, mc_optimum, linestyle='-.', marker='.', color = 'k', label = 'Optimum', linewidth = 0.9)
-            axs_copy.set_ylabel('Norm. objective optimum [-]') 
+            axs_copy.plot(x2, mc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
             axs_copy.set_ylim([-0.05,1.05])    
             
             if component == 'Data':
@@ -308,7 +355,7 @@ for component in plot_components:
             
             lines, labels = axs[i].get_legend_handles_labels()
             lines2, labels2 = axs_copy.get_legend_handles_labels()
-            axs[i].legend(lines + lines2, labels + labels2, loc='center right', fontsize = 15)    
+            axs[i].legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
             
     # plt.tight_layout() 
     plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
@@ -318,12 +365,22 @@ plt.show()
 fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
 
 for i in n.main_links:
-    try:
-        axs.plot(cc_sensitivity_cap['Links'][i], label = i)
+    
+    if i.startswith('Island_to_'):
+    
+        # i = i.replace("_"," ")
+        x = cc_sensitivity_cap['Links']['Step'].copy()
+        y = cc_sensitivity_cap['Links'][i]
+        
+        axs.plot(x, y, label = i)
         axs.legend(loc = 'best')
-    except KeyError:
-        plt.clf()
+    else:
         continue
+    
+plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
+
     
 #%% Plot sweep: country generators
 fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
@@ -336,3 +393,7 @@ for i in n.generators.index:
     except KeyError:
         plt.clf()
         continue
+
+plt.title(f'{year}: Sensitivity of country  capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
