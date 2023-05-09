@@ -300,6 +300,68 @@ def link_constraint(n, snapshots):
     define_constraints(n, lhs, '<=', rhs, 'Link', 'Sum constraint')
     
 #%% MAA FUNCTIONS
+
+def define_mga_constraint_links(n, sns, epsilon=None, with_fix=False):
+    """
+    Author: Fabian Neumann 
+    Source: https://github.com/PyPSA/pypsa-eur-mga
+    
+    Build constraint defining near-optimal feasible space
+    Parameters
+    ----------
+    n : pypsa.Network
+    sns : Series|list-like
+        snapshots
+    epsilon : float, optional
+        Allowed added cost compared to least-cost solution, by default None
+    with_fix : bool, optional
+        Calculation of allowed cost penalty should include cost of non-extendable components, by default None
+    """
+    
+    import pandas as pd
+    from pypsa.linopf import lookup, network_lopf, ilopf
+    from pypsa.pf import get_switchable_as_dense as get_as_dense
+    from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
+    from pypsa.descriptors import nominal_attrs
+    from pypsa.descriptors import get_extendable_i, get_non_extendable_i
+
+    if epsilon is None:
+        epsilon = float(snakemake.wildcards.epsilon)
+
+    if with_fix is None:
+        with_fix = snakemake.config.get("include_non_extendable", True)
+
+    expr = []
+
+    # operation
+    for c, attr in lookup.query("marginal_cost").index:
+        cost = (
+            get_as_dense(n, c, "marginal_cost", sns)
+            .loc[:, lambda ds: (ds != 0).all()]
+            .mul(n.snapshot_weightings.loc[sns,'objective'], axis=0)
+        )
+        if cost.empty:
+            continue
+        expr.append(linexpr((cost, get_var(n, c, attr).loc[sns, cost.columns])).stack())
+
+    # investment
+    for c, attr in nominal_attrs.items():
+        cost = n.df(c)["capital_cost"][get_extendable_i(n, c)]
+        if cost.empty:
+            continue
+        expr.append(linexpr((cost, get_var(n, c, attr)[cost.index])))
+
+    lhs = pd.concat(expr).sum()
+
+    if with_fix:
+        ext_const = objective_constant(n, ext=True, nonext=False)
+        nonext_const = objective_constant(n, ext=False, nonext=True)
+        rhs = (1 + epsilon) * (n.objective_optimum + ext_const + nonext_const) - nonext_const
+    else:
+        ext_const = objective_constant(n)
+        rhs = 1 * n.objective_optimum + epsilon * (n.link_total_cost + ext_const)
+
+    define_constraints(n, lhs, "<=", rhs, "GlobalConstraint", "mu_epsilon")
     
 def define_mga_constraint(n, sns, epsilon=None, with_fix=False):
     """
@@ -485,26 +547,112 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
         projection=ccrs.EqualEarth()    #Choose cartopy.crs projection
         )
     
+def MAA_density(techs, solutions_df,
+                n_samples = 10000, bins = 25,
+                linewidth = 1,
+                xlim = [None, None], ylim = [None, None],
+                plot_MAA_points = False, filename = None,
+                tech_titles = None, show_text = True,
+                color = 'black', linecolor = 'gray', 
+                title = 'MAA density and polyhedron',
+                ):
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    from scipy.spatial import ConvexHull
+    import numpy as np
+    import pandas as pd
+    
+    if tech_titles == None: 
+        tech_titles = techs
+    
+    set_plot_options()
+    
+    tech_solutions = solutions_df[techs]
+    
+    fig, ax = plt.subplots(1, 1, figsize = (8,8))
+    
+    if show_text:
+        ax.set_xlabel(tech_titles[0], fontsize = 24)
+        ax.set_ylabel(tech_titles[1], fontsize = 24)
+        ax.set_title(title, color = color)
+    
+    # MAA solutions
+    x, y = tech_solutions[techs[0]],   tech_solutions[techs[1]]
+    
+    # Sample hull
+    samples = sample_in_hull(solutions_df.values, n_samples)
+    
+    samples_df = pd.DataFrame(samples,
+                              columns = solutions_df.columns)
+    
+    # Set x and y as samples for this dimension
+    x_samples = samples_df[techs[0]]
+    y_samples = samples_df[techs[1]]
+    
+    # --------  Create 2D histogram --------------------
+    hist, xedges, yedges = np.histogram2d(x_samples, y_samples,
+                                          bins = bins)
+    
+    # Create grid for pcolormesh
+    x_grid, y_grid = np.meshgrid(xedges, yedges)
+    
+    # Create pcolormesh plot with square bins
+    ax.pcolormesh(x_grid, y_grid, hist.T, cmap = 'Blues', zorder = 0)
+    
+    # Create patch to serve as hexbin label
+    hb = mpatches.Patch(color = 'tab:blue')
+    
+    ax.grid('on')
+    
+    # --------  Plot hull --------------------
+    hull = ConvexHull(tech_solutions.values)
+    
+    # plot simplexes
+    for simplex in hull.simplices:
+        l0, = ax.plot(tech_solutions.values[simplex, 0], tech_solutions.values[simplex, 1], 'k-', 
+                color = linecolor, label = 'faces',
+                linewidth = linewidth, zorder = 0)
+    
+    # list of legend handles and labels
+    l_list, l_labels   = [l0, hb], ['Polyhedron face', 'Sample density']
+    
+    if plot_MAA_points:
+        # Plot vertices from solutions
+        l1, = ax.plot(x, y,
+                  'o', label = "Near-optimal",
+                  color = 'lightcoral', zorder = 2)
+        l_list.append(l1)
+        l_labels.append('MAA points')
+        
+    if show_text:
+        ax.legend(l_list, l_labels, 
+                  loc = 'center', ncol = len(l_list),
+                  bbox_to_anchor = (0.5, -0.15), fancybox=False, shadow=False,)
+    
+    # Set limits
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    
+    if not filename == None:
+        fig.savefig(filename, format = 'pdf', bbox_inches='tight')
+        
+    return fig, ax 
+    
 def solutions_2D(techs, solutions,
+                 n_samples = 1000, bins = 25,
+                 title = 'MAA_plot', cmap = 'Blues',
+                 xlim = [None, None], ylim = [None, None],
                  opt_system = None,
-                 sweep_solutions = None,
                  tech_titles = None,
-                 n_samples = 1000,
-                 title = 'MAA_plot',
                  plot_MAA_points = False,
-                 plot_heatmap = True,
-                 cmap = 'Blues',
-                 bins = 25,
                  filename = None,
-                 alpha = 1):
+                 ):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
     # Plot the polyhedron shape, samples within and correlations.
     import pandas
-    import matplotlib
     import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
     import numpy as np
-    from scipy.stats import gaussian_kde
     import matplotlib.colors as mcolors
     import matplotlib.patches as mpatches
     
@@ -656,6 +804,10 @@ def solutions_2D(techs, solutions,
                 
                 l_list.append(l2)
                 l_labels.append('Optimal solution')
+               
+            # Set limits
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)
     
     # Place legend below subplots
     ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
@@ -668,6 +820,8 @@ def solutions_2D(techs, solutions,
     
     if not filename == None:
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
+        
+    return axs
         
 def solutions_3D(techs, solutions,
                  figsize = (10,10),

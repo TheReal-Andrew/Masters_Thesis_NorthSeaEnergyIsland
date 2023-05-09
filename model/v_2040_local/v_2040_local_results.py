@@ -23,15 +23,41 @@ import matplotlib.pyplot as plt
 
 gm.set_plot_options()
 
+year         = 2040
+project_name = 'local'
+mga_slack    = 0.1
+
 #%%
+solutions   = np.load(f'v_{year}_{project_name}_3MAA_10p_solutions.npy')
+n_opt       = pypsa.Network(f'v_{year}_{project_name}_opt.nc')
+techs       = ['P2X', 'Data', 'Store1']
+tech_titles = ['Hydrogen', 'IT', 'Storage']
 
-solutions = np.load('v_2040_local_3MAA_10p_solutions.npy')
-techs = ['P2X', 'Data', 'Store1']
+solutions_df = pd.DataFrame(solutions,
+                            columns = techs)
 
-gm.solutions_2D(techs, solutions, n_samples = 1000,
-                title = '2D plot of 3D MAA space',
-                filename = 'graphics/v_2040_preliminary_3MAA_10p_plot_2D_MAA.pdf'
+#%% Full solutions
+gm.solutions_2D(techs, solutions, 
+                n_samples = 100000, bins = 35,
+                tech_titles = tech_titles,
+                title = f'MAA results - {year}, mga_slack = {int(mga_slack)*100}% \n No area constraint',
+                # filename = f'graphics/v_{year}_{project_name}_{len(techs)}MAA_{mga_slack*100}p_plot_2D_MAA.pdf'
                 )
+
+#%% Single MAA area
+
+tech = ['Data', 'Store1']
+
+x = n_opt.generators.p_nom_opt['Data']
+y = n_opt.stores.e_nom_opt['Island_store']
+
+fig, ax = gm.MAA_density(tech, solutions_df,
+               plot_MAA_points = False,
+               bins = 50,
+               n_samples = 100000)
+
+# Plot optimal
+ax.plot(x, y, 'o', ms = 20, color = 'tab:red', alpha = 0.5)
 
 
 
