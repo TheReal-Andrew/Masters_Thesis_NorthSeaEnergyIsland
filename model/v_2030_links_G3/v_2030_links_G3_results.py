@@ -29,7 +29,7 @@ gm.set_plot_options()
 year          = 2030
 mga_slack     = 0.1   # MAA slack control
 study_name    = 'links_G3'
-variables     = []
+variables     = ['DK', 'NO', 'BE']
 
 name  = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 title = f'Model: {study_name}_{year}, for {len(variables)} MAA variables, with {int(mga_slack*100)} % slack'
