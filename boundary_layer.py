@@ -97,7 +97,7 @@ for i in range(len(h)-1):
         break
 
 fig, ax = plt.subplots(1,1, figsize = (10,5), dpi = 300)
-ax.plot(mean_wind.values, mean_wind.index, label = 'Energinet mean wind speed')
+ax.plot(mean_wind.values, mean_wind.index, label = 'DEA mean wind speed')
 ax.plot(v, h, label = 'Model velocity profile')
 
 ax.axhline(y=120, color='k', linestyle='--', linewidth = 1)
@@ -113,7 +113,7 @@ ax.yaxis.set_minor_locator(MultipleLocator(10))
 ax.set_xlim([8.5,12.5])
 ax.set_ylim([0,300])
 
-ax.set_title('Mean velocity from Energinet & model velocity profile', pad = 15)
+ax.set_title('Mean velocity from DEA & model velocity profile', pad = 15)
 ax.set_xlabel('Wind speed [m/s]')
 ax.set_ylabel('Height from sea level [m]')
 

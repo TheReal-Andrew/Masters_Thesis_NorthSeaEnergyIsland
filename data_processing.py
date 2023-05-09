@@ -106,10 +106,6 @@ cut_wind_ninja['wind_speed'] = full_wind_ninja[0:len(wind_data)]['wind_speed'].v
 
 #%% Linear interpolation
 
-# wind_speeds = wind_data['120m']
-# for i in range(len(wind_speeds)):
-#     if np.isnan(wind_speeds[i]):
-
 # #Fill Nan with mean value
 wind_data['120m'] = wind_data['120m'].replace(np.nan,wind_data['120m'].mean())
 wind_data['150m'] = wind_data['150m'].replace(np.nan,wind_data['150m'].mean())
@@ -133,7 +129,8 @@ from sklearn.metrics import mean_squared_error
 data1 = wind_data[h].copy()
 data2 = cut_wind_ninja.copy()
 
-step_sizes = np.arange(2000,int(len(np.ceil(wind_data[h])/2)))
+step_sizes = np.arange(1,int(len(np.ceil(wind_data[h]))))
+# step_sizes = [1,24,168,672]
 
 # step_sizes = [24,168,672]
 mse = []
@@ -152,7 +149,7 @@ for step_size in step_sizes:
         
         predict = filtered_ninja * coef[i]
         
-        mse.append(mean_squared_error(filtered_dea, predict))
+        mse.append(mean_squared_error(filtered_dea, predict,squared=True))
     
 coef_opt = coef[mse.index(min(mse))]
 print("Coef_opt = " + str(coef_opt))
@@ -197,8 +194,11 @@ ax.text(1.01, 0.70,
                 transform=ax.transAxes,
                 )
 
+plt.tight_layout() 
+plt.savefig('images/time_series_dea_vs_ninja.png', format = 'png', bbox_inches='tight')
+
 #%% Mean correction
-# full_wind_mean = full_wind_ninja/full_wind_ninja.mean() * wind_data[h].mean()
+#full_wind_mean = full_wind_ninja/full_wind_ninja.mean() * wind_data[h].mean()
 full_wind_mean =  coef_opt * full_wind_ninja
 # full_wind_mean =  1.04 * full_wind_ninja
 
@@ -242,6 +242,9 @@ ax.text(1.01, 1,
                 transform=ax.transAxes,
                 )
 
+plt.tight_layout() 
+plt.savefig('images/histogram_dea_vs_ninja.png', format = 'png', bbox_inches='tight')
+
 #%% Mean correction QQ plot
 fig, ax = plt.subplots(1,1,figsize = (5, 5), dpi = 300)
 
@@ -267,6 +270,8 @@ ax.set_xlabel('Renewables.Ninja quantiles [m/s]')
 ax.set_ylabel('DEA quantiles [m/s]')
 
 ax.legend()
+plt.tight_layout() 
+plt.savefig('images/qq_dea_ninja.png', format = 'png', bbox_inches='tight')
 
 #%% Wind speeds to CF
 def gaussian(v,v0):
@@ -330,4 +335,7 @@ ax.tick_params(which='minor')
 
 ax.grid(visible=True)
 ax.legend()
-ax.set_title('Vestas v164-8.0')
+ax.set_title('Vestas v164-9.5')
+
+plt.tight_layout() 
+plt.savefig('images/wind_correction.png', format = 'png', bbox_inches='tight')
