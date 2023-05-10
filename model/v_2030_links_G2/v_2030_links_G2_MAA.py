@@ -73,10 +73,6 @@ n.main_links          = n.links.loc[n.links.bus0 == "Energy Island"].index
 n.variables_set       = variables
 n.connected_countries = connected_countries
 
-# Save variables for objective function modification
-# n.MB        = n_optimum.generators.loc['MoneyBin'].capital_cost
-# n.revenue   = abs(n_optimum.generators_t.p['Data'].sum())*tech_df['marginal cost']['datacenter'] + abs(n.generators_t.p['P2X'].sum())*tech_df['marginal cost']['hydrogen']
-
 # Calculate total link costs
 link_cost = 0
 for link in n.links.loc[n.main_links].index:
