@@ -21,7 +21,6 @@ from ttictoc import tic,toc
 
 gm.set_plot_options()
 
-
 #%% Control
 
 year       = 2030
@@ -73,9 +72,18 @@ n.main_links          = n.links.loc[n.links.bus0 == "Energy Island"].index
 n.variables_set       = variables
 n.connected_countries = connected_countries
 
-# Save variables for objective function modification
-n.MB        = n_optimum.generators.loc['MoneyBin'].capital_cost
-n.revenue   = abs(n_optimum.generators_t.p['Data'].sum())*tech_df['marginal cost']['datacenter'] + abs(n.generators_t.p['P2X'].sum())*tech_df['marginal cost']['hydrogen']
+# Calculate total link costs
+link_cost = 0
+for link in n.links.loc[n.main_links].index:
+    
+    # Get capital cost [Eur/MW] and p_nom_opt [MW] for link:
+    capital_cost = n.links.loc[n.main_links].capital_cost[link]
+    p_nom_opt    = n.links.loc[n.main_links].p_nom_opt[link]
+    
+    # Add to sum of link costs:
+    link_cost +=  capital_cost * p_nom_opt
+    
+n.link_total_cost = link_cost
 
 #%% MAA setup
 
@@ -86,13 +94,13 @@ techs = [variables[x][1] for x in mga_variables]
 
 n.objective_optimum = n_objective
 
-def extra_functionality(n,snapshots,options,direction):
+def extra_functionality(n, snapshots, options, direction):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
     
     gm.marry_links(n, snapshots)
     
-    gm.define_mga_constraint(n,snapshots,options['mga_slack'])
+    gm.define_mga_constraint_links(n,snapshots,options['mga_slack'])
     gm.define_mga_objective(n,snapshots,direction,options)
 
 #%% MGA - Search 1 direction
