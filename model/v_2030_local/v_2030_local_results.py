@@ -38,7 +38,7 @@ solutions = np.load(name + 'solutions.npy')
 
 gm.solutions_2D(variables, solutions, n_samples = 1000,
                 title = title,
-                # filename = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
+                filename = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
                 )
 
 

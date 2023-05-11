@@ -28,7 +28,7 @@ study_name          = 'local'
 
 # Comment out the variables that should NOT be included as MAA variables
 variables = {
-                # 'x1':('Generator', 'P2X'),
+                'x1':('Generator', 'P2X'),
                 'x2':('Generator', 'Data'),
                 'x3':('Store',     'Storage'),
                 # 'x4':('Link',      'link_Denmark'),
