@@ -147,10 +147,10 @@ def sweep_solutions(n_opt, solutions, techs,
                 n_i.generators.p_nom_max[tech] = set_value 
                 n_i.generators.p_nom_min[tech] = set_value
                 
-            elif tech == "Store1":
+            elif tech == "Storage":
                 # Force capacity to be built
-                n_i.stores.e_nom_max['Island_store'] = set_value 
-                n_i.stores.e_nom_min['Island_store'] = set_value
+                n_i.stores.e_nom_max['Storage'] = set_value 
+                n_i.stores.e_nom_min['Storage'] = set_value
             
             # ----- Optimization ----- 
             def extra_functionality(n,snapshots):
@@ -170,7 +170,7 @@ def sweep_solutions(n_opt, solutions, techs,
             
             values = [n_i.generators.p_nom_opt['P2X'], 
                       n_i.generators.p_nom_opt['Data'],
-                      n_i.stores.e_nom_opt['Island_store'],
+                      n_i.stores.e_nom_opt['Storage'],
                       ]
             
             sweep = np.append(sweep, np.array([values]), axis=0)
@@ -259,7 +259,7 @@ def area_constraint(n, snapshots):
     lhs = linexpr(
                    (n.area_use['hydrogen'], vars_gen["P2X"]), 
                    (n.area_use['data'],     vars_gen["Data"]), 
-                   (n.area_use['storage'],  vars_store['Island_store'])
+                   (n.area_use['storage'],  vars_store['Storage'])
                   )
     
     # Define area use limit
@@ -300,6 +300,75 @@ def link_constraint(n, snapshots):
     define_constraints(n, lhs, '<=', rhs, 'Link', 'Sum constraint')
     
 #%% MAA FUNCTIONS
+
+def define_mga_constraint_local(n, sns, epsilon=None, with_fix=False):
+    """
+    Author: Fabian Neumann 
+    Source: https://github.com/PyPSA/pypsa-eur-mga
+    
+    Build constraint defining near-optimal feasible space
+    Parameters
+    ----------
+    n : pypsa.Network
+    sns : Series|list-like
+        snapshots
+    epsilon : float, optional
+        Allowed added cost compared to least-cost solution, by default None
+    with_fix : bool, optional
+        Calculation of allowed cost penalty should include cost of non-extendable components, by default None
+    """
+    
+    MB = n.MB               # Load money bin capital cost
+    revenue = n.revenue     # Load the revenue from the optimal system
+    
+    import pandas as pd
+    from pypsa.linopf import lookup, network_lopf, ilopf
+    from pypsa.pf import get_switchable_as_dense as get_as_dense
+    from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints, get_dual, get_con, write_objective, get_sol, define_variables
+    from pypsa.descriptors import nominal_attrs
+    from pypsa.descriptors import get_extendable_i, get_non_extendable_i
+
+    if epsilon is None:
+        epsilon = float(snakemake.wildcards.epsilon)
+
+    if with_fix is None:
+        with_fix = snakemake.config.get("include_non_extendable", True)
+
+    expr = []
+
+    # operation
+    for c, attr in lookup.query("marginal_cost").index:
+        cost = (
+            get_as_dense(n, c, "marginal_cost", sns)
+            .loc[:, lambda ds: (ds != 0).all()]
+            .mul(n.snapshot_weightings.loc[sns,'objective'], axis=0)
+        )
+        if cost.empty:
+            continue
+        expr.append(linexpr((cost, get_var(n, c, attr).loc[sns, cost.columns])).stack())
+
+    # investment
+    for c, attr in nominal_attrs.items():
+        cost = n.df(c)["capital_cost"][get_extendable_i(n, c)]
+        if cost.empty:
+            continue
+        expr.append(linexpr((cost, get_var(n, c, attr)[cost.index])))
+
+    lhs = pd.concat(expr).sum()
+
+    if with_fix:
+        ext_const = objective_constant(n, ext=True, nonext=False)
+        nonext_const = objective_constant(n, ext=False, nonext=True)
+        rhs = (1 + epsilon) * (n.objective_optimum + ext_const + nonext_const) - nonext_const
+    else:
+        ext_const = objective_constant(n)
+        rhs = n.objective_optimum + epsilon * (n.local_cost)
+        # rhs = (1 + epsilon) * (n.objective_optimum + revenue - MB + ext_const)
+        # rhs = 216028554434.1 # Original
+        # rhs = 198467222042.6 # local cost
+        
+    define_constraints(n, lhs, "<=", rhs, "GlobalConstraint", "mu_epsilon")
+
 
 def define_mga_constraint_links(n, sns, epsilon=None, with_fix=False):
     """
@@ -748,7 +817,7 @@ def solutions_2D(techs, solutions,
             
             ax = axs[j][i]
             
-            ax.text(0.5, text_lift, 'Scatter plot with vertices', ha='center', va='top',
+            ax.text(0.5, text_lift, 'MAA density', ha='center', va='top',
                     transform=ax.transAxes, fontsize=16, color = 'gray')
             
             # MAA solutions
@@ -908,7 +977,7 @@ def bake_local_area_pie(n, plot_title = 'title', exportname = None, ax = None):
     
     P2X_a   = n.generators.p_nom_opt["P2X"] * n.area_use['hydrogen']
     Data_a  = n.generators.p_nom_opt["Data"] * n.area_use['data']
-    Store_a = n.stores.e_nom_opt["Island_store"] * n.area_use['storage']
+    Store_a = n.stores.e_nom_opt['Storage'] * n.area_use['storage']
     
     total_A = P2X_a + Data_a + Store_a
     
@@ -960,7 +1029,7 @@ def bake_capacity_pie(n, plot_title = 'Title', exportname = None, ax = None):
     
     P2X_capacity   = n.generators.p_nom_opt["P2X"]      # [MW]
     data_capacity  = n.generators.p_nom_opt["Data"]     # [MW]
-    store_capacity = n.stores.e_nom_opt["Island_store"] # [MWh]
+    store_capacity = n.stores.e_nom_opt['Storage'] # [MWh]
     
     links_capacity = n.links.p_nom_opt[n.main_links].sum() # [MW]
     

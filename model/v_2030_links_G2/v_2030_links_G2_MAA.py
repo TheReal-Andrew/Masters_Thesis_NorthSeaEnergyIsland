@@ -32,7 +32,7 @@ study_name = 'links_G2'
 variables = {
                 # 'x1':('Generator', 'P2X'),
                 # 'x2':('Generator', 'Data'),
-                # 'x3':('Store',     'Store1'),
+                # 'x3':('Store',     'Storage'),
                 # 'x4':('Link',      'link_Denmark'),
                 # 'x5':('Link',      'link_Norway'),
                 'x6':('Link',      'link_Germany'),
@@ -184,10 +184,11 @@ while epsilon>MAA_convergence_tol:
         solutions = np.append(solutions, np.array([res]), axis=0)
         
         n.export_to_netcdf('results/' + MAA_network_names + str(j)+ '-'+ str(i) + '.nc')
+        np.save(MAA_solutions + 'solutions.npy', solutions)
         print(f'\n #### Exported MAA network: Loop {j}, direction {i} ####    \
                 \n Directions in this loop: {len(directions)}   \
                 \n Current Epsilon: {epsilon} \n')
-
+                
     try:
         hull = ConvexHull(solutions)
     except Exception as e:

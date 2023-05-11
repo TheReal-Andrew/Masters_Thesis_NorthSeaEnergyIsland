@@ -206,9 +206,9 @@ n.add("Generator",
 # Add storage to the island, represented by lithium-ion battery. Cyclic.
 if add_storage:
     n.add("Store",
-          "Island_store",
+          "Storage",
           bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
-          carrier           = "Store1",
+          carrier           = "Storage",
           e_nom_extendable  = True,
           e_cyclic          = True,
           capital_cost      = tech_df['capital cost']['storage'],

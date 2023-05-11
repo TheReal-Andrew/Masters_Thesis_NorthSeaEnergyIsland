@@ -18,9 +18,7 @@ from scipy.spatial import ConvexHull
 import gorm as gm
 import tim as tm
 from ttictoc import tic,toc
-
 gm.set_plot_options()
-
 
 #%% Control
 
@@ -32,7 +30,7 @@ study_name = 'links_G1'
 variables = {
                 # 'x1':('Generator', 'P2X'),
                 # 'x2':('Generator', 'Data'),
-                # 'x3':('Store',     'Store1'),
+                # 'x3':('Store',     'Storage'),
                 'x4':('Link',      'link_Denmark'),
                 # 'x5':('Link',      'link_Norway'),
                 'x6':('Link',      'link_Germany'),
@@ -183,6 +181,7 @@ while epsilon>MAA_convergence_tol:
         res       = search_direction(direction_i, mga_variables)
         solutions = np.append(solutions, np.array([res]), axis=0)
         
+        np.save(MAA_solutions + 'solutions_temp.npy', solutions)
         n.export_to_netcdf('results/' + MAA_network_names + str(j)+ '-'+ str(i) + '.nc')
         print(f'\n #### Exported MAA network: Loop {j}, direction {i} ####    \
                 \n Directions in this loop: {len(directions)}   \
@@ -202,7 +201,6 @@ while epsilon>MAA_convergence_tol:
     print(' ' + str(epsilon) + '\n')
     
 np.save(MAA_solutions + 'solutions.npy', solutions)
-
 
 print(f'\n It took {round(toc(), 2)} sec for a simulation with {len(variables)} variables. \n')
 

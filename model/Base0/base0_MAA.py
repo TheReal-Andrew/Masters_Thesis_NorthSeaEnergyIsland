@@ -32,7 +32,7 @@ study_name = 'base0'
 variables = {
                 # 'x1':('Generator', 'P2X'),
                 # 'x2':('Generator', 'Data'),
-                # 'x3':('Store',     'Store1'),
+                # 'x3':('Store',     'Storage'),
                 'x4':('Link',      'link_Denmark'),
                 'x5':('Link',      'link_Norway'),
                 # 'x6':('Link',      'link_Germany'),

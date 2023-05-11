@@ -42,7 +42,7 @@ o_slack = 0.0005
 o_value = n_opt.objective * o_slack
 
 #%%
-gm.solutions_2D(variables, solutions, n_samples = 1000,
+gm.solutions_2D(variables, solutions, n_samples = 100_000,
                 title = title,
                 # filename = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
                 )
