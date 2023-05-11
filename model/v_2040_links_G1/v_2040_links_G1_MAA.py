@@ -183,6 +183,7 @@ while epsilon>MAA_convergence_tol:
         res       = search_direction(direction_i, mga_variables)
         solutions = np.append(solutions, np.array([res]), axis=0)
         
+        np.save(MAA_solutions + 'solutions_temp.npy', solutions)
         n.export_to_netcdf('results/' + MAA_network_names + str(j)+ '-'+ str(i) + '.nc')
         print(f'\n #### Exported MAA network: Loop {j}, direction {i} ####    \
                 \n Directions in this loop: {len(directions)}   \
