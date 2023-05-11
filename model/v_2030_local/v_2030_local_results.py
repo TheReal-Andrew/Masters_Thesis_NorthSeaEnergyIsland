@@ -34,11 +34,19 @@ variables     = ['P2X', 'Data', 'Storage']
 name  = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_'
 title = f'Model: {study_name}_{year}, for {len(variables)} MAA variables, with {int(mga_slack*100)} % slack'
 
-solutions = np.load(name + 'solutions.npy')
+solutions  = np.load(name + 'solutions.npy')
+n_opt      = pypsa.Network(f'v_{year}_{study_name}_opt.nc')
 
-gm.solutions_2D(variables, solutions, n_samples = 1000,
+# Generate list with optimal values
+opt_system = n_opt.generators.loc[n_opt.generators.index.isin(variables)].p_nom_opt.tolist()
+
+opt_system.append(n_opt.stores.loc[n_opt.stores.index.isin(variables)].e_nom_opt['Storage'])
+
+#%%
+gm.solutions_2D(variables, solutions, n_samples = 1_000_000,
                 title = title,
-                filename = f'v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
+                opt_system = opt_system,
+                filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
                 )
 
 

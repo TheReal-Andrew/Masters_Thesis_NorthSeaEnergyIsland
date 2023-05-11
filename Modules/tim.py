@@ -52,8 +52,18 @@ def get_load_and_price(year = 2030, connected_countries = ['Denmark'], n_std = 1
     return cprice, cload
 
 #%% ----- BUS DATAFRAME -----
-def get_bus_df(connected_countries = ['Denmark']):
+def get_bus_df(connected_countries = None):
     import pandas as pd
+    
+    if connected_countries == None:
+        connected_countries =  [
+                                "Denmark",         
+                                "Norway",          
+                                "Germany",         
+                                "Netherlands",     
+                                "Belgium",         
+                                "United Kingdom"
+                                ]
     
     #Create dataframe with info on buses. Names, x (Longitude) and y (Latitude) 
     bus_df = pd.DataFrame(
