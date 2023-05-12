@@ -17,7 +17,7 @@ from scipy.spatial import ConvexHull
 
 import gorm as gm
 import tim as tm
-from ttictoc import tic,toc
+from ttictoc import tic, toc
 gm.set_plot_options()
 
 #%% Control
