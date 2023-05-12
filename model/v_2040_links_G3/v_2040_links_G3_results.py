@@ -48,11 +48,6 @@ opt_system = n_opt.links[n_opt.links['bus0'].isin(countries)].p_nom_opt.tolist()
 gm.solutions_2D(variables, solutions, n_samples = 1_000_000,
                 title = title,
                 opt_system = opt_system,
-                xlim = [0, solutions.max()], ylim = [0, solutions.max()],
                 filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
                 )
 
-gm.solutions_3D(variables, solutions,
-                markersize = 0, linewidth = 0.5,
-                filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_3D_MAA.pdf',
-                )
