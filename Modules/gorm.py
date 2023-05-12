@@ -318,9 +318,6 @@ def define_mga_constraint_local(n, sns, epsilon=None, with_fix=False):
         Calculation of allowed cost penalty should include cost of non-extendable components, by default None
     """
     
-    MB = n.MB               # Load money bin capital cost
-    revenue = n.revenue     # Load the revenue from the optimal system
-    
     import pandas as pd
     from pypsa.linopf import lookup, network_lopf, ilopf
     from pypsa.pf import get_switchable_as_dense as get_as_dense
@@ -363,9 +360,6 @@ def define_mga_constraint_local(n, sns, epsilon=None, with_fix=False):
     else:
         ext_const = objective_constant(n)
         rhs = n.objective_optimum + epsilon * (n.local_cost)
-        # rhs = (1 + epsilon) * (n.objective_optimum + revenue - MB + ext_const)
-        # rhs = 216028554434.1 # Original
-        # rhs = 198467222042.6 # local cost
         
     define_constraints(n, lhs, "<=", rhs, "GlobalConstraint", "mu_epsilon")
 
@@ -616,9 +610,43 @@ def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
         projection=ccrs.EqualEarth()    #Choose cartopy.crs projection
         )
     
-def MAA_density(techs, solutions_df,
+def fill_polyhedron(techs, solutions, 
+                    ax = None, label = None, tech_titles = None,
+                    title = None,
+                    fillcolor = 'tab:blue', edgecolor = 'black'):
+    import matplotlib.pyplot as plt
+    from scipy.spatial import ConvexHull
+    
+    if ax == None:
+        fig, ax = plt.subplots(1, 1, figsize = (8,8))
+        
+    if tech_titles == None: 
+        tech_titles = techs
+        
+    ax.set_xlabel(tech_titles[0], fontsize = 24)
+    ax.set_ylabel(tech_titles[1], fontsize = 24)
+    ax.set_title(title, color = 'black')
+
+    # Find the convex hull of the points
+    hull = ConvexHull(solutions)
+    
+    # Plot the points and the convex hull
+    ax.plot(solutions[:,0], solutions[:,1], 'o')
+    for simplex in hull.simplices:
+        ax.plot(solutions[simplex, 0], solutions[simplex, 1], '-', color = edgecolor)
+    
+    # Fill the area inside the convex hull
+    hull_poly = plt.Polygon(solutions[hull.vertices], label = label, 
+                            alpha = 0.2, color = fillcolor)
+    
+    ax.add_patch(hull_poly)
+    
+    return ax
+    
+def MAA_density(techs, solutions,
                 n_samples = 10000, bins = 25,
-                linewidth = 1,
+                linewidth = 1, density_alpha = 1,
+                ax = None,
                 xlim = [None, None], ylim = [None, None],
                 plot_MAA_points = False, filename = None,
                 tech_titles = None, show_text = True,
@@ -631,14 +659,19 @@ def MAA_density(techs, solutions_df,
     import numpy as np
     import pandas as pd
     
+    
     if tech_titles == None: 
         tech_titles = techs
     
     set_plot_options()
     
+    solutions_df = pd.DataFrame(solutions,
+                                columns = techs)
+    
     tech_solutions = solutions_df[techs]
     
-    fig, ax = plt.subplots(1, 1, figsize = (8,8))
+    if ax == None:
+        fig, ax = plt.subplots(1, 1, figsize = (8,8))
     
     if show_text:
         ax.set_xlabel(tech_titles[0], fontsize = 24)
@@ -666,7 +699,8 @@ def MAA_density(techs, solutions_df,
     x_grid, y_grid = np.meshgrid(xedges, yedges)
     
     # Create pcolormesh plot with square bins
-    ax.pcolormesh(x_grid, y_grid, hist.T, cmap = 'Blues', zorder = 0)
+    ax.pcolormesh(x_grid, y_grid, hist.T, cmap = 'Blues', 
+                  zorder = 0, alpha = density_alpha)
     
     # Create patch to serve as hexbin label
     hb = mpatches.Patch(color = 'tab:blue')
@@ -705,7 +739,7 @@ def MAA_density(techs, solutions_df,
     if not filename == None:
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
         
-    return fig, ax 
+    return ax 
     
 def solutions_2D(techs, solutions,
                  n_samples = 1000, bins = 25,
