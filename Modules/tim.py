@@ -28,9 +28,19 @@ def get_main_parameters():
     return mp, mp_gen
 
 #%% ---- COUNTRY LOAD AND PRICES ----
-def get_load_and_price(year = 2030, connected_countries = ['Denmark'], n_std = 1): # require year
+def get_load_and_price(year = 2030, connected_countries = None, n_std = 1): # require year
     import pandas as pd
     import gorm as gm
+    
+    if connected_countries == None:
+        connected_countries =  [
+                                "Denmark",         
+                                "Norway",          
+                                "Germany",         
+                                "Netherlands",     
+                                "Belgium",         
+                                "United Kingdom"
+                                ]
     
     # load data
     # cprice = pd.read_csv('https://raw.githubusercontent.com/TheReal-Andrew/Pre_project/main/Data/market/price_%d.csv'%year, index_col = 0)      

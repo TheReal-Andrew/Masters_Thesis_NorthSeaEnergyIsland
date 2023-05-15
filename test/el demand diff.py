@@ -5,6 +5,12 @@ Created on Thu Mar 30 14:38:14 2023
 @author: lukas
 """
 
+import os
+import sys
+# Add modules folder to path
+os.chdir(os.path.join(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath('../modules')) 
+
 import pandas as pd
 import gorm as gm
 import matplotlib.pyplot as plt
@@ -39,14 +45,6 @@ data.columns = ['2015 input demand',
                 ]
 data.index = pd.to_datetime(data.index)
 
-# ax = data.plot(figsize = (15,7), ax = ax[0])
-
-# fig = plt.gcf()
-
-# plt.suptitle( country +' projected energy consumption for 2030 and 2040')
-# ax.set_title('PES30P input demand vs demand adjusted for electrification', fontsize = 16)
-# ax.set_xlabel('Time [hr]')
-# ax.set_ylabel('Demand [MW]')
 
 #%%
 fig, ax = plt.subplots(2,1,figsize = (20, 10), dpi = 300)
@@ -72,5 +70,5 @@ ax[1].set_title(country +' Histogram of 2015 demand and adjusted 2030 and 2040 d
 ax[1].set_xlabel('Demand [MW]')
 ax[1].set_ylabel('Frequency')
 
-fig.savefig('energy_adjusted.pdf', format = 'pdf', bbox_inches='tight')
+# fig.savefig('energy_adjusted.pdf', format = 'pdf', bbox_inches='tight')
 
