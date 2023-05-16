@@ -245,6 +245,32 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
           carrier       = [carrier, carrier],
           )
     
+def get_link_flow(n, connected_countries):
+    import pandas as pd
+
+    # Create a new DataFrame to store the combined rows
+    result_df = pd.DataFrame()
+    
+    for country in connected_countries:
+        
+        p0 = n.links_t.p0[f'Island_to_{country}']
+        
+        p1 = n.links_t.p1[f'{country}_to_Island']
+        
+        diff = p0 + p1
+        
+        series = pd.Series(diff,
+                           name = country)
+        
+        result_df[country] = series
+        
+    ax = result_df.plot()
+    
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=len(result_df.columns)/2)
+
+    return result_df
+
+    
 # CONSTRAINTS
 
 # Area constraint
@@ -596,6 +622,15 @@ def set_plot_options():
     plt.rcParams.update({"axes.grid" : True, "grid.color": color_gridaxe}) #Set grid color
     plt.rcParams['axes.grid'] = True
     # plt.fontname = "Computer Modern Serif"
+    
+def get_color_codes():
+    color_codes = {
+                   'P2X':'#66c2a5',
+                   'IT':'#fc8d62',
+                   'Storage':'#8da0cb',
+                   'Links':'#f3dc83'}
+    
+    return color_codes
     
 def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
     import matplotlib.pyplot as plt
@@ -992,7 +1027,9 @@ def sns_heatmap(techs, solutions, triangular = False, n_samples = 1000):
 
     sns.heatmap(d_corr, annot = True, linewidths = 0.5, mask = mask)
     
-def bake_local_area_pie(n, plot_title = 'title', exportname = None, ax = None):
+def bake_local_area_pie(n, title = 'title', 
+                        labels = None,
+                        exportname = None, ax = None):
     # Create a piechart, showing the area used by each local technology on
     # the Energy Island.
     
@@ -1033,7 +1070,7 @@ def bake_local_area_pie(n, plot_title = 'title', exportname = None, ax = None):
     ax.margins(0, 0)
     ax.text(0, 1.05, f'Area used: {total_A:.0f} m$^2$', ha='center', fontsize=10)
     
-    ax.set_title(plot_title,
+    ax.set_title(title,
               fontsize = 16,
               pad = 20)
     
@@ -1045,7 +1082,7 @@ def bake_local_area_pie(n, plot_title = 'title', exportname = None, ax = None):
     if not exportname == None and ax == None:
         fig.savefig(exportname, format = 'pdf', bbox_inches='tight')
         
-def bake_capacity_pie(n, plot_title = 'Title', exportname = None, ax = None):
+def bake_capacity_pie(n, title = 'Title', exportname = None, ax = None):
     # Create a piechart, showing the capacity of all links and local demand.
     
     import matplotlib.pyplot as plt
@@ -1085,7 +1122,7 @@ def bake_capacity_pie(n, plot_title = 'Title', exportname = None, ax = None):
     ax.margins(0, 0)
     ax.text(0, 1.05, f'Total capacity: {round(total_capacity,2)} MW', ha='center', fontsize=10)
     
-    ax.set_title(plot_title,
+    ax.set_title(title,
               fontsize = 16,
               pad = 20)
     
@@ -1096,8 +1133,35 @@ def bake_capacity_pie(n, plot_title = 'Title', exportname = None, ax = None):
     
     if not exportname == None:
         fig.savefig(exportname, format = 'pdf', bbox_inches='tight')
+  
+
+def waffles_from_values(values, title, waffletitles,
+                        figsize = (10, 7), hspace = 0.35,
+                        ):
+    import matplotlib.pyplot as plt
+    from pywaffle import Waffle
     
+    fig, axs = plt.subplots(len(values), 1, figsize = figsize)
+    fig.suptitle(title, fontsize = 22)
+    fig.subplots_adjust(wspace = 0.5, hspace = hspace)
     
+    i = 0
+    for waffle_data in values:
+        
+        ax = axs[i]
+        ax.set_aspect(aspect="equal")
+        
+        Waffle.make_waffle(
+            ax     = ax,
+            rows   = 5,
+            values = waffle_data,
+            title  = {"label": waffletitles[i], "loc": "left"},
+            labels = [f"{k} ({v}%)" for k, v in waffle_data.items()],
+            legend = {'loc': 'lower left', 'bbox_to_anchor': (0, -0.3), 'ncol': len(waffle_data), 'framealpha': 0}
+            )
+        i += 1
+        
+    return fig, axs
     
     
     

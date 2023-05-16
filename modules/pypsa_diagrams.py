@@ -154,8 +154,8 @@ def draw_network(n, spacing = 2,
                  arrow_color = 'darkorange',
                  theme = 'default',
                  pos = None, filename = 'graphics/pypsa_diagram.pdf',
-                 handle_bi = False,
-                 index1 = None,
+                 handle_bi = False, index1 = None,
+                 show_country_values = False, exclude_bus = '',
                  ):
     import pandas as pd
     pd.options.mode.chained_assignment = None #Disable warning (For line 218)
@@ -272,8 +272,13 @@ def draw_network(n, spacing = 2,
                 
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push() # Save position
+                
+                value_string = f'\n \n p: {round(n.generators.loc[gen].p_nom_opt, 2)}'
+                label_addition = value_string if show_country_values else ''
+                label_addition = value_string if bus == exclude_bus else label_addition
+                
                 label = (gen.replace(' ', ' \n') 
-                          + '\n \n p: ' + str(round(n.generators.loc[gen].p_nom_opt, 2))
+                          + label_addition
                          )
                 d += MyGen().up().label(label, loc='right', fontsize = fontsize)
                 d.pop()  # Return to saved position
@@ -284,8 +289,13 @@ def draw_network(n, spacing = 2,
                 
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push()
+                
+                value_string = f'\n \n e: {round(n.stores.loc[store].e_nom_opt, 2)}'
+                label_addition = value_string if show_country_values and bus != exclude_bus else ''
+                label_addition = value_string if bus == exclude_bus else label_addition
+                
                 label = (store.replace(' ', ' \n') 
-                          + '\n \n e: ' + str(round(n.stores.loc[store].e_nom_opt, 2))
+                          + label_addition
                          )
                 d += MyStore().up().label(label, loc = 'right', fontsize = fontsize).color(component_color)
                 d.pop()
@@ -296,8 +306,13 @@ def draw_network(n, spacing = 2,
                 
                 d += elm.Line().color(bus_color).length(line_length) #Add line piece
                 d.push()
+                
+                value_string = f'\n \n p: {round(n.loads_t.p[load].mean(), 2)}'
+                label_addition = value_string if show_country_values and bus != exclude_bus else ''
+                label_addition = value_string if bus == exclude_bus else label_addition
+                
                 label = (load.replace(' ', ' \n') 
-                          + '\n \n mean p: ' + str(round(n.loads_t.p[load].mean(), 2))
+                          + label_addition
                          )
                 d += MyLoad().right().label(label, loc='top', fontsize = fontsize).color(component_color)
                 d.pop()
