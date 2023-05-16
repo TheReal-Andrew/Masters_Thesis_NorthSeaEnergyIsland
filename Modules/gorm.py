@@ -112,72 +112,6 @@ def sample_in_hull(points, n_samples = 1000):
                 counter = counter + 1
         
     return samples
-    
-def sweep_solutions(n_opt, solutions, techs,
-                    sweep_range = 6,
-                    no_constraint = False):
-    import numpy as np
-    import pandas as pd
-    import tim as tm
-    
-    area_use          = tm.get_area_use()
-    
-    sweeps = []
-    
-    for tech in techs:
-        sweep = np.empty((0, len(techs)), float)
-        
-        for coeff in np.linspace(0, 1, sweep_range):
-            
-            # Reset network
-            n_i = n_opt.copy()
-    
-            solutions_df = pd.DataFrame(solutions, columns = techs)
-    
-            n_i.area_use      = area_use
-            n_i.link_sum_max  = n_i.generators.p_nom_max['Wind']
-            n_i.main_links    = n_i.links[~n_i.links.index.str.contains("bus")].index
-            n_i.total_area    = n_opt.total_area 
-            
-            set_value = solutions_df[tech].max() * coeff
-            
-            if tech == 'P2X' or tech == 'Data':
-    
-                # Force capacity to be built
-                n_i.generators.p_nom_max[tech] = set_value 
-                n_i.generators.p_nom_min[tech] = set_value
-                
-            elif tech == "Storage":
-                # Force capacity to be built
-                n_i.stores.e_nom_max['Storage'] = set_value 
-                n_i.stores.e_nom_min['Storage'] = set_value
-            
-            # ----- Optimization ----- 
-            def extra_functionality(n,snapshots):
-                
-                if not no_constraint:
-                    area_constraint(n, snapshots)
-                    
-                link_constraint(n, snapshots)
-                
-            n_i.lopf(pyomo = False,
-                   solver_name = 'gurobi',
-                   # keep_shadowprices = True,
-                   # keep_references = True,
-                   extra_functionality = extra_functionality,
-                   )
-            
-            
-            values = [n_i.generators.p_nom_opt['P2X'], 
-                      n_i.generators.p_nom_opt['Data'],
-                      n_i.stores.e_nom_opt['Storage'],
-                      ]
-            
-            sweep = np.append(sweep, np.array([values]), axis=0)
-            
-        sweeps.append(sweep)
-        
-    return sweeps
 
 #%% ------- PyPSA FUNCTIONS -----------------------------------
 
@@ -245,8 +179,19 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
           carrier       = [carrier, carrier],
           )
     
-def get_link_flow(n, connected_countries):
+def get_link_flow(n, connected_countries = None, plot = False):
     import pandas as pd
+    
+    # Set connected countries if none provided
+    if connected_countries == None:
+        connected_countries =  [
+                                "Denmark",         
+                                "Norway",          
+                                "Germany",         
+                                "Netherlands",     
+                                "Belgium",         
+                                "United Kingdom"
+                                ]
 
     # Create a new DataFrame to store the combined rows
     result_df = pd.DataFrame()
@@ -264,13 +209,14 @@ def get_link_flow(n, connected_countries):
         
         result_df[country] = series
         
-    ax = result_df.plot()
-    
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=len(result_df.columns)/2)
+    if plot:
+        ax = result_df.plot()
+        
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=len(result_df.columns)/2)
 
     return result_df
 
-    
+
 # CONSTRAINTS
 
 # Area constraint
