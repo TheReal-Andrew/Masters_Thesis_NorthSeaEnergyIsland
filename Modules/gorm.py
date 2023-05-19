@@ -181,6 +181,9 @@ def add_bi_link(network, bus0, bus1, link_name, carrier, efficiency = 1,
     
 def get_link_flow(n, connected_countries = None, plot = False):
     import pandas as pd
+    # Combine powerflow from the two links that make the bidirectional link.
+    # Power going from Island to DK becomes positive.
+    # Power going from DK to Island becomes negative.
     
     # Set connected countries if none provided
     if connected_countries == None:
@@ -197,13 +200,10 @@ def get_link_flow(n, connected_countries = None, plot = False):
     result_df = pd.DataFrame()
     
     for country in connected_countries:
-        
         p0 = n.links_t.p0[f'Island_to_{country}']
+        p1 = n.links_t.p0[f'{country}_to_Island']
         
-        p1 = n.links_t.p1[f'{country}_to_Island']
-        
-        diff = p0 + p1
-        
+        diff = p0 - p1 # Power flow from DK to Island becomes negative
         series = pd.Series(diff,
                            name = country)
         
@@ -244,6 +244,16 @@ def marry_links(n, snapshots):
     from pypsa.linopt import get_var, linexpr, join_exprs, define_constraints
     
     vars_links   = get_var(n, 'Link', 'p_nom')
+    
+    if not hasattr(n, 'connected_countries'):
+        n.connected_countries =  [
+                                "Denmark",         
+                                "Norway",          
+                                "Germany",         
+                                "Netherlands",     
+                                "Belgium",         
+                                "United Kingdom"
+                                ]
     
     for country in n.connected_countries:
         
@@ -572,7 +582,7 @@ def set_plot_options():
 def get_color_codes():
     color_codes = {
                    'P2X':'#66c2a5',
-                   'IT':'#fc8d62',
+                   'Data':'#fc8d62',
                    'Storage':'#8da0cb',
                    'Links':'#f3dc83'}
     
@@ -888,6 +898,7 @@ def solutions_2D(techs, solutions,
                 
                 l_list.append(l2)
                 l_labels.append('Optimal solution')
+                
                
             # Set limits
             ax.set_xlim(xlim)
@@ -1109,7 +1120,62 @@ def waffles_from_values(values, title, waffletitles,
         
     return fig, axs
     
+def histograms_3MAA(techs, solutions, 
+                    title = 'Histograms', n_samples = 10000):
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
     
+    # Get colors
+    colors = get_color_codes()
     
+    #Check if one or more solutions was passed, and create list
+    if not isinstance(solutions, list):
+        solutions = [solutions]
+    
+    fig, axs = plt.subplots(len(techs), 1, figsize = (15,4*len(techs)))
+    fig.subplots_adjust(hspace = 0.5)
+    fig.suptitle(title, fontsize = 32)
+    axs = axs.ravel()
+    
+    for solution, year in zip(solutions, [2030, 2040]):
+        # Sampling
+        samples = sample_in_hull(solution, n_samples)
+        samples_df = pd.DataFrame(samples, columns = techs)
+        
+        # ----------------------- Histograms plot -----------------------------
+        
+        linestyle = '-' if year == 2030 else '--'
+        
+        for tech, ax in zip(techs, axs):
+            
+            # Create Seaborn histplot with KDE line
+            sns.histplot(samples_df[tech].values, 
+                         line_kws = {'linewidth':3, 'linestyle':linestyle},
+                         element = 'step',
+                         color = colors[tech],
+                         alpha = 1/2,
+                         kde = True,
+                         ax = ax, label='_nolegend_',
+                         )
+                
+            xUnit  = '[MWh]' if tech == 'Storage' else '[MW]'
+            ax.set(xlabel = f'Installed capacity {xUnit}', 
+                   ylabel = 'Frequency',
+                   )
+            
+            ax.set_title(tech, color = colors[tech], fontsize = 24, y = 0.975)
+        
+    # ----------------------- Set legend -----------------------------
+    for tech, ax in zip(techs, axs):
+        
+        handles = [
+            Line2D([], [], color = colors[tech], linestyle='-', linewidth = 3),
+            Line2D([], [], color = colors[tech], linestyle='--', linewidth = 3)
+        ]
+        labels = ['2030', '2040']
+        ax.legend(handles=handles, labels=labels, loc='upper center',
+                  ncol=2, fancybox=False, shadow=False)
     
     

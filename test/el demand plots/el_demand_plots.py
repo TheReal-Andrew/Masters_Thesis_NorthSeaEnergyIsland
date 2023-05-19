@@ -19,10 +19,10 @@ import numpy as np
 
 country = 'Denmark'
 
-cprice, cload30   = tm.get_load_and_price(2030, n_std = 1)
+cprice30, cload30   = tm.get_load_and_price(2030, n_std = 1)
 cload30 = cload30.applymap(lambda x: 0 if x < 0 else x) # Remove negative values
 
-cprice, cload40   = tm.get_load_and_price(2040, n_std = 1)
+cprice40, cload40   = tm.get_load_and_price(2040, n_std = 1)
 cload40 = cload40.applymap(lambda x: 0 if x < 0 else x) # Remove negative values
 
 cload15 = pd.read_csv(f'../../data/market/demand_2030.csv', index_col = 0)

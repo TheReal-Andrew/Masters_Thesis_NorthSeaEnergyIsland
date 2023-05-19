@@ -32,19 +32,16 @@ input_name = 'base0_opt.nc'
 
 n = pypsa.Network(input_name) #Load network from netcdf file
 
-# ----- data ---------
-tech_df         = tm.get_tech_data(year, 0.07) # Get data
-
-area_use        = tm.get_area_use()
-n.area_use      = area_use
+n.area_use      = tm.get_area_use()
 n.link_sum_max  = n.generators.p_nom_max['Wind']
-n.main_links    = n.links[~n.links.index.str.contains("bus")].index
+n.main_links    = n.links.loc[n.links.bus0 == "Energy Island"].index
 
  #%% Optimization
  
 def extra_functionality(n,snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
+    gm.marry_links(n, snapshots)
     
 n.lopf(pyomo = False,
        solver_name = 'gurobi',

@@ -39,6 +39,85 @@ for n in [n_2030, n_2030_nac, n_2040, n_2040_nac]:
     n.link_sum_max  = n.generators.p_nom_max['Wind']
     n.main_links    = n.links.loc[n.links.bus0 == "Energy Island"].index
     
+#%% Run sim and get dual values
+
+def extra_functionality(n,snapshots):
+    gm.area_constraint(n, snapshots)
+    gm.link_constraint(n, snapshots)
+    gm.marry_links(n, snapshots)
+    
+n_2030.lopf(pyomo = False,
+       solver_name = 'gurobi',
+       keep_shadowprices = True,
+       keep_references = True,
+       extra_functionality = extra_functionality,
+       )
+
+n_2040.lopf(pyomo = False,
+       solver_name = 'gurobi',
+       keep_shadowprices = True,
+       keep_references = True,
+       extra_functionality = extra_functionality,
+       )
+
+#%% Get duals
+from pypsa.linopt import get_dual
+
+def remove_outliers2(df,columns,n_std):
+    for col in columns:
+        print('Removing outliers - Working on column: {}'.format(col))
+        
+        df2 = df.copy()
+        
+        df[col][ df[col] >= df[col].mean() + (n_std * df[col].std())] = \
+        0
+        
+        df.mean()
+        
+        df2[col][ df2[col] >= df2[col].mean() + (n_std * df2[col].std())] = \
+        df.mean()
+        
+    return df
+
+rent_30 = get_dual(n_2030, 'Island', 'Area_Use') # [EUR/m^2]
+rent_40 = get_dual(n_2040, 'Island', 'Area_Use') # [EUR/m^2]
+
+island_price_30 = get_dual(n_2030, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
+island_price_40 = get_dual(n_2040, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
+
+prices = pd.DataFrame({'2030 price': island_price_30.copy().reset_index(drop = True),
+                       '2040 price': island_price_40.copy().reset_index(drop = True)},
+                      )
+prices = remove_outliers2(prices, prices.columns, 0)
+
+rent_df = pd.DataFrame({'2030':rent_30,
+                        '2040':rent_40},
+                       )
+
+#%% plot prices
+
+filename = 'island_electricity_prices.pdf'
+
+ax = prices.plot(figsize = (10,5))
+
+ax.legend(loc = 'center',
+          bbox_to_anchor = (1.15, 0.5), fancybox=False, shadow=False,)
+
+ax.set(ylabel = 'Electricity price [EUR/MW]',
+       xlabel = 'Time [hr]',
+       title  = 'Electricity price on the energy island'
+       )
+
+fig = ax.figure
+
+fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+
+#%%
+
+n = n_2030
+
+m2_price = n.generators.capital_cost['Data']/n.area_use['data']
+    
 #%% Network visualization
 n = n_2030
 
@@ -129,11 +208,33 @@ fig.suptitle(f'{year} optimal system',
 
 fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
 
-#%% Transmission link visualization
-n = n_2030
+#%% Transmission link visualization - 2030
+n = n_2040
+year = 2040
+filename = f'{year}_link_histograms.pdf'
 
 flow = gm.get_link_flow(n)
 
+if year == 2040:
+    flow = flow.drop(['Belgium', 'United Kingdom'], axis = 1)
+    v = 6.66
+elif year == 2030:
+    flow = flow.drop('Germany', axis = 1)
+    v = 10
+
+axs = flow.hist(figsize = (20, v), bins = 100)
+
+axs = axs.ravel()
+
+fig = axs[0].get_figure()
+fig.subplots_adjust(hspace = 0.7)
+fig.suptitle(f'{year} - Link histograms', fontsize = 30)
+
+for ax in axs:
+    ax.set_xlabel('Power flow [MW]')
+    ax.set_ylabel('Frequency')
+    
+fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
 
 #%% Waffle diagram - area use, optimals - OLD
 # filename = 'waffle_optimals_area_use.pdf' 
