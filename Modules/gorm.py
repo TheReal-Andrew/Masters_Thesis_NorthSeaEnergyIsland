@@ -584,8 +584,14 @@ def get_color_codes():
                    'P2X':'#66c2a5',
                    'Data':'#fc8d62',
                    'Storage':'#8da0cb',
-                   'Links':'#f3dc83'}
-    
+                   'Links':'#f3dc83',
+                   'DK': '#ee6e5c',
+                   'NO': '#66b8c2',
+                   'DE': '#e5c494',
+                   'BE': '#e5db94',
+                   'NL': '#e5adcf',
+                   'GB': '#b4d480',
+                   }
     return color_codes
     
 def plot_geomap(network, bounds = [-3, 12, 59, 50.5], size = (15,15)):
@@ -1120,14 +1126,13 @@ def waffles_from_values(values, title, waffletitles,
         
     return fig, axs
     
-def histograms_3MAA(techs, solutions, 
+def histograms_3MAA(techs, solutions, filename = None,
                     title = 'Histograms', n_samples = 10000):
     import pandas as pd
     import seaborn as sns
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     
-    # Get colors
     colors = get_color_codes()
     
     #Check if one or more solutions was passed, and create list
@@ -1136,7 +1141,7 @@ def histograms_3MAA(techs, solutions,
     
     fig, axs = plt.subplots(len(techs), 1, figsize = (15,4*len(techs)))
     fig.subplots_adjust(hspace = 0.5)
-    fig.suptitle(title, fontsize = 32)
+    fig.suptitle(title, fontsize = 32, y = 0.97)
     axs = axs.ravel()
     
     for solution, year in zip(solutions, [2030, 2040]):
@@ -1165,7 +1170,9 @@ def histograms_3MAA(techs, solutions,
                    ylabel = 'Frequency',
                    )
             
-            ax.set_title(tech, color = colors[tech], fontsize = 24, y = 0.975)
+            axtitle = 'IT' if tech == 'Data' else tech
+            
+            ax.set_title(axtitle, color = colors[tech], fontsize = 24, y = 0.975)
         
     # ----------------------- Set legend -----------------------------
     for tech, ax in zip(techs, axs):
@@ -1177,5 +1184,8 @@ def histograms_3MAA(techs, solutions,
         labels = ['2030', '2040']
         ax.legend(handles=handles, labels=labels, loc='upper center',
                   ncol=2, fancybox=False, shadow=False)
+        
+    if not filename == None:
+        fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
     
     

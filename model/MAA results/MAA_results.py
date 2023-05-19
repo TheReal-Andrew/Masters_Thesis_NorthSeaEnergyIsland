@@ -49,67 +49,36 @@ from gorm import sample_in_hull
 
 #%% Overlapping histograms
 
-n_samples    = 10_000
+n_samples   = 100_000
+tech_colors = gm.get_color_codes()
 
 # project, n_MAA, techs, title
 
-projects    = ['local', 'local_nac', 'G2', 'G3']
+projects    = ['local', 'links_G2', 'links_G3']
 techs_list  = [['P2X', 'Data', 'Storage'],
-               ['P2X', 'Data', 'Storage'],
+               # ['P2X', 'Data', 'Storage'],
                ['DE', 'NL', 'GB'],
                ['DK', 'NO', 'BE']
                ]
 
 for techs, project in zip(techs_list, projects):
     #Local:
-    # project = 'local'
+    filename = f'MAA_overlap_hist_{project}.pdf'
     n_MAA   = 3
     sol30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
     sol40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
     sols  = [sol30, sol40]
-    techs = ['P2X', 'Data', 'Storage']
-    title = 'Histograms'
-    gm.histograms_3MAA(techs, sols, n_samples = n_samples)
+    title = f'Histograms for project: {project}'
+    gm.histograms_3MAA(techs, sols, title = title, n_samples = n_samples,
+                       filename = filename,)
 
 
 #%%
 #Local:
-project = 'local_nac'
-n_MAA   = 3
-local_nac30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
-local_nac40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
-local_nac_sols  = [local30, local40]
-local_techs = ['P2X', 'Data', 'Storage']
-local_title = 'Histograms'
-gm.histograms_3MAA(techs, local_sols, n_samples = n_samples)
-
-#G1:
 project = 'local'
 n_MAA   = 3
-local30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
-local40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
-local_sols  = [local30, local40]
-local_techs = ['P2X', 'Data', 'Storage']
-local_title = 'Histograms'
-
-#G2:
-project = 'local'
-n_MAA   = 3
-local30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
-local40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
-local_sols  = [local30, local40]
-local_techs = ['P2X', 'Data', 'Storage']
-local_title = 'Histograms'
-
-#G3:
-project = 'local'
-n_MAA   = 3
-local30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
-local40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
-local_sols  = [local30, local40]
-local_techs = ['P2X', 'Data', 'Storage']
-local_title = 'Histograms'
-
+solutions30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
+solutions40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
 
 solutions_list = [solutions30,
                    solutions40,
