@@ -45,6 +45,7 @@ n.main_links    = n.links[~n.links.index.str.contains("bus")].index
 def extra_functionality(n,snapshots):
     gm.area_constraint(n, snapshots)
     gm.link_constraint(n, snapshots)
+    gm.marry_links(n, snapshots)
     
 n.lopf(pyomo = False,
        solver_name = 'gurobi',

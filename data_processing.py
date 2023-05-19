@@ -129,7 +129,7 @@ from sklearn.metrics import mean_squared_error
 data1 = wind_data[h].copy()
 data2 = cut_wind_ninja.copy()
 
-step_sizes = np.arange(1,int(len(np.ceil(wind_data[h])/2)))
+step_sizes = np.arange(2000,int(len(np.ceil(wind_data[h]))/2))
 # step_sizes = [1,24,168,672]
 
 # step_sizes = [24,168,672]
@@ -159,7 +159,7 @@ print("MSE index = " + str(mse.index(min(mse))) + ", MSE = " + str(min(mse)))
 fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
 
 ax.plot(wind_data[h], label = 'DEA (LiDAR buoy)')
-ax.plot(cut_wind_ninja,   label = 'Renewables.Ninja')
+ax.plot(cut_wind_ninja,   label = 'MERRA')
 
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b%d'))
 ax.yaxis.set_minor_locator(MultipleLocator(1))
@@ -175,7 +175,7 @@ ax.legend(loc = 'upper right', fontsize = 11)
 ax.grid(linewidth=1)
 
 ax.text(1.01, 1, 
-                str('Renewables.Ninja:\n'
+                str('MERRA:\n'
                     + 'Std = ' + str(round(cut_wind_ninja['wind_speed'].std(), 1)) +'m/s\n'
                     + 'Min = ' + str(round(cut_wind_ninja['wind_speed'].min(), 1)) +'m/s\n'
                     + 'Mean = '+ str(round(cut_wind_ninja['wind_speed'].mean(),1)) +'m/s\n'
@@ -219,7 +219,7 @@ ax.hist([wind_data[h].values,
         bins = np.arange(0,27,1), 
         rwidth=0.9,
         label = ['DEA',
-                 'Renewables.Ninja',
+                 'MERRA',
                  'Mean corrected'])
 
 ax.set_xticks(np.arange(0,27))
@@ -265,8 +265,8 @@ ax.set_ylim([0,35])
 ax.set_xticks(np.arange(0,40,5))
 ax.set_yticks(np.arange(0,40,5))
 
-ax.set_title('DEA vs Renewables.Ninja')
-ax.set_xlabel('Renewables.Ninja quantiles [m/s]')
+ax.set_title('DEA vs MERRA')
+ax.set_xlabel('MERRA quantiles [m/s]')
 ax.set_ylabel('DEA quantiles [m/s]')
 
 ax.legend()

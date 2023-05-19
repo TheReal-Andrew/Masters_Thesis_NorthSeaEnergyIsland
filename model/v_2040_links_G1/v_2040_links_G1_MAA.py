@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 20 13:06:40 2023
-
-@author: lukas
-"""
-
 import os
 import sys
 # Add modules folder to path
