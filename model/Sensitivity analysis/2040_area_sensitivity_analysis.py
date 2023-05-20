@@ -60,7 +60,7 @@ n.lopf(pyomo                = False,
        extra_functionality  = extra_functionality)
 
 #%% Should run or not
-area_mode = True # Choose to run capital cost sweep or not
+area_mode = False # Choose to run capital cost sweep or not
     
 #%% Set sensitivity sweep parameters
 
@@ -173,6 +173,7 @@ area_components = list(area_ranges.keys())
 plot_components = []
 
 titler = ['P2X','IT','storage']
+colors = gm.get_color_codes()
 
 for i in area_components:
     plot_components.append(i)
@@ -194,15 +195,17 @@ for q, component in enumerate(plot_components):
             # axs[0].set_xticks(np.arange(0.5,2.25,0.25))
             
             if component == "hydrogen":
-                axs[0].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
+                axs[0].set_xlim(0,max(area_ranges[component]))
             if component == "data":
                 axs[0].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
             if component == "storage":
-                axs[0].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
+                axs[0].set_xlim(0,max(area_ranges[component]))
             
             axs[0].set_ylim([-0.05,1.05])
             
             axs[0].set_yticks(np.arange(0,1.2,0.2),[0,20,40,60,80,100])
+            axs[0].yaxis.set_minor_locator(MultipleLocator(0.05))
+            axs[0].xaxis.set_minor_locator(MultipleLocator(0.1))
             
             axs_copy1 = axs[0].twinx()
             axs_copy1.set_ylim([-0.05,1.05])
@@ -225,7 +228,7 @@ for q, component in enumerate(plot_components):
                     for j in range(len(y1)):
                         y1[j] = y1[j] * area_sensitivity_cap.copy()[component]['Use_area'][j]['storage'] / n.total_area                  
                         
-                axs[0].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3)
+                axs[0].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
                 
             # plt.legend(loc = 'best')
             
@@ -233,21 +236,24 @@ for q, component in enumerate(plot_components):
             #Plot capacities 
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in area_components]:
                 y2 = area_sensitivity_cap[component][k].copy()
-                axs[1].plot(x1, y2, linestyle='-', marker='.', label = k, linewidth = 3)
+                axs[1].plot(x1, y2, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
                 
             # axs[1].set_ylim([-500,12000])
             axs[1].set_xlabel('Area use coefficient [-]')
             axs[1].set_ylabel("Nominal capacity [GW]")
             
             if component == "hydrogen":
-                axs[0].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
+                axs[1].set_xlim(0,max(area_ranges[component]))
             if component == "data":
-                axs[0].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
+                axs[1].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
             if component == "storage":
-                axs[0].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
+                axs[1].set_xlim(0,max(area_ranges[component]))
             
             axs[1].set_ylim([-750,15_750])
             axs[1].set_yticks(np.arange(0,16_000,3_000),[0,3,6,9,12,15])
+            
+            axs[1].yaxis.set_minor_locator(MultipleLocator(1000))
+            axs[1].xaxis.set_minor_locator(MultipleLocator(0.1))
             
             axs_copy2 = axs[1].twinx()
             axs_copy2.set_ylim([-0.05,1.05])
@@ -256,10 +262,11 @@ for q, component in enumerate(plot_components):
             area_optimum = area_sensitivity_cap[component]['Optimum'].copy()
             area_optimum[:] = [x / max(area_optimum) for x in area_optimum]
             axs_copy2.plot(x1, area_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            axs_copy2.yaxis.set_minor_locator(MultipleLocator(0.05))
             
             lines, labels = axs[i].get_legend_handles_labels()
             lines2, labels2 = axs_copy2.get_legend_handles_labels()
-            axs[1].legend(lines + lines2, labels + labels2, loc='best', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
+            axs[1].legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
             
     # plt.tight_layout() 
     plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_area_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
