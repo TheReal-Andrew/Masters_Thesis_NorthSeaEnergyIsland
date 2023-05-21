@@ -108,7 +108,7 @@ prices = pd.DataFrame({'2030 price': island_price_30.copy().reset_index(drop = T
                        '2040 price': island_price_40.copy().reset_index(drop = True),
                        '2040_nac price': island_price_40_nac.copy().reset_index(drop = True)},
                       )
-prices = remove_outliers2(prices, prices.columns, 0)
+# prices = remove_outliers2(prices, prices.columns, 0)
 
 rent_df = pd.DataFrame({'2030':rent_30,
                         '2040':rent_40},
@@ -401,8 +401,8 @@ fig.savefig('graphics/waffles/'+filename, format = 'pdf', bbox_inches='tight')
 
 
 #%% Transmission link visualization - 2030
-n    = n_2030_nac
-year = 2030
+n    = n_2040_nac
+year = 2040
 nac  = True
 filename = f'{year}_nac_link_histograms.pdf'
 
@@ -424,7 +424,7 @@ axs = axs.ravel()
 
 fig = axs[0].get_figure()
 fig.subplots_adjust(hspace = 0.7)
-fig.suptitle(f'{year} - Link histograms', fontsize = 30, y = 1.1)
+fig.suptitle(f'{year} - Link histograms for unconstrained case', fontsize = 30, y = 1.1)
 
 for ax in axs:
     ax.set_xlabel('Power flow [MW]')

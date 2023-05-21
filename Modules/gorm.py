@@ -739,7 +739,7 @@ def MAA_density(techs, solutions,
     return ax 
     
 def solutions_2D(techs, solutions,
-                 n_samples = 1000, bins = 25,
+                 n_samples = 1000, bins = 50,
                  title = 'MAA_plot', cmap = 'Blues',
                  xlim = [None, None], ylim = [None, None],
                  opt_system = None,
@@ -755,9 +755,11 @@ def solutions_2D(techs, solutions,
     import numpy as np
     import matplotlib.colors as mcolors
     import matplotlib.patches as mpatches
+    import seaborn as sns
     
     pad = 5
     ncols = len(techs) if opt_system == None else len(techs)+1
+    colors = get_color_codes()
     
     if tech_titles == None: 
         tech_titles = techs
@@ -831,12 +833,16 @@ def solutions_2D(techs, solutions,
     
     # Diagonal plotting
     for j in range(0, len(techs)):
-        
+
         ax = axs[j][j]
         
-        d_df[techs[j]].hist(bins = 50, ax = ax,
-                            color = 'tab:purple', rwidth = 0.9,
-                            label = 'histogram')
+        sns.histplot(d_df[techs[j]].values,
+                     color = colors[techs[j]],
+                     bins = bins,
+                     line_kws = {'linewidth':3},
+                     element = 'bars',
+                     kde = True,
+                     ax = ax, label = '_nolegend_',)
         
         ax.text(0.5, text_lift, 'Histogram', ha='center', va='top', 
                 transform=ax.transAxes, fontsize = 16, color = 'gray')
@@ -1127,7 +1133,8 @@ def waffles_from_values(values, title, waffletitles,
     return fig, axs
     
 def histograms_3MAA(techs, solutions, filename = None,
-                    title = 'Histograms', n_samples = 10000):
+                    title = 'Histograms', n_samples = 10000,
+                    titlesize = 24, titley = 0.97):
     import pandas as pd
     import seaborn as sns
     import matplotlib.pyplot as plt
@@ -1141,7 +1148,7 @@ def histograms_3MAA(techs, solutions, filename = None,
     
     fig, axs = plt.subplots(len(techs), 1, figsize = (15,4*len(techs)))
     fig.subplots_adjust(hspace = 0.5)
-    fig.suptitle(title, fontsize = 32, y = 0.97)
+    fig.suptitle(title, fontsize = 32, y = titley)
     axs = axs.ravel()
     
     for solution, year in zip(solutions, [2030, 2040]):
@@ -1172,7 +1179,7 @@ def histograms_3MAA(techs, solutions, filename = None,
             
             axtitle = 'IT' if tech == 'Data' else tech
             
-            ax.set_title(axtitle, color = colors[tech], fontsize = 24, y = 0.975)
+            ax.set_title(axtitle, color = colors[tech], fontsize = titlesize, y = 0.975)
         
     # ----------------------- Set legend -----------------------------
     for tech, ax in zip(techs, axs):

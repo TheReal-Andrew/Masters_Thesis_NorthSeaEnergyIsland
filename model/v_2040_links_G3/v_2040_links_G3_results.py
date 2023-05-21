@@ -37,6 +37,7 @@ title = f'Model: {study_name}_{year}, for {len(variables)} MAA variables, with {
 solutions = np.load(name + 'solutions.npy')
 n_opt     = pypsa.Network(f'v_{year}_{study_name}_opt.nc')
 
+
 bus_df = tm.get_bus_df()
 
 # filter the rows based on the abbreviations in the 'variables' list
@@ -48,6 +49,6 @@ opt_system = n_opt.links[n_opt.links['bus0'].isin(countries)].p_nom_opt.tolist()
 gm.solutions_2D(variables, solutions, n_samples = 1_000_000,
                 title = title,
                 opt_system = opt_system,
-                filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
+                # filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
                 )
 

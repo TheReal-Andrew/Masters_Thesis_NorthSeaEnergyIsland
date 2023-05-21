@@ -39,7 +39,6 @@ n_opt      = pypsa.Network(f'v_{year}_{study_name}_opt.nc')
 
 # Generate list with optimal values
 opt_system = n_opt.generators.loc[n_opt.generators.index.isin(variables)].p_nom_opt.tolist()
-
 opt_system.append(n_opt.stores.loc[n_opt.stores.index.isin(variables)].e_nom_opt['Storage'])
 
 #%%
