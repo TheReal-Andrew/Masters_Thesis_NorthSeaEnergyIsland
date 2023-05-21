@@ -54,13 +54,20 @@ tech_colors = gm.get_color_codes()
 
 # project, n_MAA, techs, title
 
-projects    = ['local', 'links_G2', 'links_G3']
+projects    = ['local', 'local_nac', 'links_G2', 'links_G3']
 techs_list  = [['P2X', 'Data', 'Storage'],
-               # ['P2X', 'Data', 'Storage'],
+               ['P2X', 'Data', 'Storage'],
                ['DE', 'NL', 'GB'],
                ['DK', 'NO', 'BE']
                ]
 
+titles      = ['MAA solution histograms for local demand',
+               'MAA solution histograms for local demand',
+               'MAA solution histograms for links',
+               'MAA solution histograms for links',
+               ]
+
+i = 0
 for techs, project in zip(techs_list, projects):
     #Local:
     filename = f'MAA_overlap_hist_{project}.pdf'
@@ -68,7 +75,7 @@ for techs, project in zip(techs_list, projects):
     sol30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
     sol40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
     sols  = [sol30, sol40]
-    title = f'Histograms for project: {project}'
+    title = titles[i]
     gm.histograms_3MAA(techs, sols, title = title, n_samples = n_samples,
                        filename = filename,)
 
