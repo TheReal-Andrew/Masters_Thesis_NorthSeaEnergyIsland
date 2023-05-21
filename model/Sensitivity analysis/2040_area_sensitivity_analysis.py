@@ -244,15 +244,23 @@ for q, component in enumerate(plot_components):
             
             if component == "hydrogen":
                 axs[1].set_xlim(0,max(area_ranges[component]))
+                axs[1].set_ylim([-750,15_750])
+                axs[1].set_yticks(np.arange(0,16_000,3_000),[0,3,6,9,12,15])
             if component == "data":
                 axs[1].set_xlim(min(area_ranges[component]),max(area_ranges[component]))
+                axs[1].set_ylim([-750,15_750])
+                axs[1].set_yticks(np.arange(0,16_000,3_000),[0,3,6,9,12,15])
             if component == "storage":
                 axs[1].set_xlim(0,max(area_ranges[component]))
+                # axs[1].set_ylim([-750,15_750])
+                # axs[1].set_yticks(np.arange(0,0,3_000),[0,3,6,9,12,15])
+                axs[1].set_ylabel("Nominal capacity [MW]")
+                axs[1].set_yscale('log')
             
-            axs[1].set_ylim([-750,15_750])
-            axs[1].set_yticks(np.arange(0,16_000,3_000),[0,3,6,9,12,15])
+            # axs[1].set_ylim([-750,15_750])
+            # axs[1].set_yticks(np.arange(0,16_000,3_000),[0,3,6,9,12,15])
             
-            axs[1].yaxis.set_minor_locator(MultipleLocator(1000))
+            # axs[1].yaxis.set_minor_locator(MultipleLocator(1000))
             axs[1].xaxis.set_minor_locator(MultipleLocator(0.1))
             
             axs_copy2 = axs[1].twinx()

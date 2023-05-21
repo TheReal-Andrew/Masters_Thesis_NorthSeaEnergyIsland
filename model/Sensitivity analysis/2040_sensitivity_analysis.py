@@ -64,8 +64,8 @@ def extra_functionality(n,snapshots):
     gm.marry_links(n, snapshots)
 
 #%% Should run or not
-cc_mode = True # Choose to run capital cost sweep or not
-mc_mode = True # Choose to run marginal cost sweep or not
+cc_mode = False # Choose to run capital cost sweep or not
+mc_mode = False # Choose to run marginal cost sweep or not
     
 #%% Set sensitivity sweep parameters
 

@@ -64,23 +64,23 @@ def extra_functionality(n,snapshots):
     gm.marry_links(n, snapshots)
 
 #%% Should run or not
-cc_mode = False # Choose to run capital cost sweep or not
-mc_mode = False # Choose to run marginal cost sweep or not
+cc_mode = True # Choose to run capital cost sweep or not
+mc_mode = True # Choose to run marginal cost sweep or not
     
 #%% Set sensitivity sweep parameters
 
 cc_ranges = {
-    'P2X': np.arange(0,1.05,0.05),
-    'Data': np.arange(1,4.05,0.05),
-    'Storage': np.arange(0,1.05,0.05),
-    # 'Links': np.arange(0,4.05,0.05),    
+    # 'P2X': np.arange(0,1.05,0.05),
+    # 'Data': np.arange(1,4.05,0.05),
+    # 'Storage': np.arange(0,1.05,0.05),
+    'Links': np.arange(0,4.05,0.05),    
     }
 
 mc_ranges = {
-    'P2X': np.arange(1,4.05,0.05),
-    'Data': np.arange(0,1.05,0.05),
-    'Storage': np.arange(0,1.05,0.05),
-    # 'Country_gen': np.arange(0,4.05,0.05),
+    # 'P2X': np.arange(1,4.05,0.05),
+    # 'Data': np.arange(0,1.05,0.05),
+    # 'Storage': np.arange(0,1.05,0.05),
+    'Country_gen': np.arange(0,4.05,0.05),
     }
     
 cc_n_studies = 0
@@ -260,156 +260,156 @@ else:
 t.toc()
 # gm.its_britney_bitch()        
 #%% Plot sweep: generators + storage
-colors = gm.get_color_codes()
-plot_components = []
+# colors = gm.get_color_codes()
+# plot_components = []
 
-for i in cc_components:
-    if i in mc_components and i not in plot_components:
-        plot_components.append(i)
+# for i in cc_components:
+#     if i in mc_components and i not in plot_components:
+#         plot_components.append(i)
 
-for component in plot_components:
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(7*2,5), dpi = 300, constrained_layout = True)
-    for i in range(2):
-        if i == 0:
+# for component in plot_components:
+#     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(7*2,5), dpi = 300, constrained_layout = True)
+#     for i in range(2):
+#         if i == 0:
 
-            axs[i].set_title(f'{year}: Sensitivity of\n{component} capital cost', pad = 5)
-            axs[i].set_xlabel('Capital cost coefficient [-]')
-            axs[i].set_ylabel('Use of available island area [%]')
+#             axs[i].set_title(f'{year}: Sensitivity of\n{component} capital cost', pad = 5)
+#             axs[i].set_xlabel('Capital cost coefficient [-]')
+#             axs[i].set_ylabel('Use of available island area [%]')
             
-            axs[i].set_ylim([-0.05,1.05])
+#             axs[i].set_ylim([-0.05,1.05])
             
-            axs[i].set_yticks(np.arange(0,1.2,0.2),[0,20,40,60,80,100])
-            axs[i].yaxis.set_minor_locator(MultipleLocator(0.05))
-            axs[i].xaxis.set_minor_locator(MultipleLocator(0.1))
+#             axs[i].set_yticks(np.arange(0,1.2,0.2),[0,20,40,60,80,100])
+#             axs[i].yaxis.set_minor_locator(MultipleLocator(0.05))
+#             axs[i].xaxis.set_minor_locator(MultipleLocator(0.1))
             
-            axs_copy = axs[i].twinx()
-            axs_copy.get_yaxis().set_visible(False)
+#             axs_copy = axs[i].twinx()
+#             axs_copy.get_yaxis().set_visible(False)
             
-            for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in cc_components]:
-                y1 = cc_sensitivity_cap[component][k].copy()
+#             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in cc_components]:
+#                 y1 = cc_sensitivity_cap[component][k].copy()
                 
-                if k == "Data":
-                    for j in range(len(y1)):
-                        y1[j] = y1[j]  * n.area_use['data'] / n.total_area
-                elif k == "P2X":
-                    for j in range(len(y1)):
-                        y1[j] = y1[j] * n.area_use['hydrogen'] / n.total_area
-                elif k == "Storage":
-                    for j in range(len(y1)):
-                        y1[j] = y1[j] * n.area_use['storage'] / n.total_area    
+#                 if k == "Data":
+#                     for j in range(len(y1)):
+#                         y1[j] = y1[j]  * n.area_use['data'] / n.total_area
+#                 elif k == "P2X":
+#                     for j in range(len(y1)):
+#                         y1[j] = y1[j] * n.area_use['hydrogen'] / n.total_area
+#                 elif k == "Storage":
+#                     for j in range(len(y1)):
+#                         y1[j] = y1[j] * n.area_use['storage'] / n.total_area    
                 
-                x1 = cc_sensitivity_cap[component]['Step'].copy()
-                axs[i].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
+#                 x1 = cc_sensitivity_cap[component]['Step'].copy()
+#                 axs[i].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
                 
-            cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
-            cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
+#             cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
+#             cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
             
-            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
-            axs_copy.set_ylabel('Objective optimum [€]') 
-            axs_copy.set_ylim([-0.05,1.05])
+#             axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+#             axs_copy.set_ylabel('Objective optimum [€]') 
+#             axs_copy.set_ylim([-0.05,1.05])
             
-            if component == 'Data':
-                axs[i].set_xlim([1,4])
-                axs[i].set_xticks(np.arange(1,4.5,0.5))   
-            if component == 'P2X':
-                axs[i].set_xlim([0,1])
-                axs[i].set_xticks(np.arange(0,1.1,0.1))
-            if component == 'Storage':
-                axs[i].set_xlim([0,1])
-                axs[i].set_xticks(np.arange(0,1.1,0.1))
+#             if component == 'Data':
+#                 axs[i].set_xlim([1,4])
+#                 axs[i].set_xticks(np.arange(1,4.5,0.5))   
+#             if component == 'P2X':
+#                 axs[i].set_xlim([0,1])
+#                 axs[i].set_xticks(np.arange(0,1.1,0.1))
+#             if component == 'Storage':
+#                 axs[i].set_xlim([0,1])
+#                 axs[i].set_xticks(np.arange(0,1.1,0.1))
             
-        if i == 1:
+#         if i == 1:
             
-            axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal revenue', pad = 10)
+#             axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal revenue', pad = 10)
             
-            axs[i].set_ylim([-0.05,1.05])
-            axs[i].set_yticks(np.arange(0,1.2,0.2))
-            axs[i].set_yticklabels([])
+#             axs[i].set_ylim([-0.05,1.05])
+#             axs[i].set_yticks(np.arange(0,1.2,0.2))
+#             axs[i].set_yticklabels([])
             
-            for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in mc_components]:
-                y2 = mc_sensitivity_cap[component][k].copy()
-                print(k)
-                if k == "Data":
-                    for j in range(len(y2)):
-                        y2[j] = y2[j] * n.area_use['data'] / n.total_area
-                elif k == "P2X":
-                    for j in range(len(y2)):
-                        y2[j] = y2[j] * n.area_use['hydrogen'] / n.total_area
-                elif k == "Storage":
-                    for j in range(len(y2)):
-                        y2[j] = y2[j] * n.area_use['storage'] / n.total_area 
+#             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in mc_components]:
+#                 y2 = mc_sensitivity_cap[component][k].copy()
+#                 print(k)
+#                 if k == "Data":
+#                     for j in range(len(y2)):
+#                         y2[j] = y2[j] * n.area_use['data'] / n.total_area
+#                 elif k == "P2X":
+#                     for j in range(len(y2)):
+#                         y2[j] = y2[j] * n.area_use['hydrogen'] / n.total_area
+#                 elif k == "Storage":
+#                     for j in range(len(y2)):
+#                         y2[j] = y2[j] * n.area_use['storage'] / n.total_area 
                         
-                x2 = mc_sensitivity_cap[component]['Step'].copy()        
-                axs[i].plot(x2, y2, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
+#                 x2 = mc_sensitivity_cap[component]['Step'].copy()        
+#                 axs[i].plot(x2, y2, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
             
-            axs[1].yaxis.set_minor_locator(MultipleLocator(0.05))
-            axs[1].xaxis.set_minor_locator(MultipleLocator(0.1))
+#             axs[1].yaxis.set_minor_locator(MultipleLocator(0.05))
+#             axs[1].xaxis.set_minor_locator(MultipleLocator(0.1))
             
-            axs_copy2 = axs[1].twinx()
-            axs_copy2.set_ylim([-0.05,1.05])
-            axs_copy2.set_ylabel('Normalized optimum [-]')
-            axs_copy2.yaxis.set_minor_locator(MultipleLocator(0.05))
+#             axs_copy2 = axs[1].twinx()
+#             axs_copy2.set_ylim([-0.05,1.05])
+#             axs_copy2.set_ylabel('Normalized optimum [-]')
+#             axs_copy2.yaxis.set_minor_locator(MultipleLocator(0.05))
             
-            mc_optimum = mc_sensitivity_cap[component]['Optimum'].copy()
-            mc_optimum[:] = [x / max(mc_optimum) for x in mc_optimum]
+#             mc_optimum = mc_sensitivity_cap[component]['Optimum'].copy()
+#             mc_optimum[:] = [x / max(mc_optimum) for x in mc_optimum]
             
-            axs_copy2.plot(x2, mc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+#             axs_copy2.plot(x2, mc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
             
-            if component == 'Data':
-                axs[i].set_xlim([0,1])
-                axs[i].set_xticks(np.arange(0,1.1,0.1))
-                axs[i].set_xlabel('Marginal revenue coefficient [-]')
-            if component == 'P2X':
-                axs[i].set_xlim([1,4])
-                axs[i].set_xticks(np.arange(1,4.5,0.5))
-                axs[i].set_xlabel('Marginal revenue coefficient [-]')
-            if component == 'Storage':
-                axs[i].set_xlim([0,1])
-                axs[i].set_xticks(np.arange(0,1.1,0.1))
-                axs[i].set_xlabel('Marginal cost coefficient [-]')
-                axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal cost', pad = 10)
+#             if component == 'Data':
+#                 axs[i].set_xlim([0,1])
+#                 axs[i].set_xticks(np.arange(0,1.1,0.1))
+#                 axs[i].set_xlabel('Marginal revenue coefficient [-]')
+#             if component == 'P2X':
+#                 axs[i].set_xlim([1,4])
+#                 axs[i].set_xticks(np.arange(1,4.5,0.5))
+#                 axs[i].set_xlabel('Marginal revenue coefficient [-]')
+#             if component == 'Storage':
+#                 axs[i].set_xlim([0,1])
+#                 axs[i].set_xticks(np.arange(0,1.1,0.1))
+#                 axs[i].set_xlabel('Marginal cost coefficient [-]')
+#                 axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal cost', pad = 10)
             
-            lines, labels = axs[i].get_legend_handles_labels()
-            lines2, labels2 = axs_copy.get_legend_handles_labels()
-            axs[i].legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
+#             lines, labels = axs[i].get_legend_handles_labels()
+#             lines2, labels2 = axs_copy.get_legend_handles_labels()
+#             axs[i].legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
             
-    # plt.tight_layout() 
-    plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
-plt.show()
+#     # plt.tight_layout() 
+#     plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
+# plt.show()
 
 #%% Plot sweep: links
-# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
+fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
 
-# for i in n.main_links:
+for i in n.main_links:
     
-#     if i.startswith('Island_to_'):
+    if i.startswith('Island_to_'):
     
-#         # i = i.replace("_"," ")
-#         x = cc_sensitivity_cap['Links']['Step'].copy()
-#         y = cc_sensitivity_cap['Links'][i]
+        # i = i.replace("_"," ")
+        x = cc_sensitivity_cap['Links']['Step'].copy()
+        y = cc_sensitivity_cap['Links'][i]
         
-#         axs.plot(x, y, label = i)
-#         axs.legend(loc = 'best')
-#     else:
-#         continue
+        axs.plot(x, y, label = i)
+        axs.legend(loc = 'best')
+    else:
+        continue
     
-# plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
-# plt.xlabel('Capital cost coefficient [-]')
-# plt.ylabel('Installed capacity [MW]')
+plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
 
     
-# #%% Plot sweep: country generators
-# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
-# for i in n.generators.index:
-#     if i in ['Wind','MoneyBin','P2X','Data']:
-#         continue
-#     try:
-#         axs.plot(mc_sensitivity_cap['Country_gen'][i], label = i)
-#         axs.legend(loc = 'best')
-#     except KeyError:
-#         plt.clf()
-#         continue
+#%% Plot sweep: country generators
+fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
+for i in n.generators.index:
+    if i in ['Wind','MoneyBin','P2X','Data']:
+        continue
+    try:
+        axs.plot(mc_sensitivity_cap['Country_gen'][i], label = i)
+        axs.legend(loc = 'best')
+    except KeyError:
+        plt.clf()
+        continue
 
-# plt.title(f'{year}: Sensitivity of country  capital cost', pad = 5)
-# plt.xlabel('Capital cost coefficient [-]')
-# plt.ylabel('Installed capacity [MW]')
+plt.title(f'{year}: Sensitivity of country  capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
