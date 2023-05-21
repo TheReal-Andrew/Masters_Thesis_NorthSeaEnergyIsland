@@ -53,12 +53,28 @@ n_2030.lopf(pyomo = False,
        extra_functionality = extra_functionality,
        )
 
+n_2030_nac.lopf(pyomo = False,
+       solver_name = 'gurobi',
+       keep_shadowprices = True,
+       keep_references = True,
+       extra_functionality = extra_functionality,
+       )
+
 n_2040.lopf(pyomo = False,
        solver_name = 'gurobi',
        keep_shadowprices = True,
        keep_references = True,
        extra_functionality = extra_functionality,
        )
+
+n_2040_nac.lopf(pyomo = False,
+       solver_name = 'gurobi',
+       keep_shadowprices = True,
+       keep_references = True,
+       extra_functionality = extra_functionality,
+       )
+
+
 
 #%% Get duals
 from pypsa.linopt import get_dual
@@ -79,14 +95,18 @@ def remove_outliers2(df,columns,n_std):
         
     return df
 
-rent_30 = get_dual(n_2030, 'Island', 'Area_Use') # [EUR/m^2]
-rent_40 = get_dual(n_2040, 'Island', 'Area_Use') # [EUR/m^2]
+rent_30     = get_dual(n_2030, 'Island', 'Area_Use') # [EUR/m^2]
+rent_40     = get_dual(n_2040, 'Island', 'Area_Use') # [EUR/m^2]
 
-island_price_30 = get_dual(n_2030, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
-island_price_40 = get_dual(n_2040, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
+island_price_30     = get_dual(n_2030, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
+island_price_30_nac = get_dual(n_2030_nac, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
+island_price_40     = get_dual(n_2040, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
+island_price_40_nac = get_dual(n_2040_nac, 'Bus', 'marginal_price')['Energy Island'] # [EUR/MW]
 
 prices = pd.DataFrame({'2030 price': island_price_30.copy().reset_index(drop = True),
-                       '2040 price': island_price_40.copy().reset_index(drop = True)},
+                       '2030 nac price': island_price_30_nac.copy().reset_index(drop = True),
+                       '2040 price': island_price_40.copy().reset_index(drop = True),
+                       '2040_nac price': island_price_40_nac.copy().reset_index(drop = True)},
                       )
 prices = remove_outliers2(prices, prices.columns, 0)
 
@@ -138,6 +158,75 @@ obj_df = pd.DataFrame( {'2030':[obj30, obj30_nac],
                       index = ['With constraint',
                                'Without constraint']
                         )
+
+#%% Adjusted objective value without MoneyBin
+
+# Get value of moneybin capital cost for 2030 and 2040
+moneybin_value30 = n_2030_nac.generators.capital_cost['MoneyBin']
+moneybin_value40 = n_2040_nac.generators.capital_cost['MoneyBin']
+
+
+data_revenue30 = n_2030.generators_t.p['Data'].sum() * n_2030.generators.p_nom_opt['Data']
+P2X_revenue30  = n_2030.generators_t.p['P2X'].sum() * n_2030.generators.p_nom_opt['P2X']
+revenue30      = data_revenue30 + P2X_revenue30
+
+data_revenue30_nac = n_2030_nac.generators_t.p['Data'].sum() * n_2030_nac.generators.p_nom_opt['Data']
+P2X_revenue30_nac  = n_2030_nac.generators_t.p['P2X'].sum() * n_2030_nac.generators.p_nom_opt['P2X']
+revenue30_nac      = data_revenue30_nac + P2X_revenue30_nac
+
+data_revenue40 = n_2040.generators_t.p['Data'].sum() * n_2040.generators.p_nom_opt['Data']
+P2X_revenue40  = n_2040.generators_t.p['P2X'].sum() * n_2040.generators.p_nom_opt['P2X']
+revenue40      = data_revenue40 + P2X_revenue40
+
+data_revenue40_nac = n_2040_nac.generators_t.p['Data'].sum() * n_2040_nac.generators.p_nom_opt['Data']
+P2X_revenue40_nac  = n_2040_nac.generators_t.p['P2X'].sum() * n_2040_nac.generators.p_nom_opt['P2X']
+revenue40_nac      = data_revenue40_nac + P2X_revenue40_nac
+
+# Objective function value without moneybin 
+obj30     = n_2030.objective - moneybin_value30 + abs(revenue30)
+obj30_nac = n_2030_nac.objective - moneybin_value30 + abs(revenue30_nac)
+
+obj40     = n_2040.objective - moneybin_value40 + abs(revenue30)
+obj40_nac = n_2040_nac.objective - moneybin_value40 + abs(revenue40_nac)
+
+obj_df = pd.DataFrame( {'2030':[obj30, obj30_nac],
+                        '2040':[obj40, obj40_nac]},
+                      index = ['With constraint',
+                               'Without constraint']
+                        )
+
+#%% Adjusted values in summation loop
+values = []
+n_list = [n_2030, n_2030_nac, n_2040, n_2040_nac]
+
+# countries = tm.get_bus_df()['Bus name'][1:].values
+
+for n in n_list:
+    value = 0
+    
+    # Capital costs
+    for tech in ['P2X', 'Data']:
+        
+        if tech == 'Storage':
+            value += n.stores.e_nom_opt[tech]* n.stores.capital_cost[tech]
+        else:
+            value += n.generators.p_nom_opt[tech]* n.generators.capital_cost[tech]
+        
+    for link in n.main_links:
+        value += n.links.p_nom_opt[link] * n.links.capital_cost[link]
+    
+    
+    # Marginal costs
+    value += n.stores_t.e['Storage'].sum() * n.stores.marginal_cost['Storage']
+    
+    # Adjusted 
+    values.append(value)
+    
+values_df =  pd.DataFrame( {'2030':[values[0], values[1]],
+                            '2040':[values[2], values[3]]},
+                             index = ['With constraint',
+                                      'Without constraint']
+                          )
 
     
 #%% Network visualization
@@ -286,7 +375,7 @@ fig = plt.figure(
     plots = {
             311: {
                  'values': val_a,
-                 'title':  {'label': f'Area use distribution - Area available: {round(total_a)} $m^2$', 'loc': 'left'},
+                 'title':  {'label': f'Area use distribution - Area available: {int(round(total_a, -3))} $m^2$', 'loc': 'left'},
                  'labels': [f"{k} ({int(v)}%) \n {round(v/100*total_a)} $m^2$" for k, v in val_a.items()],
                  'legend': {'loc': 'lower left', 'bbox_to_anchor': (0, -0.325), 'ncol': len(val_a), 'framealpha': 0},
                  'colors': col_a,
@@ -307,18 +396,22 @@ fig = plt.figure(
 fig.suptitle(f'{year} optimal system', 
               fontsize = 28)
 
-fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+fig.savefig('graphics/waffles/'+filename, format = 'pdf', bbox_inches='tight')
 
 
 
 #%% Transmission link visualization - 2030
-n = n_2040
-year = 2040
-filename = f'{year}_link_histograms.pdf'
+n    = n_2030_nac
+year = 2030
+nac  = True
+filename = f'{year}_nac_link_histograms.pdf'
 
 flow = gm.get_link_flow(n)
 
-if year == 2040:
+if nac == True:
+    flow = flow[['Denmark', 'Norway']]
+    v = 3.33
+elif year == 2040:
     flow = flow.drop(['Belgium', 'United Kingdom'], axis = 1)
     v = 6.66
 elif year == 2030:
@@ -331,7 +424,7 @@ axs = axs.ravel()
 
 fig = axs[0].get_figure()
 fig.subplots_adjust(hspace = 0.7)
-fig.suptitle(f'{year} - Link histograms', fontsize = 30)
+fig.suptitle(f'{year} - Link histograms', fontsize = 30, y = 1.1)
 
 for ax in axs:
     ax.set_xlabel('Power flow [MW]')
