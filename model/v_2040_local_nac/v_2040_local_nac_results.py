@@ -46,6 +46,12 @@ opt_system.append(n_opt.stores.loc[n_opt.stores.index.isin(variables)].e_nom_opt
 gm.solutions_2D(variables, solutions, n_samples = 1_000_000,
                 title = title,
                 opt_system = opt_system,
+                xlim = [0, solutions.max()], ylim = [0, solutions.max()],
                 filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_2D_MAA.pdf',
+                )
+
+gm.solutions_3D(variables, solutions,
+                markersize = 0, linewidth = 0.5,
+                filename = f'graphics/v_{year}_{study_name}_{len(variables)}MAA_{int(mga_slack*100)}p_plot_3D_MAA.pdf',
                 )
 
