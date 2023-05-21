@@ -38,7 +38,7 @@ local40_nac = np.load(f'../v_2040_{project}_nac/v_2040_{project}_nac_{n_MAA}MAA_
 linksG130 = np.load('../v_2030_links_G1/v_2030_links_G1_4MAA_10p_solutions.npy')
 linksG230 = np.load('../v_2030_links_G2/v_2030_links_G2_3MAA_10p_solutions.npy')
 linksG330 = np.load('../v_2030_links_G3/v_2030_links_G3_3MAA_10p_solutions.npy')
-linksG140 = np.load('../v_2040_links_G1/v_2040_links_G1_4MAA_10p_solutions.npy')
+linksG140 = np.load('../v_2040_links_G1/v_2040_links_G1_4MAA_10p_solutions_temp.npy')
 linksG240 = np.load('../v_2040_links_G2/v_2040_links_G2_3MAA_10p_solutions.npy')
 linksG340 = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
 
@@ -141,10 +141,10 @@ slack = 0.1 * costs.sum()
 
 #%%
 
-sol = np.load('../v_2040_links_G3_test/v_2040_links_G3_3MAA_10p_solutions_temp.npy')
-techs = ["DK","NO","BE"]
+sol = np.load('../v_2040_links_G2/v_2040_links_G2_3MAA_10p_solutions.npy')
+techs = ['DE', 'NL', 'GB']
 
-gm.solutions_2D(techs, sol, n_samples = 100_000, title = '2040 Links G3 - rerun')
+gm.solutions_2D(techs, sol, n_samples = 10_000, title = '2040 Links G2')
 
 #%% Solutions_2D for all studies
 
@@ -165,16 +165,31 @@ years    = [2030, 2030,
             2030, 2030, 2030, 
             2040, 2040, 2040,]
 
+
+
 for i in range(len(case_list)):
     
     filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
     
     gm.solutions_2D(techs_list[i], case_list[i],
-                    n_samples = 1_000_000,
-                    filename = filename,
+                    n_samples = 10_000,
+                    # filename = filename,
                     title = titles[i],
                     opt_system = opt_list[i]
                     )
+    
+#%% 
+i = 7
+
+filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
+
+gm.solutions_2D(techs_list[i], case_list[i],
+                n_samples = 1_000_000,
+                filename = filename,
+                title = titles[i],
+                opt_system = opt_list[i]
+                )
+gm.solutions_2D(techs)
 
 
 #%% Load solutions

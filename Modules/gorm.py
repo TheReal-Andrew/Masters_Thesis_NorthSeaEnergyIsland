@@ -884,7 +884,7 @@ def solutions_2D(techs, solutions,
             
             # plot simplexes
             for simplex in hull.simplices:
-                l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], 'k-', 
+                l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], '-', 
                         color = 'silver', label = 'faces', zorder = 0)
             
             # list of legend handles and labels
