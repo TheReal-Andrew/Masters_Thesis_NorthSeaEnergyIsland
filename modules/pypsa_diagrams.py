@@ -364,7 +364,10 @@ def draw_network(n, spacing = 2,
                       )
                 
                 d += elm.Arrowhead(headwidth = headwidth, headlength = headlength).color(arrow_color)
-            
+    
+    fig = d.draw()
+    
+    return fig
 
 #%% DRAW NETWORK --------------------------------------------------------------
 

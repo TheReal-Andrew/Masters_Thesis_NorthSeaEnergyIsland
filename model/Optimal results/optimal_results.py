@@ -95,33 +95,56 @@ rent_df = pd.DataFrame({'2030':rent_30,
                        )
 
 #%% plot prices
+from tabulate import tabulate
 
 filename = 'island_electricity_prices.pdf'
 
-ax = prices.plot(figsize = (10,5))
+fig, axs = plt.subplots(2, 1, figsize = (15,5))
 
-ax.legend(loc = 'center',
-          bbox_to_anchor = (1.15, 0.5), fancybox=False, shadow=False,)
+prices['2030 price'].plot(ax = axs[0])
 
-ax.set(ylabel = 'Electricity price [EUR/MW]',
-       xlabel = 'Time [hr]',
-       title  = 'Electricity price on the energy island'
-       )
+prices['2040 price'].plot(ax = axs[1], color = 'tab:blue')
 
-fig = ax.figure
+fig.legend(loc = 'center',
+           bbox_to_anchor = (0.5, -0.05),
+          ncols = 2,
+          fancybox=False, shadow=False,)
 
-fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+for ax, year in zip(axs, [2030, 2040]):
+    ax.set(ylabel = 'Price [EUR/MW]',
+            xlabel = 'Time [hr]',
+            # title = f'{year}',
+            )
 
-#%%
+fig.suptitle('Electricity price on the energy island')
 
-n = n_2030
+# fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
 
-m2_price = n.generators.capital_cost['Data']/n.area_use['data']
+#%% Adjusted objective values with and without area constraint
+
+# Get value of moneybin capital cost for 2030 and 2040
+moneybin_value30 = n_2030_nac.generators.capital_cost['MoneyBin']
+moneybin_value40 = n_2040_nac.generators.capital_cost['MoneyBin']
+
+# Objective function value without moneybin 
+obj30     = n_2030.objective - moneybin_value30
+obj30_nac = n_2030_nac.objective - moneybin_value30
+
+obj40     = n_2040.objective - moneybin_value40
+obj40_nac = n_2040_nac.objective - moneybin_value40
+
+obj_df = pd.DataFrame( {'2030':[obj30, obj30_nac],
+                        '2040':[obj40, obj40_nac]},
+                      index = ['With constraint',
+                               'Without constraint']
+                        )
+
     
 #%% Network visualization
-n = n_2030
-
-year = 2030
+n     = n_2040
+year  = 2040
+title = f'{year} optimal system'
+filename = f'graphics/network_diagrams/pypsa_diagram_{year}.pdf'
 
 It = 'Island_to_'
 index2 = [
@@ -133,26 +156,104 @@ index2 = [
           It+'United Kingdom',
           ]
 
-
-pdiag.draw_network(n, spacing = 1, handle_bi = True,
+schemfig = pdiag.draw_network(n, spacing = 1, handle_bi = True,
                     index1 = index2,
                     show_country_values = False,
                     exclude_bus = 'Energy Island',
-                    filename = f'graphics/pypsa_diagram_{year}.pdf'
+                    # filename = filename,
                     )
 
-#%% 2030 Waffle diagram - area and capacity for {year}
+# Add title to ax
+schemfig.ax.set_title(title, fontsize = 24)
+# Get figure of schemdrawing
+fig = schemfig.ax.get_figure()
+
+# Show altered figure
+display(schemfig)
+
+# save altered figure
+fig.savefig(filename, format = 'pdf', bbox_inches='tight')
+
+#%% Waffle diagram - area and capacity for {year}
 
 values = []
 totals = []
-n      = n_2040
-year = 2040
+n      = n_2040_nac
+year   = 2040
+title  = f'{year} optimal system without area constraint'
 
 filename = f'waffle_{year}_area_capacity.pdf' 
 
 col = gm.get_color_codes()
-col_a = [col['P2X'], col['IT'], col['Storage']]
-col_c = [col['P2X'], col['IT'], col['Storage'], col['Links']]
+col_a = [col['P2X'], col['Data'], col['Storage']]
+col_c = [col['P2X'], col['Data'], col['Storage'], col['Links']]
+
+# Area data
+P2X_a   = n.generators.p_nom_opt["P2X"] * n.area_use['hydrogen']
+Data_a  = n.generators.p_nom_opt["Data"] * n.area_use['data']
+Store_a = n.stores.e_nom_opt['Storage'] * n.area_use['storage']
+
+total_a = P2X_a + Data_a + Store_a
+
+val_a  = {'P2X':    (P2X_a/total_a * 100), 
+          'IT':     (Data_a/total_a * 100), 
+          'Storage':(Store_a/total_a * 100)}
+
+# Capacity data
+P2X_c   = n.generators.p_nom_opt["P2X"] 
+Data_c  = n.generators.p_nom_opt["Data"] 
+Store_c = n.stores.e_nom_opt['Storage'] 
+Links_c = n.links.p_nom_opt[n.main_links].sum()
+
+
+total_c = P2X_c + Data_c + Store_c + Links_c
+
+val_c  = {'P2X':    (P2X_c/total_c * 100), 
+          'IT':     (Data_c/total_c * 100), 
+          'Storage':(Store_c/total_c * 100),
+          'Links':  (Links_c/total_c * 100)}
+
+# Create waffle diagram
+fig = plt.figure(
+    FigureClass = Waffle,
+    plots = {
+            311: {
+                 'values': val_a,
+                 'title':  {'label': f'Area use distribution - Area available: {round(total_a)} $m^2$', 'loc': 'left'},
+                 'labels': [f"{k} ({int(v)}%) \n {round(v/100*total_a)} $m^2$" for k, v in val_a.items()],
+                 'legend': {'loc': 'lower left', 'bbox_to_anchor': (0, -0.325), 'ncol': len(val_a), 'framealpha': 0},
+                 'colors': col_a,
+                  },
+            312: {
+                 'values': val_c,
+                 'title':  {'label': f'Installed capacity distribution - Total capacity: {round(total_c/1000, 1)} $GW$', 'loc': 'left'},
+                 'labels': [f"{k} ({int(v)}%) \n {round(v/100*total_c/1000, 1)} $GW$" for k, v in val_c.items()],
+                 'legend': {'loc': 'lower left', 'bbox_to_anchor': (0, -0.325), 'ncol': len(val_c), 'framealpha': 0},
+                 'colors': col_c,
+                  },
+        },
+    rows   = 5,
+    columns = 20,
+    figsize = (10,12),
+)
+
+fig.suptitle(title, 
+              fontsize = 28)
+
+fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+
+#%% Waffle diagram nac - area and capacity for {year}
+
+values = []
+totals = []
+n      = n_2030_nac
+year = 2030
+
+filename = f'waffle_{year}_nac_area_capacity.pdf' 
+
+col = gm.get_color_codes()
+col_a = [col['P2X'], col['Data'], col['Storage']]
+col_c = [col['P2X'], col['Data'], col['Storage'], col['Links']]
 
 # Area data
 P2X_a   = n.generators.p_nom_opt["P2X"] * n.area_use['hydrogen']
@@ -208,6 +309,8 @@ fig.suptitle(f'{year} optimal system',
 
 fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
 
+
+
 #%% Transmission link visualization - 2030
 n = n_2040
 year = 2040
@@ -234,7 +337,7 @@ for ax in axs:
     ax.set_xlabel('Power flow [MW]')
     ax.set_ylabel('Frequency')
     
-fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+fig.savefig('graphics/link_histograms/'+filename, format = 'pdf', bbox_inches='tight')
 
 #%% Waffle diagram - area use, optimals - OLD
 # filename = 'waffle_optimals_area_use.pdf' 
