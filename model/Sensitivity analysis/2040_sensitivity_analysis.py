@@ -311,6 +311,7 @@ for component in plot_components:
             if component == 'Data':
                 axs[i].set_xlim([1,4])
                 axs[i].set_xticks(np.arange(1,4.5,0.5))   
+                axs[i].set_title(f'{year}: Sensitivity of\n IT capital cost', pad = 5)
             if component == 'P2X':
                 axs[i].set_xlim([0,1])
                 axs[i].set_xticks(np.arange(0,1.1,0.1))
@@ -338,9 +339,13 @@ for component in plot_components:
                 elif k == "Storage":
                     for j in range(len(y2)):
                         y2[j] = y2[j] * n.area_use['storage'] / n.total_area 
-                        
-                x2 = mc_sensitivity_cap[component]['Step'].copy()        
-                axs[i].plot(x2, y2, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
+                if k == 'Data':
+                    x2 = mc_sensitivity_cap[component]['Step'].copy()      
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = 'IT', linewidth = 3, color = colors[k])    
+                else:
+                    x2 = mc_sensitivity_cap[component]['Step'].copy()      
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])    
+                
             
             axs[1].yaxis.set_minor_locator(MultipleLocator(0.05))
             axs[1].xaxis.set_minor_locator(MultipleLocator(0.1))
@@ -359,6 +364,7 @@ for component in plot_components:
                 axs[i].set_xlim([0,1])
                 axs[i].set_xticks(np.arange(0,1.1,0.1))
                 axs[i].set_xlabel('Marginal revenue coefficient [-]')
+                axs[i].set_title(f'{year}: Sensitivity of\nIT capital cost', pad = 5)
             if component == 'P2X':
                 axs[i].set_xlim([1,4])
                 axs[i].set_xticks(np.arange(1,4.5,0.5))
@@ -378,27 +384,48 @@ for component in plot_components:
 plt.show()
 
 #%% Plot sweep: links
-# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
-
+# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,5), dpi = 300, constrained_layout = True)
+# colors = gm.get_color_codes()
 # for i in n.main_links:
     
 #     if i.startswith('Island_to_'):
-    
+        
 #         # i = i.replace("_"," ")
 #         x = cc_sensitivity_cap['Links']['Step'].copy()
 #         y = cc_sensitivity_cap['Links'][i]
         
-#         axs.plot(x, y, label = i)
-#         axs.legend(loc = 'best')
+#         plt.xlim([0,4])
+#         plt.ylim([-20,7_000])
+        
+#         axs.yaxis.set_major_locator(MultipleLocator(1000))
+#         axs.yaxis.set_minor_locator(MultipleLocator(200))
+        
+#         axs.xaxis.set_minor_locator(MultipleLocator(0.1))
+        
+#         i = i.replace('Island_to_', '')
+#         if i == 'Denmark':
+#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['DK'])
+#         if i == 'Norway':    
+#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['NO'])
+#         if i == 'Germany':    
+#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['DE'])
+#         if i == 'Netherlands':    
+#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['NL'])
+#         if i == 'Belgium':    
+#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['BE'])
+#         if i == 'United Kingdom':    
+#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['GB'])
+            
+#         axs.legend(loc='upper right', bbox_to_anchor=(1, 0.78), ncol = 2, fontsize = 15)
 #     else:
 #         continue
-    
+
 # plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
 # plt.xlabel('Capital cost coefficient [-]')
 # plt.ylabel('Installed capacity [MW]')
 
     
-# #%% Plot sweep: country generators
+#%% Plot sweep: country generators
 # fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
 # for i in n.generators.index:
 #     if i in ['Wind','MoneyBin','P2X','Data']:
