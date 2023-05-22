@@ -755,6 +755,7 @@ def solutions_2D(techs, solutions,
                  tech_titles = None,
                  plot_MAA_points = False,
                  filename = None,
+                 cheb = None,
                  ):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
     # Plot the polyhedron shape, samples within and correlations.
@@ -936,7 +937,9 @@ def solutions_2D(techs, solutions,
                 l_list.append(l2)
                 l_labels.append('Optimal solution')
                 
-               
+            # if not cheb == None:
+            ax.scatter(cheb[i], cheb[j], color='red', marker='o', s = 600)
+                
             # Set limits
             ax.set_xlim(xlim)
             ax.set_ylim(ylim)

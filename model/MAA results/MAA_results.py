@@ -132,10 +132,22 @@ for n_opt in n_opt_list:
 
 #%%
 
-sol = np.load('../v_2040_links_G2/v_2040_links_G2_3MAA_10p_solutions.npy')
-techs = ['DE', 'NL', 'GB']
+import polytope
 
-gm.solutions_2D(techs, sol, n_samples = 10_000, title = '2040 Links G2')
+sol = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
+# sol = np.load('../v_2030_local/v_2030_local_3MAA_10p_solutions.npy')
+techs = ["DK","NO","BE"]
+
+poly = polytope.qhull(sol)
+
+cheb = poly.chebXc
+
+
+
+#%%
+axs = gm.solutions_2D(techs, sol, n_samples = 10_000, title = '2040 Links G2',
+                      cheb = cheb)
+
 
 #%% Solutions_2D for all studies
 
