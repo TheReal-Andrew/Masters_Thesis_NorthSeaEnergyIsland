@@ -275,7 +275,7 @@ colors = gm.get_color_codes()
 info = pd.DataFrame(techs_list).T
 info.columns = projects
 
-n_samples = 1_000
+n_samples = 100_000
 titlesize = 24
 
 countries = tm.get_bus_df()['Abbreviation'][1:].values
@@ -314,7 +314,7 @@ for variable in countries:
             samples = gm.sample_in_hull(sol, n_samples)
             samples_df = pd.DataFrame(samples, columns = project_list) 
             
-            linestyle = '-' if year == 2030 else '--'
+            linestyle = '-' if year == 2030 else '-.'
             
             sns.histplot(samples_df[variable].values, 
                          line_kws = {'linewidth':3, 'linestyle':linestyle},
@@ -347,7 +347,8 @@ for variable in countries:
     axtitle = f'{title_var} - from projects: {title_projects}'
         
     ax.set_title(axtitle, color = colors[variable], fontsize = titlesize, y = 0.975)
-        
+    ax.set(xlim = [0, None])    
+    
     handles, labels = ax.get_legend_handles_labels()
     
     range_list = [a for a in range(2+len(var_projects.keys()))]
@@ -360,6 +361,12 @@ for variable in countries:
     ax.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.35, 1))
             
     i += 1
+    
+#%% Chebychev
+
+project = 'local'
+n_MAA   = 3
+sol     = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
     
 
 #%%
