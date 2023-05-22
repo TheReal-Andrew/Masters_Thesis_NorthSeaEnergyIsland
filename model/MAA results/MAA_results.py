@@ -189,7 +189,6 @@ gm.solutions_2D(techs_list[i], case_list[i],
                 title = titles[i],
                 opt_system = opt_list[i]
                 )
-gm.solutions_2D(techs)
 
 
 #%% Load solutions
