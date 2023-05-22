@@ -17,6 +17,7 @@ import numpy as np
 from ttictoc import tic, toc
 import matplotlib.pyplot as plt
 from pywaffle import Waffle
+import polytope
 
 import gorm as gm
 import tim as tm
@@ -130,24 +131,38 @@ for n_opt in n_opt_list:
     i += 1
 
 
-#%%
+#%% Chebyshev center and radius
 
-import polytope
+sol0 = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
+sol1 = np.load('../v_2030_local/v_2030_local_3MAA_10p_solutions.npy')
 
-sol = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
-# sol = np.load('../v_2030_local/v_2030_local_3MAA_10p_solutions.npy')
-techs = ["DK","NO","BE"]
+techs1 = ['P2X', 'Data', 'Storage'] 
+techs0  = ["DK","NO","BE"]
 
-poly = polytope.qhull(sol)
+p1 = polytope.qhull(sol1)
+p2 = polytope.qhull(sol0)
 
-cheb = poly.chebXc
+cheb_center = p1.chebXc # Chebyshev ball center
+cheb_radius = p1.chebR
 
+axs = gm.solutions_2D(techs1, sol1, n_samples = 10_000, title = '2040 Links G2',
+                      cheb = cheb_center,
+                      xlim = [0, None], ylim = [0, None]
+                      )
 
+#%% Polyhedron union area
 
-#%%
-axs = gm.solutions_2D(techs, sol, n_samples = 10_000, title = '2040 Links G2',
-                      cheb = cheb)
+sol1 = np.load('../v_2030_links_G3/v_2030_links_G3_3MAA_10p_solutions.npy')
+sol2 = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
+techs = ['DK', 'NO', 'BE']
 
+sol11 = sol1+300
+
+gm.solutions_3D(techs, sol1)
+gm.solutions_3D(techs, sol2)
+
+p1 = polytope.qhull(sol1)
+p2 = polytope.qhull(sol2)
 
 #%% Solutions_2D for all studies
 
@@ -169,7 +184,7 @@ years    = [2030, 2030,
             2040, 2040, 2040,]
 
 
-for i in range(len(case_list)):
+for i in [1, 2]: #range(len(case_list)):
     
     filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
     
@@ -177,10 +192,11 @@ for i in range(len(case_list)):
     
     gm.solutions_2D(techs_list[i], case_list[i],
                     tech_titles = tech_titles,
-                    n_samples = 1_000_000,
-                    filename = filename,
+                    n_samples = 100_000,
+                    # filename = filename,
                     title = titles[i],
-                    opt_system = opt_list[i]
+                    opt_system = opt_list[i],
+                    cheb = True,
                     )
     
 #%% 

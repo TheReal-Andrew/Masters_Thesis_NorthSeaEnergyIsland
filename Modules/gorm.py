@@ -755,7 +755,7 @@ def solutions_2D(techs, solutions,
                  tech_titles = None,
                  plot_MAA_points = False,
                  filename = None,
-                 cheb = None,
+                 cheb = False,
                  ):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
     # Plot the polyhedron shape, samples within and correlations.
@@ -767,6 +767,7 @@ def solutions_2D(techs, solutions,
     import matplotlib.patches as mpatches
     import matplotlib.ticker as ticker
     import seaborn as sns
+    import polytope as pc
     
     pad = 5
     ncols = len(techs) if opt_system == None else len(techs)+1
@@ -774,6 +775,11 @@ def solutions_2D(techs, solutions,
     
     if tech_titles == None: 
         tech_titles = techs
+        
+    if cheb:
+        p1 = pc.qhull(solutions)
+        cheb_center = p1.chebXc # Chebyshev ball center
+        cheb_radius = p1.chebR
     
     # Sample polyhedron
     d = sample_in_hull(solutions, n_samples)
@@ -857,6 +863,16 @@ def solutions_2D(techs, solutions,
         
         ax.text(0.5, text_lift, 'Histogram', ha='center', va='top', 
                 transform=ax.transAxes, fontsize = 16, color = 'gray')
+        
+        if not opt_system == None:
+            ax.axvline(x = opt_system[j], 
+                       color = colors[techs[j]], linestyle = '--',
+                       linewidth = 2,)
+            
+        if cheb:
+            ax.axvline(x = cheb_center[j],
+                       color = 'gold', linestyle = '--',
+                       linewidth = 2,)
     
     
     # lower traingle of subplots
@@ -937,8 +953,11 @@ def solutions_2D(techs, solutions,
                 l_list.append(l2)
                 l_labels.append('Optimal solution')
                 
-            # if not cheb == None:
-            ax.scatter(cheb[i], cheb[j], color='red', marker='o', s = 600)
+            if cheb:
+                
+                ax.scatter(cheb_center[i], cheb_center[j], 
+                           facecolor='gold', edgecolor = 'silver',
+                           linewidth = 2, marker='*', s = 600)
                 
             # Set limits
             ax.set_xlim(xlim)
