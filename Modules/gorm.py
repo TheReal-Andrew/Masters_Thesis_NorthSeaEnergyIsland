@@ -737,11 +737,20 @@ def MAA_density(techs, solutions,
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
         
     return ax 
+
+
+def scientific_formatter(x, pos):
+    """Formatter function to use scientific notation for values >= 1000"""
+    if x >= 1000:
+        return f'{x:.0e}'
+    else:
+        return f'{x:.0f}'
     
 def solutions_2D(techs, solutions,
                  n_samples = 1000, bins = 50,
                  title = 'MAA_plot', cmap = 'Blues',
                  xlim = [None, None], ylim = [None, None],
+                 xlabel = None, ylabel = None,
                  opt_system = None,
                  tech_titles = None,
                  plot_MAA_points = False,
@@ -755,6 +764,7 @@ def solutions_2D(techs, solutions,
     import numpy as np
     import matplotlib.colors as mcolors
     import matplotlib.patches as mpatches
+    import matplotlib.ticker as ticker
     import seaborn as sns
     
     pad = 5
@@ -854,11 +864,26 @@ def solutions_2D(techs, solutions,
             
             ax = axs[j][i]
             
+            if not xlabel == None:
+                ax.set_xlabel(xlabel, color = 'gray', size = 16)
+                ax.set_ylabel(ylabel, color = 'gray', size = 16)
+            else:
+                ax.set_xlabel('Capacity [MW]', color = 'gray', size = 16)
+                ax.set_ylabel('Capacity [MW]', color = 'gray', size = 16)
+            
             ax.text(0.5, text_lift, 'MAA density', ha='center', va='top',
                     transform=ax.transAxes, fontsize=16, color = 'gray')
             
             # MAA solutions
             x, y = solutions[:,i],   solutions[:,j]
+            
+            if max(x) >= 10000:
+                # Set the formatter function for the x and y axes
+                ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+                
+            if max(y) >= 10000:
+                # Set the formatter function for the x and y axes
+                ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
             
             # Set x and y as samples for this dimension
             x_samples = d[:,i]
@@ -921,7 +946,7 @@ def solutions_2D(techs, solutions,
     ax.legend(l_list,
               l_labels, 
               loc = 'center', ncol = ncols,
-              bbox_to_anchor=(0.5, -0.25),fancybox=False, shadow=False,)
+              bbox_to_anchor=(0.5, -0.35),fancybox=False, shadow=False,)
     
     fig.suptitle(title, fontsize = 24)
     
@@ -1195,4 +1220,67 @@ def histograms_3MAA(techs, solutions, filename = None,
     if not filename == None:
         fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
     
+def histograms_MAA_Variable(techs, solutions, variable, filename = None,
+                           title = 'Histograms', n_samples = 10000,
+                           titlesize = 24, titley = 0.97):
+    import pandas as pd
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    
+    colors = get_color_codes()
+    
+    #Check if one or more solutions was passed, and create list
+    if not isinstance(solutions, list):
+        solutions = [solutions]
+    
+    fig, axs = plt.subplots(1, 1, figsize = (15, 4))
+    fig.subplots_adjust(hspace = 0.5)
+    fig.suptitle(title, fontsize = 32, y = titley)
+    axs = axs.ravel()
+    
+    for solution, year in zip(solutions, [2030, 2040]):
+        # Sampling
+        samples = sample_in_hull(solution, n_samples)
+        samples_df = pd.DataFrame(samples, columns = techs)
+        
+        # ----------------------- Histograms plot -----------------------------
+        
+        linestyle = '-' if year == 2030 else '--'
+        
+        
+        for tech, ax in zip(techs, axs):
+            
+            # Create Seaborn histplot with KDE line
+            sns.histplot(samples_df[tech].values, 
+                         line_kws = {'linewidth':3, 'linestyle':linestyle},
+                         element = 'step',
+                         color = colors[tech],
+                         alpha = 1/2,
+                         kde = True,
+                         ax = ax, label='_nolegend_',
+                         )
+                
+            xUnit  = '[MWh]' if tech == 'Storage' else '[MW]'
+            ax.set(xlabel = f'Installed capacity {xUnit}', 
+                   ylabel = 'Frequency',
+                   )
+            
+            axtitle = 'IT' if tech == 'Data' else tech
+            
+            ax.set_title(axtitle, color = colors[tech], fontsize = titlesize, y = 0.975)
+        
+    # ----------------------- Set legend -----------------------------
+    for tech, ax in zip(techs, axs):
+        
+        handles = [
+            Line2D([], [], color = colors[tech], linestyle='-', linewidth = 3),
+            Line2D([], [], color = colors[tech], linestyle='--', linewidth = 3)
+        ]
+        labels = ['2030', '2040']
+        ax.legend(handles=handles, labels=labels, loc='upper center',
+                  ncol=2, fancybox=False, shadow=False)
+        
+    if not filename == None:
+        fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
     

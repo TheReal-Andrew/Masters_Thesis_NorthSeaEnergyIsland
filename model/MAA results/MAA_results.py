@@ -38,6 +38,7 @@ local40_nac = np.load(f'../v_2040_{project}_nac/v_2040_{project}_nac_{n_MAA}MAA_
 linksG130 = np.load('../v_2030_links_G1/v_2030_links_G1_4MAA_10p_solutions.npy')
 linksG230 = np.load('../v_2030_links_G2/v_2030_links_G2_3MAA_10p_solutions.npy')
 linksG330 = np.load('../v_2030_links_G3/v_2030_links_G3_3MAA_10p_solutions.npy')
+
 linksG140 = np.load('../v_2040_links_G1/v_2040_links_G1_4MAA_10p_solutions_temp.npy')
 linksG240 = np.load('../v_2040_links_G2/v_2040_links_G2_3MAA_10p_solutions.npy')
 linksG340 = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
@@ -84,7 +85,7 @@ case_list = [local30,
              local30_nac,
              local40,   
              local40_nac,
-             linksG130, 
+             linksG130,  #
              linksG230,
              linksG330,
              linksG140,
@@ -127,17 +128,7 @@ for n_opt in n_opt_list:
     opt_list.append(opt_system)
     
     i += 1
-    
-#%% Investigate links MAA slack
-n             = linksG340_opt
-n.main_links  = n.links.loc[n.links.bus0 == "Energy Island"].index
 
-p_noms = n.links.loc[n.main_links]['p_nom_opt'] 
-ccs    = n.links.loc[n.main_links]['capital_cost']
-    
-costs = p_noms * ccs
-
-slack = 0.1 * costs.sum()
 
 #%%
 
@@ -166,14 +157,16 @@ years    = [2030, 2030,
             2040, 2040, 2040,]
 
 
-
 for i in range(len(case_list)):
     
     filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
     
+    tech_titles = ['IT' if item == 'Data' else item for item in techs_list[i]]
+    
     gm.solutions_2D(techs_list[i], case_list[i],
-                    n_samples = 10_000,
-                    # filename = filename,
+                    tech_titles = tech_titles,
+                    n_samples = 1_000_000,
+                    filename = filename,
                     title = titles[i],
                     opt_system = opt_list[i]
                     )
@@ -255,6 +248,118 @@ for techs, project in zip(techs_list, projects):
     
     i += 1
     
+#%% Anders' plot
+import seaborn as sns
+
+
+
+projects    = ['local', 'local_nac', 'links_G1', 'links_G2', 'links_G3']
+techs_list  = [['P2X', 'Data', 'Storage'],
+               ['P2X', 'Data', 'Storage'],
+               ['DK', 'DE', 'NL', 'BE'],
+               ['DE', 'NL', 'GB'],
+               ['DK', 'NO', 'BE'],]
+
+titles      = ['MAA solution histograms for local demand',
+               'MAA solution histograms for unconstrained local demand',
+               'MAA solution histograms for planned links',
+               'MAA solution histograms for low capacity links',
+               'MAA solution histograms for high capacity links',
+               ]
+
+fig, axs = plt.subplots(6, 1, figsize = (15, 4*6))
+fig.subplots_adjust(hspace = 0.5)
+
+colors = gm.get_color_codes()
+
+info = pd.DataFrame(techs_list).T
+info.columns = projects
+
+n_samples = 1_000
+titlesize = 24
+
+countries = tm.get_bus_df()['Abbreviation'][1:].values
+
+pr_name = {'links_G1':'Planned links', 
+           'links_G2':'Low-capacity links',
+           'links_G3':'High-capacity links'}
+
+i = 0
+for variable in countries:
+    # variable  = 'BE'
+    hatch_project = 'G1'
+    
+    ax = axs[i]
+    
+    var_projects = info.loc[:, info.eq(variable).any()]
+    
+    data_dict = {}  # Initialize an empty dictionary
+    
+    for project_name in var_projects:
+        
+        # Remove None values
+        var_project = var_projects[project_name].dropna()
+        
+        for year in [2030, 2040]:
+            
+            hatch = '/' if hatch_project in project_name else '.'
+            label = f'Study: {pr_name[project_name]}' if year == 2030 else '_nolegend_'
+            
+            n_MAA = len(var_project)
+            
+            sol = np.load(f'../v_{year}_{project_name}/v_{year}_{project_name}_{n_MAA}MAA_10p_solutions.npy')
+            project_list = techs_list[projects.index(project_name)]
+            data_dict[(project_name, year)] = {'data': sol, 'list': project_list}
+            
+            samples = gm.sample_in_hull(sol, n_samples)
+            samples_df = pd.DataFrame(samples, columns = project_list) 
+            
+            linestyle = '-' if year == 2030 else '--'
+            
+            sns.histplot(samples_df[variable].values, 
+                         line_kws = {'linewidth':3, 'linestyle':linestyle},
+                         element = 'step',
+                         color = colors[variable],
+                         alpha = 1/len(var_projects),
+                         kde = True,
+                         ax = ax, label = label,
+                         hatch = hatch,
+                         )
+            
+            if project_name == var_projects.keys()[0]:
+                
+                line_label = '2030' if linestyle == '-' else '2040'
+                ax.plot([], [], linestyle = linestyle, color = colors[variable],
+                       label = line_label)
+            
+    xUnit  = '[MWh]' if variable == 'Storage' else '[MW]'
+        
+    ax.set(xlabel = f'Installed capacity {xUnit}', 
+           ylabel = 'Frequency',
+           )
+        
+    title_var = 'IT' if variable == 'Data' else variable
+        
+    title_projects = ' '
+    for project in var_projects:
+        title_projects += pr_name[project] + ', '
+        
+    axtitle = f'{title_var} - from projects: {title_projects}'
+        
+    ax.set_title(axtitle, color = colors[variable], fontsize = titlesize, y = 0.975)
+        
+    handles, labels = ax.get_legend_handles_labels()
+    
+    range_list = [a for a in range(2+len(var_projects.keys()))]
+    # Reorder the legend entries
+    order = range_list[1:] + [range_list[0]]
+    # order = [range_list[-1]] + range_list[:-1]
+    handles = [handles[r] for r in order]
+    labels = [labels[r] for r in order]
+    
+    ax.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.35, 1))
+            
+    i += 1
     
 
 #%%
