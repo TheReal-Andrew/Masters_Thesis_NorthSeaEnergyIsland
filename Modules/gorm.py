@@ -747,34 +747,38 @@ def scientific_formatter(x, pos):
         return f'{x:.0f}'
     
 def solutions_2D(techs, solutions,
-                 n_samples = 1000, bins = 50,
+                 n_samples = 1000, bins = 50, ncols = 3,
                  title = 'MAA_plot', cmap = 'Blues',
                  xlim = [None, None], ylim = [None, None],
                  xlabel = None, ylabel = None,
                  opt_system = None,
-                 tech_titles = None,
+                 tech_titles = None, minmax_techs = None,
                  plot_MAA_points = False,
                  filename = None,
-                 cheb = False,
+                 cheb = False, show_minmax = False,
                  ):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
     # Plot the polyhedron shape, samples within and correlations.
-    import pandas
+    import pandas as pd
     import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
     import numpy as np
     import matplotlib.colors as mcolors
     import matplotlib.patches as mpatches
     import matplotlib.ticker as ticker
+    from matplotlib.lines import Line2D
     import seaborn as sns
     import polytope as pc
     
     pad = 5
-    ncols = len(techs) if opt_system == None else len(techs)+1
+    
     colors = get_color_codes()
     
     if tech_titles == None: 
         tech_titles = techs
+        
+    if minmax_techs == None: 
+        minmax_techs = techs
         
     if cheb:
         p1 = pc.qhull(solutions)
@@ -786,7 +790,7 @@ def solutions_2D(techs, solutions,
     
     # -------- create correlation matrix --------------------------
     # Create dataframe from samples
-    d_df = pandas.DataFrame(d, columns = techs)
+    d_df = pd.DataFrame(d, columns = techs)
     
     # Calculate correlation and normalize
     d_corr = d_df.corr()
@@ -866,12 +870,12 @@ def solutions_2D(techs, solutions,
         
         if not opt_system == None:
             ax.axvline(x = opt_system[j], 
-                       color = colors[techs[j]], linestyle = '--',
-                       linewidth = 2,)
+                       color = 'gold', linestyle = '--',
+                       linewidth = 4, gapcolor = 'darkorange',)
             
         if cheb:
             ax.axvline(x = cheb_center[j],
-                       color = 'gold', linestyle = '--',
+                       color = 'red', linestyle = '--',
                        linewidth = 2,)
     
     
@@ -939,38 +943,98 @@ def solutions_2D(techs, solutions,
                           color = 'lightcoral', zorder = 2)
                 l_list.append(l1)
                 l_labels.append('MAA points')
-            
-            # optimal solutions
+                
+            # Show maximum and minimum of technology capacities
+            if show_minmax:
+                
+                minmax_df = pd.DataFrame(solutions, columns = techs)
+                
+                for tech in minmax_techs:
+                    
+                        large = minmax_df.nlargest(1, tech)
+                        small = minmax_df.nsmallest(1, tech)
+                        
+                        ax.plot(large[techs[i]], large[techs[j]],
+                                  'o',  ms = 10, zorder = 2,
+                                  color = colors[tech])
+                        
+                        
+                        ax.plot(small[techs[i]], small[techs[j]],
+                                  'o', ms = 10, zorder = 2,
+                                  markeredgecolor = colors[tech],
+                                  markeredgewidth = 3, 
+                                  markerfacecolor = 'none',)
+                        
+            #optimal solutions
             if not opt_system == None:
                 x_opt, y_opt = opt_system[i],   opt_system[j]
                 
                 # Plot optimal solutions
-                l2, = ax.plot(x_opt, y_opt,
-                          'o', label = "Optimal", 
-                          ms = 20, color = 'red',
-                          zorder = 3)
+                ax.scatter(x_opt, y_opt,
+                            marker = '*', 
+                            s = 1000, zorder = 4,
+                            linewidth = 2, alpha = 0.85,
+                            facecolor = 'gold', edgecolor = 'darkorange',)
+                
+                l2 = Line2D([0], [0], marker = '*', color = 'gold',
+                            markeredgecolor = 'darkorange', markeredgewidth = 2,
+                            markersize = 25, label = 'Optimal Solutions',
+                            linestyle = '',)
+                l2_2 = Line2D([0], [0], linestyle = '--', color = 'gold',
+                              gapcolor = 'darkorange', linewidth = 4,)
                 
                 l_list.append(l2)
                 l_labels.append('Optimal solution')
+                l_list.append(l2_2)
+                l_labels.append('Optimal line')
                 
             if cheb:
                 
-                ax.scatter(cheb_center[i], cheb_center[j], 
-                           facecolor='gold', edgecolor = 'silver',
-                           linewidth = 2, marker='*', s = 600)
+                l3, = ax.plot(cheb_center[i], cheb_center[j],
+                              marker = 'o', linestyle = '',
+                              ms = 15, zorder = 3,
+                              color = 'red',)
+                l3_2 = Line2D([0], [0], linestyle = '--', color = 'red',
+                              linewidth = 4,)
+                
+                l_list.append(l3)
+                l_labels.append(f'Chebyshev center (r = {round(cheb_radius)})')
+                l_list.append(l3_2)
+                l_labels.append('Chebyshev line')
                 
             # Set limits
             ax.set_xlim(xlim)
             ax.set_ylim(ylim)
     
+    if show_minmax:
+        for tech in minmax_techs:
+            
+            lm1 = Line2D([0], [0], marker = 'o', color = colors[tech],
+                         ms = 10, linestyle = '',)
+            
+            lm2 = Line2D([0], [0], marker = 'o', 
+                         markeredgecolor = colors[tech],
+                         markerfacecolor = 'none',
+                         ms = 10, linestyle = '',)
+            
+            l_list.append(lm1)
+            l_labels.append(f'{tech} max')
+            
+            l_list.append(lm2)
+            l_labels.append(f'{tech} min')
+            
+    
     # Place legend below subplots
     ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
+    
+    legend_right = 1.2 if len(techs) == 4 else 0.5
+    
     ax.legend(l_list,
               l_labels, 
               loc = 'center', ncol = ncols,
-              bbox_to_anchor=(0.5, -0.35),fancybox=False, shadow=False,)
+              bbox_to_anchor=(legend_right, -0.15*len(techs)), fancybox=False, shadow=False,)
     
-    fig.suptitle(title, fontsize = 24)
+    fig.suptitle(title, fontsize = 24, y = 0.96)
     
     if not filename == None:
         fig.savefig(filename, format = 'pdf', bbox_inches='tight')
@@ -1206,12 +1270,14 @@ def histograms_3MAA(techs, solutions, filename = None,
         # ----------------------- Histograms plot -----------------------------
         
         linestyle = '-' if year == 2030 else '--'
+        dash_pattern = [10, 0] if year == 2030 else [10,10]
         
         for tech, ax in zip(techs, axs):
             
             # Create Seaborn histplot with KDE line
             sns.histplot(samples_df[tech].values, 
-                         line_kws = {'linewidth':3, 'linestyle':linestyle},
+                         line_kws = {'linewidth':3, 'linestyle':linestyle,
+                                     'dashes': dash_pattern},
                          element = 'step',
                          color = colors[tech],
                          alpha = 1/2,
@@ -1243,4 +1309,344 @@ def histograms_3MAA(techs, solutions, filename = None,
         fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
     
 
+def solutions_2D_small(techs, solutions, chosen_techs,
+                 n_samples = 1000, bins = 50, ncols = 3,
+                 title = None, cmap = 'Blues',
+                 xlim = [None, None], ylim = [None, None],
+                 xlabel = None, ylabel = None,
+                 opt_system = None,
+                 tech_titles = None, minmax_techs = None,
+                 filename = None,
+                 cheb = False, show_minmax = False,
+                 ):
+    # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
+    # Plot the polyhedron shape, samples within and correlations.
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from scipy.spatial import ConvexHull
+    import numpy as np
+    import matplotlib.colors as mcolors
+    import matplotlib.patches as mpatches
+    from matplotlib.lines import Line2D
+    import seaborn as sns
+    import polytope as pc
+    
+    pad = 5
+    
+    colors = get_color_codes()
+    
+    if title == None:
+        title = f'MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+    
+    if tech_titles == None: 
+        tech_titles = techs
+        
+    if minmax_techs == None: 
+        minmax_techs = techs
+        
+    if cheb:
+        p1 = pc.qhull(solutions)
+        cheb_center = p1.chebXc # Chebyshev ball center
+        cheb_radius = p1.chebR
+    
+    # Sample polyhedron
+    d = sample_in_hull(solutions, n_samples)
+    
+    # -------- create dataframes --------------------------
+    # Create dataframe from samples
+    samples_df = pd.DataFrame(d, columns = techs)
+    
+    # Create solutions dataframe
+    solutions_df = pd.DataFrame(solutions, columns = techs)
+    
+    # -------- Set up plot ----------------------------------------
+    set_plot_options()
+    
+    # Initialize and adjust figure
+    plt.figure()
+    
+    fig, axs = plt.subplots(1, 2, figsize = (20,5),
+                           gridspec_kw={'width_ratios': [1, 3]},
+                          )
+    fig.subplots_adjust(wspace = 0.2, hspace = 0.2)
+    axs_twin = axs[1].twiny()
+    
+    fig.suptitle(title, fontsize = 24, y = 1.1)
+    
+    handles, labels = [], []
+    
+    axs[0].set_title('MAA Density')
+    axs[1].set_title('Histograms')
+    
+    axs_twin.spines['top'].set_position(('axes', -0.2))
+    
+    axs[1].spines['top'].set_position(('axes', -0.005))
+    
+    axs[1].set_xlabel('Capacity [MW]/[MWh]', color = 'gray',
+                      labelpad = 40)
+    axs[0].set(xlabel = chosen_techs[0] + ' [MW]', 
+               ylabel = chosen_techs[1] + ' [MW]')
+    
+    # Sns histplots - new axis --------------------------
+    
+    handles, labels = [], []
+    
+    for ax, tech in zip([axs[1], axs_twin], chosen_techs):
+        sns.histplot(samples_df[tech].values, 
+                     line_kws = {'linewidth': 3},
+                     element  = 'step',
+                     color    = colors[tech],
+                     alpha    = 1/2,
+                     bins     = bins,
+                     kde      = True,
+                     ax       = ax,
+                     label    = tech,)
+        
+        lpatch = mpatches.Patch(color = colors[tech],
+                                alpha = 0.5)
+        
+        handles.append(lpatch)
+        labels.append(tech)
+        
+        ax.spines['top'].set_edgecolor(colors[tech])
+        ax.tick_params(axis = 'x', colors = colors[tech])
+    
+    ax.legend(handles, labels)
+    
+    
+    # MAA Density plot - new axis --------------------------
+    handles, labels = [], []
+    
+    tech0 = chosen_techs[0]
+    tech1 = chosen_techs[1]
+    
+    x, y = solutions_df[tech0], solutions_df[tech1]
+    
+    # Set x and y as samples for this dimension
+    x_samples = samples_df[tech0]
+    y_samples = samples_df[tech1]
+    
+    # --------  Create 2D histogram --------------------
+    hist, xedges, yedges = np.histogram2d(x_samples, y_samples,
+                                          bins = bins)
+
+    # Create grid for pcolormesh
+    X, Y = np.meshgrid(xedges, yedges)
+    
+    # Create pcolormesh plot with square bins
+    axs[0].pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
+    
+    # Create patch to serve as hexbin label
+    hb = mpatches.Patch(color = 'tab:blue')
+    
+    handles.append(hb)
+    labels.append('MAA density')
+    
+    axs[0].grid('on')
+    
+    # --------  Plot hull --------------------
+    hull = ConvexHull(solutions_df[[tech0, tech1]].values)
+    
+    # plot simplexes
+    for simplex in hull.simplices:
+        l0, = axs[0].plot(solutions_df[tech0][simplex],
+                          solutions_df[tech1][simplex], '-', 
+                color = 'silver', label = 'faces', zorder = 0)
+        
+    handles.append(l0)
+    labels.append('Polyhedron face')
+    
+    # -------- Chebyshev --------------------
+    if cheb:
+        l3, = axs[0].plot(cheb_center[0], cheb_center[1],
+                      marker = 'o', linestyle = '',
+                      ms = 15, zorder = 3,
+                      color = 'red',)
+        
+        handles.append(l3)
+        labels.append(f'Chebyshev center (r = {round(cheb_radius)})')
+        
+    axs[0].legend(handles, labels, loc = 'lower center',
+                  bbox_to_anchor=(0.5, -0.5),)
+    
+    #optimal solutions
+    if not opt_system == None:
+        x_opt, y_opt = opt_system[0],   opt_system[1]
+        
+        # Plot optimal solutions
+        axs[0].scatter(x_opt, y_opt,
+                    marker = '*', 
+                    s = 1000, zorder = 4,
+                    linewidth = 2, alpha = 0.85,
+                    facecolor = 'gold', edgecolor = 'darkorange',)
+        
+        l2 = Line2D([0], [0], marker = '*', color = 'gold',
+                    markeredgecolor = 'darkorange', markeredgewidth = 2,
+                    markersize = 25, label = 'Optimal Solutions',
+                    linestyle = '',)
+        
+        handles.append(l2)
+        labels.append('Optimal solution')
+    
+    # # lower traingle of subplots
+    # for j in range(0, len(techs)):
+    #     for i in range(0, j):
+            
+    #         ax = axs[j][i]
+            
+    #         if not xlabel == None:
+    #             ax.set_xlabel(xlabel, color = 'gray', size = 16)
+    #             ax.set_ylabel(ylabel, color = 'gray', size = 16)
+    #         else:
+    #             ax.set_xlabel('Capacity [MW]', color = 'gray', size = 16)
+    #             ax.set_ylabel('Capacity [MW]', color = 'gray', size = 16)
+            
+    #         ax.text(0.5, text_lift, 'MAA density', ha='center', va='top',
+    #                 transform=ax.transAxes, fontsize=16, color = 'gray')
+            
+    #         # MAA solutions
+    #         x, y = solutions[:,i],   solutions[:,j]
+            
+    #         if max(x) >= 10000:
+    #             # Set the formatter function for the x and y axes
+    #             ax.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+                
+    #         if max(y) >= 10000:
+    #             # Set the formatter function for the x and y axes
+    #             ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+            
+    #         # Set x and y as samples for this dimension
+    #         x_samples = d[:,i]
+    #         y_samples = d[:,j]
+            
+    #         # --------  Create 2D histogram --------------------
+    #         hist, xedges, yedges = np.histogram2d(x_samples, y_samples,
+    #                                               bins = bins)
+    
+    #         # Create grid for pcolormesh
+    #         X, Y = np.meshgrid(xedges, yedges)
+            
+    #         # Create pcolormesh plot with square bins
+    #         ax.pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
+            
+    #         # Create patch to serve as hexbin label
+    #         hb = mpatches.Patch(color = 'tab:blue')
+            
+    #         ax.grid('on')
+            
+    #         # --------  Plot hull --------------------
+    #         hull = ConvexHull(solutions[:,[i,j]])
+            
+    #         # plot simplexes
+    #         for simplex in hull.simplices:
+    #             l0, = ax.plot(solutions[simplex, i], solutions[simplex, j], '-', 
+    #                     color = 'silver', label = 'faces', zorder = 0)
+            
+    #         # list of legend handles and labels
+    #         l_list, l_labels   = [l0, hb], ['Polyhedron face', 'Sample density']
+            
+    #         if plot_MAA_points:
+    #             # Plot vertices from solutions
+    #             l1, = ax.plot(x, y,
+    #                       'o', label = "Near-optimal",
+    #                       color = 'lightcoral', zorder = 2)
+    #             l_list.append(l1)
+    #             l_labels.append('MAA points')
+                
+    #         # Show maximum and minimum of technology capacities
+    #         if show_minmax:
+                
+    #             minmax_df = pd.DataFrame(solutions, columns = techs)
+                
+    #             for tech in minmax_techs:
+                    
+    #                     large = minmax_df.nlargest(1, tech)
+    #                     small = minmax_df.nsmallest(1, tech)
+                        
+    #                     ax.plot(large[techs[i]], large[techs[j]],
+    #                               'o',  ms = 10, zorder = 2,
+    #                               color = colors[tech])
+                        
+                        
+    #                     ax.plot(small[techs[i]], small[techs[j]],
+    #                               'o', ms = 10, zorder = 2,
+    #                               markeredgecolor = colors[tech],
+    #                               markeredgewidth = 3, 
+    #                               markerfacecolor = 'none',)
+                        
+    #         #optimal solutions
+    #         if not opt_system == None:
+    #             x_opt, y_opt = opt_system[i],   opt_system[j]
+                
+    #             # Plot optimal solutions
+    #             ax.scatter(x_opt, y_opt,
+    #                         marker = '*', 
+    #                         s = 1000, zorder = 4,
+    #                         linewidth = 2, alpha = 0.85,
+    #                         facecolor = 'gold', edgecolor = 'darkorange',)
+                
+    #             l2 = Line2D([0], [0], marker = '*', color = 'gold',
+    #                         markeredgecolor = 'darkorange', markeredgewidth = 2,
+    #                         markersize = 25, label = 'Optimal Solutions',
+    #                         linestyle = '',)
+    #             l2_2 = Line2D([0], [0], linestyle = '--', color = 'gold',
+    #                           gapcolor = 'darkorange', linewidth = 4,)
+                
+    #             l_list.append(l2)
+    #             l_labels.append('Optimal solution')
+    #             l_list.append(l2_2)
+    #             l_labels.append('Optimal line')
+                
+    #         if cheb:
+                
+    #             l3, = ax.plot(cheb_center[i], cheb_center[j],
+    #                           marker = 'o', linestyle = '',
+    #                           ms = 15, zorder = 3,
+    #                           color = 'red',)
+    #             l3_2 = Line2D([0], [0], linestyle = '--', color = 'red',
+    #                           linewidth = 4,)
+                
+    #             l_list.append(l3)
+    #             l_labels.append(f'Chebyshev center (r = {round(cheb_radius)})')
+    #             l_list.append(l3_2)
+    #             l_labels.append('Chebyshev line')
+                
+    #         # Set limits
+    #         ax.set_xlim(xlim)
+    #         ax.set_ylim(ylim)
+    
+    # if show_minmax:
+    #     for tech in minmax_techs:
+            
+    #         lm1 = Line2D([0], [0], marker = 'o', color = colors[tech],
+    #                      ms = 10, linestyle = '',)
+            
+    #         lm2 = Line2D([0], [0], marker = 'o', 
+    #                      markeredgecolor = colors[tech],
+    #                      markerfacecolor = 'none',
+    #                      ms = 10, linestyle = '',)
+            
+    #         l_list.append(lm1)
+    #         l_labels.append(f'{tech} max')
+            
+    #         l_list.append(lm2)
+    #         l_labels.append(f'{tech} min')
+            
+    
+    # # Place legend below subplots
+    # ax = axs[len(techs)-1, int(np.median([1,2,3]))-1] # Get center axis
+    
+    # legend_right = 1.2 if len(techs) == 4 else 0.5
+    
+    # ax.legend(l_list,
+    #           l_labels, 
+    #           loc = 'center', ncol = ncols,
+    #           bbox_to_anchor=(legend_right, -0.15*len(techs)), fancybox=False, shadow=False,)
+    
+    # fig.suptitle(title, fontsize = 24, y = 0.96)
+    
+    # if not filename == None:
+    #     fig.savefig(filename, format = 'pdf', bbox_inches='tight')
+        
+    return axs
     

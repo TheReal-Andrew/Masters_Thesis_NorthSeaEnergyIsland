@@ -25,7 +25,7 @@ import pypsa_diagrams as pdiag
 
 gm.set_plot_options()
 
-#%% Load all solutions
+#%% Load eeeeeverything. Solutions and optimal systems.
 
 # Local solutions
 project = 'local'
@@ -130,6 +130,20 @@ for n_opt in n_opt_list:
     
     i += 1
 
+#%% Solutions_2D_small
+
+studyno = 0
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+chosen_techs = ['P2X', 'Data']
+
+axs = gm.solutions_2D_small(techs, solutions,
+                            chosen_techs = chosen_techs,
+                            cheb = True, opt_system = opt,
+                            n_samples = 10_000)
+
 
 #%% Chebyshev center and radius
 
@@ -184,7 +198,7 @@ years    = [2030, 2030,
             2040, 2040, 2040,]
 
 
-for i in [1, 2]: #range(len(case_list)):
+for i in [0]: #range(len(case_list)):
     
     filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
     
@@ -192,12 +206,15 @@ for i in [1, 2]: #range(len(case_list)):
     
     gm.solutions_2D(techs_list[i], case_list[i],
                     tech_titles = tech_titles,
-                    n_samples = 100_000,
+                    n_samples = 1_000, ncols = 4,
                     # filename = filename,
                     title = titles[i],
                     opt_system = opt_list[i],
                     cheb = True,
+                    show_minmax = True,
                     )
+    
+# gm.its_britney_bitch()
     
 #%% 
 i = 7
@@ -271,10 +288,12 @@ for techs, project in zip(techs_list, projects):
     
     gm.histograms_3MAA(techs, sols, title = title, n_samples = n_samples,
                        titlesize = 20, titley = y,
-                        filename = filename,
+                       filename = filename,
                        )
     
     i += 1
+    
+gm.its_britney_bitch()
     
 #%% Anders' plot
 import seaborn as sns
@@ -305,6 +324,7 @@ info.columns = projects
 
 n_samples = 100_000
 titlesize = 24
+filename  = 'link_specific_histograms.pdf'
 
 countries = tm.get_bus_df()['Abbreviation'][1:].values
 
@@ -342,11 +362,14 @@ for variable in countries:
             samples = gm.sample_in_hull(sol, n_samples)
             samples_df = pd.DataFrame(samples, columns = project_list) 
             
-            linestyle = '-' if year == 2030 else '-.'
+            linestyle = '-' if year == 2030 else '--'
+            dash_pattern = [10, 0] if year == 2030 else [10,10]
             
             sns.histplot(samples_df[variable].values, 
-                         line_kws = {'linewidth':3, 'linestyle':linestyle},
+                         line_kws = {'linewidth':3, 'linestyle':linestyle, 
+                                     'dashes': dash_pattern},
                          element = 'step',
+                         bins = 50,
                          color = colors[variable],
                          alpha = 1/len(var_projects),
                          kde = True,
@@ -372,7 +395,7 @@ for variable in countries:
     for project in var_projects:
         title_projects += pr_name[project] + ', '
         
-    axtitle = f'{title_var} - from projects: {title_projects}'
+    axtitle = f'{title_var}' #- from projects: {title_projects}'
         
     ax.set_title(axtitle, color = colors[variable], fontsize = titlesize, y = 0.975)
     ax.set(xlim = [0, None])    
@@ -389,6 +412,10 @@ for variable in countries:
     ax.legend(handles, labels, loc='upper right', bbox_to_anchor=(1.35, 1))
             
     i += 1
+    
+fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+
+gm.its_britney_bitch()
     
 #%% Chebychev
 
@@ -410,11 +437,18 @@ solutions_list = [solutions30,
     
 gm.histograms_3MAA(techs, solutions_list, n_samples = n_samples)
 
+#%% MAA density + Histogram v2
+
+solutions = sol1
+
+gm.solutions_2D_small(techs, solutions, chosen_techs = ['P2X', 'Data'])
+
 #%% Histogram + MAA density function
 import pandas as pd
 import seaborn as sns
 import matplotlib.patches as mpatches
 from scipy.spatial import ConvexHull
+from gorm import sample_in_hull
 
 fig, axs = plt.subplots(1, 2, figsize = (20,5),
                        gridspec_kw={'width_ratios': [1, 3]},
