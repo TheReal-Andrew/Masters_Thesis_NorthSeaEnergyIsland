@@ -132,17 +132,59 @@ for n_opt in n_opt_list:
 
 #%% Solutions_2D_small
 
+
+
 studyno = 0
 solutions = case_list[studyno]
 techs     = techs_list[studyno]
 opt       = opt_list[studyno]
 
+#
 chosen_techs = ['P2X', 'Data']
 
-axs = gm.solutions_2D_small(techs, solutions,
-                            chosen_techs = chosen_techs,
-                            cheb = True, opt_system = opt,
-                            n_samples = 10_000)
+gm.solutions_2D_small(techs, solutions,
+                       # axs = axs,
+                      chosen_techs = chosen_techs,
+                      cheb = True, opt_system = opt,
+                      show_minmax = True,
+                      n_samples = 10_000)
+
+# studyno = 2
+# solutions = case_list[studyno]
+# techs     = techs_list[studyno]
+# opt       = opt_list[studyno]
+
+# gm.solutions_2D_small(techs, solutions, axs = axs,
+#                       chosen_techs = chosen_techs,
+#                        cheb = True, opt_system = opt,
+#                        show_minmax = True,
+#                        n_samples = 10_000)
+
+#%% MAA densityplot
+
+studyno = 0
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+#
+chosen_techs = ['Data', 'Storage']
+
+ax = gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 10_000,
+                        opt_system = opt, legend_down = -0.3, ncols = 3,
+                        cheb = True, show_minmax = True,
+                        minmax_legend = False,)
+
+studyno = 2
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 10_000,
+                        opt_system = opt, legend_down = -0.3, ncols = 3,
+                        cheb = True, show_minmax = True,
+                        ax = ax)
+
 
 
 #%% Chebyshev center and radius
@@ -170,13 +212,30 @@ sol1 = np.load('../v_2030_links_G3/v_2030_links_G3_3MAA_10p_solutions.npy')
 sol2 = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
 techs = ['DK', 'NO', 'BE']
 
-sol11 = sol1+300
+sol11 = sol1.copy()
 
-gm.solutions_3D(techs, sol1)
-gm.solutions_3D(techs, sol2)
+sol11[:,0] += 50
+
+xlim = [0, sol1[:,0].max()]
+ylim = [0, sol1[:,1].max()]
+zlim = [0, sol1[:,2].max()]
+
+gm.solutions_3D(techs, sol1, markersize = 2, linewidth = 2,
+                xlim = xlim, ylim = ylim, zlim = zlim)
+# gm.solutions_3D(techs, sol11)
+# gm.solutions_3D(techs, sol2)
 
 p1 = polytope.qhull(sol1)
-p2 = polytope.qhull(sol2)
+p2 = polytope.qhull(sol11)
+
+i1 = p1.intersect(p2)
+
+reduce_i1  = polytope.reduce(i1)
+extreme_i1 = polytope.extreme(reduce_i1)
+
+gm.solutions_3D(techs, extreme_i1, markersize = 2, linewidth = 2,
+                xlim = xlim, ylim = ylim, zlim = zlim)
+# gm.solutions_3D(techs, sol_u1, markersize = 2, linewidth = 2)
 
 #%% Solutions_2D for all studies
 
