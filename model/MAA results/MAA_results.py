@@ -283,63 +283,8 @@ intersection = gm.get_intersection(sol1, sol11)
 #%%
 # gm.solutions_3D(techs, intersection, markersize = 2, linewidth = 2,
 #                 xlim = xlim, ylim = ylim, zlim = zlim)
-
-def plot_intersection(sol1, sol2, intersection = None,
-                      plot_points = False, plot_edges = True,
-                      colors = ['tab:blue', 'tab:red', 'aliceblue'],
-                      markersize = 2, linewidth = 2):
-    from scipy.spatial import ConvexHull
-    
-    if intersection is None:
-        print('\n No intersection given, finding intersection... \n')
         
-    plt.figure()
-    ax = plt.axes(projection = '3d')
-    
-    # Plot original hulls as see-through
-    for sol in [sol1, sol11]:
-        
-        xi = sol[:,0]
-        yi = sol[:,1]
-        zi = sol[:,2]
-        
-        # Define hull and edges
-        hull = ConvexHull(sol)
-        
-        # Plot surfaces and lines  
-        ax.plot_trisurf(xi, yi, zi, 
-                        triangles = hull.simplices,
-                        alpha=0.1, color = colors[0],
-                        linewidth = 0)
-    
-    
-    if intersection is None:
-        intersection = gm.get_intersection(sol1, sol2)
-        print('\n Intersection found \n')
-    
-    # Plot intersection
-    sol = intersection
-    
-    xi = sol[:,0]
-    yi = sol[:,1]
-    zi = sol[:,2]
-    
-    # Define hull and edges
-    hull = ConvexHull(sol)
-    
-    linewidth = linewidth if plot_edges else 0
-    
-    # Plot surfaces and lines  
-    ax.plot_trisurf(xi, yi, zi, 
-                    triangles = hull.simplices,
-                    alpha=0.8, color = colors[0],
-                    edgecolor = colors[2], linewidth = linewidth)
-    
-    if plot_points:
-        # Plot intersection points
-        ax.plot(xi, yi, zi, 'o', c = colors[1], ms = markersize,)
-        
-plot_intersection(sol1, sol11, intersection)
+gm.plot_intersection(sol1, sol11, intersection)
 
 #%% Solutions_2D for all studies
 
