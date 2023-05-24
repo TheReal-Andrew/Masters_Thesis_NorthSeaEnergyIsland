@@ -1,0 +1,14 @@
+\begin{tabular}{lrrr}
+\toprule
+ & P2X & Data & Storage \\
+\midrule
+Optimum & 0 & 3715 & 52254 \\
+Chebyshev & 357 & 3481 & 54031 \\
+max P2X & 96761 & 3715 & 52254 \\
+min P2X & 0 & 3086 & 11833 \\
+max Data & 0 & 4433 & 226622 \\
+min Data & 0 & 2878 & 0 \\
+max Storage & 0 & 4433 & 226622 \\
+min Storage & 0 & 2878 & 0 \\
+\bottomrule
+\end{tabular}

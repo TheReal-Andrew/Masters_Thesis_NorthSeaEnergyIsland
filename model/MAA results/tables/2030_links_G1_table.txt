@@ -1,0 +1,16 @@
+\begin{tabular}{lrrrr}
+\toprule
+ & DK & DE & NL & BE \\
+\midrule
+Optimum & 1024 & 0 & 100 & 594 \\
+Chebyshev & 918 & 125 & 125 & 461 \\
+max DK & 1298 & 0 & 0 & 532 \\
+min DK & 606 & 0 & 437 & 561 \\
+max DE & 948 & 336 & 0 & 426 \\
+min DE & 606 & 0 & 437 & 561 \\
+max NL & 798 & 0 & 663 & 298 \\
+min NL & 1153 & 0 & 0 & 638 \\
+max BE & 825 & 0 & 0 & 989 \\
+min BE & 976 & 0 & 484 & 134 \\
+\bottomrule
+\end{tabular}

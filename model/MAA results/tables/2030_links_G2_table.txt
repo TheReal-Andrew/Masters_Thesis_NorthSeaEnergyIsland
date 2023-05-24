@@ -1,0 +1,14 @@
+\begin{tabular}{lrrr}
+\toprule
+ & DE & NL & GB \\
+\midrule
+Optimum & 0 & 100 & 103 \\
+Chebyshev & 139 & 139 & 139 \\
+max DE & 336 & 0 & 108 \\
+min DE & 0 & 61 & 0 \\
+max NL & 0 & 663 & 0 \\
+min NL & 0 & 0 & 0 \\
+max GB & 0 & 0 & 475 \\
+min GB & 0 & 27 & 0 \\
+\bottomrule
+\end{tabular}

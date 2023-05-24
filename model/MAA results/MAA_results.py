@@ -58,6 +58,12 @@ linksG140_opt   = pypsa.Network('../v_2040_links_G1/v_2040_links_G1_opt.nc')
 linksG240_opt   = pypsa.Network('../v_2040_links_G2/v_2040_links_G2_opt.nc')
 linksG340_opt   = pypsa.Network('../v_2040_links_G3/v_2040_links_G3_opt.nc')
 
+projects = ['local', 'local_nac', 
+            'local', 'local_nac', 
+            'links_G1', 'links_G2', 'links_G3',
+            'links_G1', 'links_G2', 'links_G3',
+            ]
+
 techs_list  = [['P2X', 'Data', 'Storage'], 
                ['P2X', 'Data', 'Storage'],
                ['P2X', 'Data', 'Storage'],
@@ -129,6 +135,68 @@ for n_opt in n_opt_list:
     opt_list.append(opt_system)
     
     i += 1
+
+#%% Create tables with relevant data
+
+for i in range(len(case_list)):
+
+    if i in [0, 1] or i in [4, 5, 6]:
+        year = 2030
+    else:
+        year = 2040
+    
+    # Get data for this project
+    project   = projects[i]
+    
+    techs     = techs_list[i]
+    
+    solutions = case_list[i]
+    opt       = opt_list[i]
+    
+    
+    # Optimal
+    opt_df = pd.DataFrame(np.array([opt]), columns = techs,
+                          index = ['Optimum'])
+    
+    # Chevyshev center
+    p1 = polytope.qhull(solutions)
+    cheb_center = p1.chebXc # Chebyshev ball center
+    cheb_radius = p1.chebR
+    
+    cheb_df = pd.DataFrame(np.array([cheb_center]), columns = techs,
+                           index = ['Chebyshev'])
+    
+    # Minmax combinations
+    solutions_df = pd.DataFrame(solutions, columns = techs)
+    dfs = []
+    
+    for tech in techs:
+        large = solutions_df.nlargest(1, tech)
+        large.index = ['max ' + tech]
+        
+        small = solutions_df.nsmallest(1, tech)
+        small.index = ['min ' + tech]
+        
+        dfs.append(large)
+        dfs.append(small)
+               
+
+    # Create dataframe from all results                        
+    minmax_df = pd.concat(dfs)
+        
+    results_df = pd.concat([opt_df, cheb_df, minmax_df])
+    
+    # Export to Latex
+    latex = results_df.to_latex(float_format = '%.0f')
+    
+    filename = os.path.join('tables', f"{year}_{project}_table.txt")
+    
+    # Write the LaTeX code to the text file
+    with open(filename, 'w') as file:
+        file.write(latex)
+
+
+        
 
 #%% Solutions_2D_small
 
