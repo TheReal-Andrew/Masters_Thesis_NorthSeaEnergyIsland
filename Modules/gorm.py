@@ -113,6 +113,51 @@ def sample_in_hull(points, n_samples = 1000):
         
     return samples
 
+def get_intersection(sol1, sol2):
+    import cdd as pcdd
+    from scipy.spatial import ConvexHull
+    import numpy as np
+
+    v1 = np.column_stack((np.ones(sol1.shape[0]), sol1))
+    mat = pcdd.Matrix(v1, number_type='fraction') # use fractions if possible
+    mat.rep_type = pcdd.RepType.GENERATOR
+    poly1 = pcdd.Polyhedron(mat)
+    
+    # make the V-representation of the second cube; you have to prepend
+    # with a column of ones
+    v2 = np.column_stack((np.ones(sol2.shape[0]), sol2))
+    mat = pcdd.Matrix(v2, number_type='fraction')
+    mat.rep_type = pcdd.RepType.GENERATOR
+    poly2 = pcdd.Polyhedron(mat)
+
+    # H-representation of the first cube
+    h1 = poly1.get_inequalities()
+    
+    # H-representation of the second cube
+    h2 = poly2.get_inequalities()
+
+    # join the two sets of linear inequalities; this will give the intersection
+    hintersection = np.vstack((h1, h2))
+    
+    # make the V-representation of the intersection
+    mat = pcdd.Matrix(hintersection, number_type='fraction')
+    mat.rep_type = pcdd.RepType.INEQUALITY
+    polyintersection = pcdd.Polyhedron(mat)
+    
+    # get the vertices; they are given in a matrix prepended by a column of ones
+    vintersection = polyintersection.get_generators()
+    
+    # get rid of the column of ones
+    ptsintersection = np.array([
+        vintersection[i][1:4] for i in range(vintersection.row_size)    
+    ])
+    
+    # these are the vertices of the intersection; it remains to take
+    # the convex hull
+    intersection = ConvexHull(ptsintersection)
+    
+    return intersection.points
+
 #%% ------- PyPSA FUNCTIONS -----------------------------------
 
 # Add bidirectional link with setup for losses
@@ -1537,10 +1582,10 @@ def solutions_2D_small(techs, solutions, chosen_techs,
     
 def MAA_density_for_vars(techs, solutions, chosen_techs,
                          n_samples = 1000, bins = 50, ncols = 2,
-                         title = None, legend_down = -0.15,
+                         title = None, legend_down = -0.15, show_legend = True,
                          opt_system = None, ax = None,
                          tech_titles = None, minmax_techs = None,
-                         filename = None,
+                         filename = None, density = True, polycolor = 'silver',
                          cheb = False, show_minmax = False, minmax_legend = True,
                          ):
             # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
@@ -1573,16 +1618,6 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
                 cheb_center = p1.chebXc # Chebyshev ball center
                 cheb_radius = p1.chebR
             
-            # Sample polyhedron
-            d = sample_in_hull(solutions, n_samples)
-            
-            # -------- create dataframes --------------------------
-            # Create dataframe from samples
-            samples_df = pd.DataFrame(d, columns = techs)
-            
-            # Create solutions dataframe
-            solutions_df = pd.DataFrame(solutions, columns = techs)
-            
             # -------- Set up plot ----------------------------------------
             set_plot_options()
             
@@ -1598,33 +1633,40 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
             ax.set(xlabel = tech0 + ' [MW]', 
                    ylabel = tech1 + ' [MW]')
             
-            
-            # MAA Density plot - new axis --------------------------
             handles, labels = [], []
             
-            # x, y = solutions_df[tech0], solutions_df[tech1]
+            # ------------ Sampling ----------------------------------
+            # Create solutions dataframe
+            solutions_df = pd.DataFrame(solutions, columns = techs)
             
-            # Set x and y as samples for this dimension
-            x_samples = samples_df[tech0]
-            y_samples = samples_df[tech1]
-            
-            # --------  Create 2D histogram --------------------
-            hist, xedges, yedges = np.histogram2d(x_samples, y_samples,
-                                                  bins = bins)
-
-            # Create grid for pcolormesh
-            X, Y = np.meshgrid(xedges, yedges)
-            
-            # Create pcolormesh plot with square bins
-            ax.pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
-            
-            # Create patch to serve as hexbin label
-            hb = mpatches.Patch(color = 'tab:blue')
-            
-            handles.append(hb)
-            labels.append('MAA density')
-            
-            ax.grid('on')
+            if density:
+                # Sample polyhedron
+                d = sample_in_hull(solutions, n_samples)
+                
+                # Create dataframe from samples
+                samples_df = pd.DataFrame(d, columns = techs)
+                
+                # Set x and y as samples for this dimension
+                x_samples = samples_df[tech0]
+                y_samples = samples_df[tech1]
+                
+                # --------  Create 2D histogram --------------------
+                hist, xedges, yedges = np.histogram2d(x_samples, y_samples,
+                                                      bins = bins)
+    
+                # Create grid for pcolormesh
+                X, Y = np.meshgrid(xedges, yedges)
+                
+                # Create pcolormesh plot with square bins
+                ax.pcolormesh(X, Y, hist.T, cmap = 'Blues', zorder = 0)
+                
+                # Create patch to serve as hexbin label
+                hb = mpatches.Patch(color = 'tab:blue')
+                
+                handles.append(hb)
+                labels.append('MAA density')
+                
+                ax.grid('on')
             
             # --------  Plot hull --------------------
             hull = ConvexHull(solutions_df[[tech0, tech1]].values)
@@ -1633,7 +1675,7 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
             for simplex in hull.simplices:
                 l0, = ax.plot(solutions_df[tech0][simplex],
                                   solutions_df[tech1][simplex], '-', 
-                        color = 'silver', label = 'faces', zorder = 0)
+                        color = polycolor, label = 'faces', zorder = 0)
                 
             handles.append(l0)
             labels.append('Polyhedron face')
@@ -1708,8 +1750,9 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
                             handles.append(lm2)
                             labels.append(f'{tech} min')
                         
-            ax.legend(handles, labels, loc = 'lower center',
-                          ncols = ncols,
-                          bbox_to_anchor=(0.5, legend_down),)
+            if show_legend:
+                ax.legend(handles, labels, loc = 'lower center',
+                              ncols = ncols,
+                              bbox_to_anchor=(0.5, legend_down),)
                 
             return ax

@@ -200,8 +200,6 @@ for i in range(len(case_list)):
 
 #%% Solutions_2D_small
 
-
-
 studyno = 0
 solutions = case_list[studyno]
 techs     = techs_list[studyno]
@@ -216,17 +214,6 @@ gm.solutions_2D_small(techs, solutions,
                       cheb = True, opt_system = opt,
                       show_minmax = True,
                       n_samples = 10_000)
-
-# studyno = 2
-# solutions = case_list[studyno]
-# techs     = techs_list[studyno]
-# opt       = opt_list[studyno]
-
-# gm.solutions_2D_small(techs, solutions, axs = axs,
-#                       chosen_techs = chosen_techs,
-#                        cheb = True, opt_system = opt,
-#                        show_minmax = True,
-#                        n_samples = 10_000)
 
 #%% MAA densityplot
 
@@ -252,8 +239,6 @@ gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 10_000,
                         opt_system = opt, legend_down = -0.3, ncols = 3,
                         cheb = True, show_minmax = True,
                         ax = ax)
-
-
 
 #%% Chebyshev center and radius
 
@@ -282,7 +267,7 @@ techs = ['DK', 'NO', 'BE']
 
 sol11 = sol1.copy()
 
-sol11[:,0] += 50
+sol11[:,0] += 100
 
 xlim = [0, sol1[:,0].max()]
 ylim = [0, sol1[:,1].max()]
@@ -290,20 +275,71 @@ zlim = [0, sol1[:,2].max()]
 
 gm.solutions_3D(techs, sol1, markersize = 2, linewidth = 2,
                 xlim = xlim, ylim = ylim, zlim = zlim)
-# gm.solutions_3D(techs, sol11)
-# gm.solutions_3D(techs, sol2)
-
-p1 = polytope.qhull(sol1)
-p2 = polytope.qhull(sol11)
-
-i1 = p1.intersect(p2)
-
-reduce_i1  = polytope.reduce(i1)
-extreme_i1 = polytope.extreme(reduce_i1)
-
-gm.solutions_3D(techs, extreme_i1, markersize = 2, linewidth = 2,
+gm.solutions_3D(techs, sol11, markersize = 2, linewidth = 2,
                 xlim = xlim, ylim = ylim, zlim = zlim)
-# gm.solutions_3D(techs, sol_u1, markersize = 2, linewidth = 2)
+
+intersection = gm.get_intersection(sol1, sol11)
+
+#%%
+# gm.solutions_3D(techs, intersection, markersize = 2, linewidth = 2,
+#                 xlim = xlim, ylim = ylim, zlim = zlim)
+
+def plot_intersection(sol1, sol2, intersection = None,
+                      plot_points = False, plot_edges = True,
+                      colors = ['tab:blue', 'tab:red', 'aliceblue'],
+                      markersize = 2, linewidth = 2):
+    from scipy.spatial import ConvexHull
+    
+    if intersection is None:
+        print('\n No intersection given, finding intersection... \n')
+        
+    plt.figure()
+    ax = plt.axes(projection = '3d')
+    
+    # Plot original hulls as see-through
+    for sol in [sol1, sol11]:
+        
+        xi = sol[:,0]
+        yi = sol[:,1]
+        zi = sol[:,2]
+        
+        # Define hull and edges
+        hull = ConvexHull(sol)
+        
+        # Plot surfaces and lines  
+        ax.plot_trisurf(xi, yi, zi, 
+                        triangles = hull.simplices,
+                        alpha=0.1, color = colors[0],
+                        linewidth = 0)
+    
+    
+    if intersection is None:
+        intersection = gm.get_intersection(sol1, sol2)
+        print('\n Intersection found \n')
+    
+    # Plot intersection
+    sol = intersection
+    
+    xi = sol[:,0]
+    yi = sol[:,1]
+    zi = sol[:,2]
+    
+    # Define hull and edges
+    hull = ConvexHull(sol)
+    
+    linewidth = linewidth if plot_edges else 0
+    
+    # Plot surfaces and lines  
+    ax.plot_trisurf(xi, yi, zi, 
+                    triangles = hull.simplices,
+                    alpha=0.8, color = colors[0],
+                    edgecolor = colors[2], linewidth = linewidth)
+    
+    if plot_points:
+        # Plot intersection points
+        ax.plot(xi, yi, zi, 'o', c = colors[1], ms = markersize,)
+        
+plot_intersection(sol1, sol11, intersection)
 
 #%% Solutions_2D for all studies
 
