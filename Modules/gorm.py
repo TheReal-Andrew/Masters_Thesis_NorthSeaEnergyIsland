@@ -862,10 +862,11 @@ def solutions_2D(techs, solutions,
     fig, axs = plt.subplots(len(techs), len(techs), figsize = (20,15))
     fig.subplots_adjust(wspace = 0.4, hspace = 0.4)
     
-    # Set titles
+    # Set top titles
     for ax, col in zip(axs[0], tech_titles):
         ax.set_title(col + '\n')
     
+    # Set side titles
     for ax, row in zip(axs[:,0], tech_titles):
         ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
                     xycoords = ax.yaxis.label, textcoords='offset points',
@@ -1062,11 +1063,15 @@ def solutions_2D(techs, solutions,
                          markerfacecolor = 'none',
                          ms = 10, linestyle = '',)
             
+            # Replace Data with IT
+            title1 = ['IT' if tech == 'Data' else tech]
+            
+            # Set titles
             l_list.append(lm1)
-            l_labels.append(f'{tech} max')
+            l_labels.append(f'{title1[0]} max')
             
             l_list.append(lm2)
-            l_labels.append(f'{tech} min')
+            l_labels.append(f'{title1[0]} min')
             
     
     # Place legend below subplots
@@ -1365,6 +1370,8 @@ def solutions_2D_small(techs, solutions, chosen_techs,
                  tech_titles = None, minmax_techs = None,
                  filename = None,
                  cheb = False, show_minmax = False,
+                 legend_v = -0.2, legend_h = 0.5,
+                 figsize = (20,5),
                  ):
     # Take a multi-dimensional MAA polyhedron, and plot each "side" in 2D.
     # Plot the polyhedron shape, samples within and correlations.
@@ -1382,11 +1389,13 @@ def solutions_2D_small(techs, solutions, chosen_techs,
     
     colors = get_color_codes()
     
+    tech_names = ['IT' if tech == 'Data' else tech for tech in chosen_techs]
+    
     tech0 = chosen_techs[0]
     tech1 = chosen_techs[1]
     
     if title == None:
-        title = f'MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+        title = f'MAA and histogram plot for MAA variables: {tech_names[0]}, {tech_names[1]}'
     
     if tech_titles == None: 
         tech_titles = techs
@@ -1417,7 +1426,7 @@ def solutions_2D_small(techs, solutions, chosen_techs,
     if axs is None:
         plt.figure()
         
-        fig, axs = plt.subplots(1, 2, figsize = (20,5),
+        fig, axs = plt.subplots(1, 2, figsize = figsize,
                                gridspec_kw={'width_ratios': [1, 3]},
                               )
         fig.subplots_adjust(wspace = 0.2, hspace = 0.2)
@@ -1576,13 +1585,14 @@ def solutions_2D_small(techs, solutions, chosen_techs,
                 
     axs[0].legend(handles, labels, loc = 'lower center',
                   ncols = ncols,
-                  bbox_to_anchor=(0.5, -0.6),)
+                  bbox_to_anchor=(legend_h, legend_v),)
         
     return axs
     
 def MAA_density_for_vars(techs, solutions, chosen_techs,
-                         n_samples = 1000, bins = 50, ncols = 2,
-                         title = None, legend_down = -0.15, show_legend = True,
+                         n_samples = 1000, bins = 50, ncols = 2, figsize = (10,10),
+                         title = None, legend_v = -0.15, legend_h = 0.5, 
+                         show_legend = True, loc = 'lower center',
                          opt_system = None, ax = None,
                          tech_titles = None, minmax_techs = None,
                          filename = None, density = True, polycolor = 'silver',
@@ -1601,11 +1611,13 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
     
     colors = get_color_codes()
     
+    tech_names = ['IT' if tech == 'Data' else tech for tech in chosen_techs]
+    
     tech0 = chosen_techs[0]
     tech1 = chosen_techs[1]
     
     if title == None:
-        title = f'MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+        title = f'MAA density plot for MAA variables: {tech_names[0]}, {tech_names[1]}'
     
     if tech_titles == None: 
         tech_titles = techs
@@ -1626,9 +1638,11 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
     if ax is None:
         plt.figure()
         
-        fig, ax = plt.subplots(1, 1, figsize = (10, 10),)
+        fig, ax = plt.subplots(1, 1, figsize = figsize,)
         fig.subplots_adjust(wspace = 0.2, hspace = 0.2)
         fig.suptitle(title, fontsize = 24)
+        
+    # ax.set_title(title, fontsize = 24)
         
     ax.set(xlabel = tech0 + ' [MW]', 
            ylabel = tech1 + ' [MW]')
@@ -1751,9 +1765,9 @@ def MAA_density_for_vars(techs, solutions, chosen_techs,
                     labels.append(f'{tech} min')
                 
     if show_legend:
-        ax.legend(handles, labels, loc = 'lower center',
+        ax.legend(handles, labels, loc = loc,
                       ncols = ncols,
-                      bbox_to_anchor=(0.5, legend_down),)
+                      bbox_to_anchor=(legend_h, legend_v),)
         
     return ax
 

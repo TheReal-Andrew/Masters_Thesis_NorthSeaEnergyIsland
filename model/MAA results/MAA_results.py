@@ -200,45 +200,70 @@ for i in range(len(case_list)):
 
 #%% Solutions_2D_small
 
-studyno = 0
+studyno = 6
 solutions = case_list[studyno]
 techs     = techs_list[studyno]
 opt       = opt_list[studyno]
 
-#
-chosen_techs = ['P2X', 'Data']
 
-gm.solutions_2D_small(techs, solutions,
+
+#
+chosen_techs = ['DK', 'BE']
+year  = 2030
+study = 'G3'
+
+title = f'{year} - MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+
+axs = gm.solutions_2D_small(techs, solutions,
                        # axs = axs,
                       chosen_techs = chosen_techs,
                       cheb = True, opt_system = opt,
-                      show_minmax = True,
-                      n_samples = 10_000)
+                      show_minmax = False,
+                      n_samples = 100_000,
+                      legend_v = -0.45, legend_h = 0.5,
+                      figsize = (20,4),
+                      title = title,
+                      )
+
+fig = axs[0].get_figure()
+
+filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
+
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
 
 #%% MAA densityplot
 
-studyno = 0
+studyno   = 4
 solutions = case_list[studyno]
 techs     = techs_list[studyno]
 opt       = opt_list[studyno]
 
-#
-chosen_techs = ['Data', 'Storage']
+filename = '2030_G1_DE-NL_MAA_density.pdf'
 
-ax = gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 10_000,
-                        opt_system = opt, legend_down = -0.3, ncols = 3,
+# chosen_techs = ['P2X', 'Data']
+chosen_techs = ['DE', 'NL']
+
+ax = gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 1_000_000,
+                        opt_system = opt, 
+                        legend_v = 0.5, legend_h = 1.6,  ncols = 2,
+                        loc = 'center',
                         cheb = True, show_minmax = True,
-                        minmax_legend = False,)
+                        minmax_legend = True,
+                        figsize = (7,7))
 
-studyno = 2
-solutions = case_list[studyno]
-techs     = techs_list[studyno]
-opt       = opt_list[studyno]
+fig = ax.get_figure()
 
-gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 10_000,
-                        opt_system = opt, legend_down = -0.3, ncols = 3,
-                        cheb = True, show_minmax = True,
-                        ax = ax)
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
+
+# studyno = 2
+# solutions = case_list[studyno]
+# techs     = techs_list[studyno]
+# opt       = opt_list[studyno]
+
+# gm.MAA_density_for_vars(techs, solutions, chosen_techs, n_samples = 10_000,
+#                         opt_system = opt, legend_down = -0.3, ncols = 3,
+#                         cheb = True, show_minmax = True,
+#                         ax = ax)
 
 #%% Chebyshev center and radius
 
@@ -286,6 +311,9 @@ intersection = gm.get_intersection(sol1, sol11)
         
 gm.plot_intersection(sol1, sol11, intersection)
 
+
+
+
 #%% Solutions_2D for all studies
 
 projects = ['local', 'local_nac', 
@@ -306,7 +334,7 @@ years    = [2030, 2030,
             2040, 2040, 2040,]
 
 
-for i in [0]: #range(len(case_list)):
+for i in range(len(case_list)):
     
     filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
     
@@ -314,15 +342,16 @@ for i in [0]: #range(len(case_list)):
     
     gm.solutions_2D(techs_list[i], case_list[i],
                     tech_titles = tech_titles,
-                    n_samples = 1_000, ncols = 4,
-                    # filename = filename,
+                    # minmax_techs = ['P2X', 'Data'],
+                    n_samples = 1_000_000, ncols = 4,
+                    filename = filename,
                     title = titles[i],
                     opt_system = opt_list[i],
                     cheb = True,
-                    show_minmax = True,
+                    show_minmax = False,
                     )
     
-# gm.its_britney_bitch()
+gm.its_britney_bitch()
     
 #%% 
 i = 7
