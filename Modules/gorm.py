@@ -1826,3 +1826,74 @@ def plot_intersection(sol1, sol2, intersection = None,
     if plot_points:
         # Plot intersection points
         ax.plot(xi, yi, zi, 'o', c = colors[1], ms = markersize,)
+        
+def waffles_area_and_capacity(n, 
+                              title = 'Area and Capacity waffle diagrams',
+                              filename = None,):
+    import matplotlib.pyplot as plt
+    from pywaffle import Waffle
+    
+    # ----- Initial data loading and processing ----
+    # Get colors
+    col = get_color_codes()
+    col_a = [col['P2X'], col['Data'], col['Storage']]
+    col_c = [col['P2X'], col['Data'], col['Storage'], col['Links']]
+    
+    # Area data
+    P2X_a   = n.generators.p_nom_opt["P2X"] * n.area_use['hydrogen']
+    Data_a  = n.generators.p_nom_opt["Data"] * n.area_use['data']
+    Store_a = n.stores.e_nom_opt['Storage'] * n.area_use['storage']
+    
+    total_a = P2X_a + Data_a + Store_a
+    
+    val_a  = {'P2X':    (P2X_a/total_a * 100), 
+              'IT':     (Data_a/total_a * 100), 
+              'Storage':(Store_a/total_a * 100)}
+    
+    # Capacity data
+    P2X_c   = n.generators.p_nom_opt["P2X"] 
+    Data_c  = n.generators.p_nom_opt["Data"] 
+    Store_c = n.stores.e_nom_opt['Storage'] 
+    Links_c = n.links.p_nom_opt[n.main_links].sum()
+    
+    total_c = P2X_c + Data_c + Store_c + Links_c
+    
+    val_c  = {'P2X':    (P2X_c/total_c * 100), 
+              'IT':     (Data_c/total_c * 100), 
+              'Storage':(Store_c/total_c * 100),
+              'Links':  (Links_c/total_c * 100)}
+    
+    # ----- Create waffle diagrams ---------------------------
+    # Create waffle diagram
+    fig = plt.figure(
+        FigureClass = Waffle,
+        plots = {
+                311: {
+                     'values': val_a,
+                     'title':  {'label': f'Area use distribution - Area available: {round(total_a)} $m^2$', 'loc': 'left'},
+                     'labels': [f"{k} ({int(v)}%) \n {round(v/100*total_a)} $m^2$" for k, v in val_a.items()],
+                     'legend': {'loc': 'lower left', 'bbox_to_anchor': (0, -0.325), 'ncol': len(val_a), 'framealpha': 0},
+                     'colors': col_a,
+                      },
+                312: {
+                     'values': val_c,
+                     'title':  {'label': f'Installed capacity distribution - Total capacity: {round(total_c/1000, 1)} $GW$', 'loc': 'left'},
+                     'labels': [f"{k} ({int(v)}%) \n {round(v/100*total_c/1000, 1)} $GW$" for k, v in val_c.items()],
+                     'legend': {'loc': 'lower left', 'bbox_to_anchor': (0, -0.325), 'ncol': len(val_c), 'framealpha': 0},
+                     'colors': col_c,
+                      },
+            },
+        rows   = 5,
+        columns = 20,
+        figsize = (10,12),
+    )
+    
+    # Set title
+    fig.suptitle(title, 
+                  fontsize = 28)
+    
+    # Save if filename is given
+    if filename is not None:
+        fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+        
+    return fig
