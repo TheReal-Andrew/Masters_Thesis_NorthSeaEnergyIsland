@@ -339,3 +339,34 @@ ax.set_title('Vestas v164-9.5')
 
 plt.tight_layout() 
 plt.savefig('images/wind_correction.png', format = 'png', bbox_inches='tight')
+
+#%% Plot wind capacity factor
+fig, ax = plt.subplots(1,1,figsize = (10, 5), dpi = 300)
+
+ax.set_title('Wind farm capacity duration curve')
+ax.set_xlabel('Duration [hr]')
+ax.set_ylabel('Capacity factor [-]')
+
+ax.yaxis.set_major_locator(MultipleLocator(0.1))
+ax.xaxis.set_minor_locator(MultipleLocator(200))
+ax.yaxis.set_minor_locator(MultipleLocator(0.02))
+
+ax.set_xlim([1,8760])
+ax.set_ylim([0,1])
+
+ax.set_xticks([1,1000,2000,3000,4000,5000,6000,7000,8000,8760])
+
+ax.axhline(y = np.mean(np.sort(cf_wind[0:8760])[::-1]), color = 'k', linestyle = '--', linewidth = 1)
+ax.text(100,np.mean(np.sort(cf_wind[0:8760])[::-1])*1.02,'Average CF = ' + str(round(np.mean(np.sort(cf_wind[0:8760])[::-1]),2)))
+
+ax.axvline(x = 8760*0.25, color = 'k', linestyle = '--', linewidth = 0.5)
+ax.text(8760*0.25, 0.02, '0.25 quantile', rotation = -90, fontsize = 10)
+ax.axvline(x = 8760*0.50, color = 'k', linestyle = '--', linewidth = 0.5)
+ax.text(8760*0.50, 0.02, '0.50 quantile', rotation = -90, fontsize = 10)
+ax.axvline(x = 8760*0.75, color = 'k', linestyle = '--', linewidth = 0.5)
+ax.text(8760*0.75, 0.02, '0.75 quantile', rotation = -90, fontsize = 10)
+
+ax.plot(np.sort(cf_wind[0:8760])[::-1], color = 'tab:blue')
+
+plt.tight_layout() 
+plt.savefig('images/wind_cf_duration.png', format = 'png', bbox_inches='tight')
