@@ -304,9 +304,10 @@ for component in plot_components:
             cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
             cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
             
-            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
-            axs_copy.set_ylabel('Objective optimum [€]') 
+            axs_copy = axs[0].twinx()
             axs_copy.set_ylim([-0.05,1.05])
+            axs_copy.set_ylabel('Normalized optimum [-]')
+            axs_copy.yaxis.set_minor_locator(MultipleLocator(0.05))
             
             if component == 'Data':
                 axs[i].set_xlim([1,4])
@@ -322,10 +323,10 @@ for component in plot_components:
         if i == 1:
             
             axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal revenue', pad = 10)
-            
+            axs[i].set_ylabel('Use of available island area [%]')
             axs[i].set_ylim([-0.05,1.05])
             axs[i].set_yticks(np.arange(0,1.2,0.2))
-            axs[i].set_yticklabels([])
+            # axs[i].set_yticklabels([])
             
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in mc_components]:
                 y2 = mc_sensitivity_cap[component][k].copy()
@@ -364,7 +365,7 @@ for component in plot_components:
                 axs[i].set_xlim([0,1])
                 axs[i].set_xticks(np.arange(0,1.1,0.1))
                 axs[i].set_xlabel('Marginal revenue coefficient [-]')
-                axs[i].set_title(f'{year}: Sensitivity of\nIT capital cost', pad = 5)
+                axs[i].set_title(f'{year}: Sensitivity of\nIT marginal revenue', pad = 5)
             if component == 'P2X':
                 axs[i].set_xlim([1,4])
                 axs[i].set_xticks(np.arange(1,4.5,0.5))
@@ -373,7 +374,7 @@ for component in plot_components:
                 axs[i].set_xlim([0,1])
                 axs[i].set_xticks(np.arange(0,1.1,0.1))
                 axs[i].set_xlabel('Marginal cost coefficient [-]')
-                axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal cost', pad = 10)
+                axs[i].set_title(f'{year}: Sensitivity of\n{component} marginal cost', pad = 10)
             
             lines, labels = axs[i].get_legend_handles_labels()
             lines2, labels2 = axs_copy.get_legend_handles_labels()

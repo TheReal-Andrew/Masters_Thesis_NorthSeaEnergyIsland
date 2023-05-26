@@ -209,11 +209,12 @@ for q, component in enumerate(plot_components):
             
             axs_copy1 = axs[0].twinx()
             axs_copy1.set_ylim([-0.05,1.05])
-            axs_copy1.get_yaxis().set_visible(False)
+            axs_copy1.set_ylabel('Normalized optimum [-]')
             
             area_optimum = area_sensitivity_cap[component]['Optimum'].copy()
             area_optimum[:] = [x / max(area_optimum) for x in area_optimum]
             axs_copy1.plot(x1, area_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            axs_copy1.yaxis.set_minor_locator(MultipleLocator(0.05))
             
             #Plot area use
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in area_components]:
@@ -227,8 +228,7 @@ for q, component in enumerate(plot_components):
                 elif k == "Storage":
                     for j in range(len(y1)):
                         y1[j] = y1[j] * area_sensitivity_cap.copy()[component]['Use_area'][j]['storage'] / n.total_area                  
-                        
-                axs[0].plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
+                axs[0].plot(x1, y1, linestyle='-', marker='.', linewidth = 3, color = colors[k])
                 
             # plt.legend(loc = 'best')
             
@@ -236,8 +236,13 @@ for q, component in enumerate(plot_components):
             #Plot capacities 
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in area_components]:
                 y2 = area_sensitivity_cap[component][k].copy()
-                axs[1].plot(x1, y2, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
-                
+                if k == "Data":
+                    axs[1].plot(x1, y2, linestyle='-', marker='.', label = "IT", linewidth = 3, color = colors[k])
+                if k == "Storage":
+                    axs[1].plot(x1, y2, linestyle='-', marker='.', label = "Storage", linewidth = 3, color = colors[k])
+                if k == "P2X":
+                    axs[1].plot(x1, y2, linestyle='-', marker='.', label = "P2X", linewidth = 3, color = colors[k])
+                    
             # axs[1].set_ylim([-500,12000])
             axs[1].set_xlabel('Area use coefficient [-]')
             axs[1].set_ylabel("Nominal capacity [GW]")
@@ -274,7 +279,9 @@ for q, component in enumerate(plot_components):
             
             lines, labels = axs[i].get_legend_handles_labels()
             lines2, labels2 = axs_copy2.get_legend_handles_labels()
-            axs[1].legend(lines + lines2, labels + labels2, loc='upper right', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
+            all_lines = lines + lines2
+            all_labels = labels + labels2
+            axs[1].legend(all_lines, all_labels, loc='upper right', bbox_to_anchor=(1.01, 0.96), fontsize = 15)    
             
     # plt.tight_layout() 
     plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_area_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
