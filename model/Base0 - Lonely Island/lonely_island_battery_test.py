@@ -124,6 +124,9 @@ n.madd('Bus',
        y     = bus_df['Y'].values,
         )
 
+n.add('Bus',
+       name = "battery_bus", 
+        )
 
 # ----- Add links -------------------
 # For each country, add a link from the island to the country and from the
@@ -207,14 +210,34 @@ n.add("Generator",
 if add_storage:
     n.add("Store",
           "Storage",
-          bus               = bus_df.loc['Energy Island']['Bus name'], # Add to island bus
+          bus               = "battery_bus", # Add to island bus
           carrier           = "Storage",
           e_nom_extendable  = True,
           e_cyclic          = True,
           capital_cost      = tech_df['capital cost']['storage'],
-          marginal_cost     = tech_df['marginal cost']['storage']
+          marginal_cost     = tech_df['marginal cost']['storage'],
+          standing_loss     = 0.1/100,
           )
-
+    
+    n.add(
+        "Link",
+        "battery_charge",
+        bus0="Energy Island",
+        bus1="battery_bus",
+        efficiency= 0.985,
+        # p_nom = 20100,
+        p_nom_extendable=True,
+    )
+    
+    n.add(
+        "Link",
+        "battery_discharge",
+        bus0="battery_bus",
+        bus1="Energy Island",
+        efficiency= 0.975,
+        # p_nom = 20100,
+        p_nom_extendable=True,
+    )
 # ----- Add hydrogen production --------------------
 # Add hydrogen production. The generator is made negative by setting p_max_pu
 # to 0, and p_min_pu to -1. This generator will produce "negative" energy, 

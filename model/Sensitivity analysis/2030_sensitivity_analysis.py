@@ -64,8 +64,8 @@ def extra_functionality(n,snapshots):
     gm.marry_links(n, snapshots)
 
 #%% Should run or not
-cc_mode = False # Choose to run capital cost sweep or not
-mc_mode = False # Choose to run marginal cost sweep or not
+cc_mode = True # Choose to run capital cost sweep or not
+mc_mode = True # Choose to run marginal cost sweep or not
     
 #%% Set sensitivity sweep parameters
 
@@ -73,7 +73,7 @@ cc_ranges = {
     'P2X': np.arange(0,1.05,0.05),
     'Data': np.arange(1,4.05,0.05),
     'Storage': np.arange(0,1.05,0.05),
-    # 'Links': np.arange(0,4.05,0.05),    
+    'Links': np.arange(0,4.05,0.05),    
     }
 
 mc_ranges = {
@@ -258,7 +258,7 @@ else:
         mc_sensitivity_cap = pickle.load(fp)
         
 t.toc()
-# gm.its_britney_bitch()        
+gm.its_britney_bitch()        
 #%% Plot sweep: generators + storage
 colors = gm.get_color_codes()
 plot_components = []

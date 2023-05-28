@@ -3,17 +3,17 @@ import sys
 # Add modules folder to path
 os.chdir(os.path.join(os.path.dirname(__file__))) # Change working directory
 sys.path.append(os.path.abspath('../../modules')) # Add modules to path
- 
+import matplotlib.pyplot as plt
 import pypsa
 import gorm as gm
 import tim as tm
  
 gm.set_plot_options()
- 
+year = 2030
 #%% Import
  
 # Choose one or more networks to import
-n_2030     = pypsa.Network(r'v_2030_base0_lonely_island_opt.nc')
+n_2030     = pypsa.Network(f'v_{year}_base0_lonely_island_opt.nc')
 
 # Choose one or more networks to loop through and insert data into
 networks = [n_2030,
@@ -39,4 +39,6 @@ n = n_2030
 # can set filename and save figure by passing filename to waffle function
 # filename = f'waffle_{year}_area_capacity.pdf' 
  
-gm.waffles_area_and_capacity(n,)
+gm.waffles_area_and_capacity(n,title = f"100% Renewable Energy Island in {year}")
+plt.tight_layout() 
+plt.savefig(f'../../images/green_island_{year}.pdf', format = 'pdf', bbox_inches='tight')
