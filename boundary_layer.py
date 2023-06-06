@@ -98,11 +98,11 @@ for i in range(len(h)-1):
 
 fig, ax = plt.subplots(1,1, figsize = (10,5), dpi = 300)
 ax.plot(mean_wind.values, mean_wind.index, label = 'DEA mean wind speed')
-ax.plot(v, h, label = 'Model velocity profile')
+ax.plot(v, h, label = 'Modeled velocity profile')
 
 ax.axhline(y=120, color='k', linestyle='--', linewidth = 1)
 ax.axhline(y=150, color='k', linestyle='--', linewidth = 1)
-ax.plot([v[120-4],v[150-4]], [120,150],color = 'r', linestyle="--", label = 'Linear stretch', linewidth = 1.5)
+ax.plot([v[120-4],v[150-4]], [120,150],color = 'r', linestyle="--", label = 'Linear approximation', linewidth = 1.5)
 
 ax.set_xticks(np.arange(8.5,13,0.5))
 ax.set_yticks(np.arange(0,350,50))
@@ -113,7 +113,7 @@ ax.yaxis.set_minor_locator(MultipleLocator(10))
 ax.set_xlim([8.5,12.5])
 ax.set_ylim([0,300])
 
-ax.set_title('Mean velocity from DEA & model velocity profile', pad = 15)
+ax.set_title('Mean velocity from DEA & modeled velocity profile', pad = 15)
 ax.set_xlabel('Wind speed [m/s]')
 ax.set_ylabel('Height from sea level [m]')
 

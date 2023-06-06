@@ -18,6 +18,24 @@ from ttictoc import tic, toc
 import gorm as gm
 import tim as tm
 import pypsa_diagrams as pdiag
+import matplotlib.dates as mdates
+import os
+import sys
+os.chdir(os.path.join(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath('../../modules'))
+import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+import pypsa
+import gorm as gm
+import tim as tm
+import island_plt as ip
+ip.set_plot_options()
+# import pandas as pd
+from matplotlib.ticker import (MultipleLocator)
+from pytictoc import TicToc
+t = TicToc() #create instance of time class
+
 
 tic() # Start timer
 
@@ -73,7 +91,7 @@ filename = f"/v_{year}_{project_name}_opt.nc" # Choose filename for export
 
 # ----- Wind capacity factor data ---------
 wind_cf         = pd.read_csv(r'../../data/wind/wind_cf.csv',
-                       index_col = [0], sep=",")[:8760]
+                       index_col = [0], sep=",")[-8760:]
 
 # ----- Country demand and price ---------
 # Import price and demand for each country for the year, and remove outliers
@@ -327,16 +345,119 @@ if should_bus_diagram:
 
 print(f'\n ### Runtime: {round(toc(), 2)} seconds \n')
 
+#%% Finish message
+fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 5), dpi=300, constrained_layout=True)
+
+# Set limits and formatter for the x-axis (time)
+axs.set_xlim([n.stores_t.p['Storage'].index[0], n.stores_t.p['Storage'].index[-1]])
+axs.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+
+# Set labels and title for the plot
+axs.set_xlabel('Time [day]')
+axs.set_ylabel('Energy level [GWh]')
+axs.set_title('Lonely island storage power flow in ' + str(year))
+
+# Set limits, ticks, and a horizontal line at zero for the original y-axis (dispatch)
+axs.set_ylim([-1_200, 1_500])
+axs.set_yticks(np.arange(-1_200, 1_800, 300), [-1.2, -0.9, -0.6, -0.3, 0, 0.3, 0.6, 0.9, 1.2, 1.5])
+axs.axhline(y=0, linestyle="--", color="k")
+axs.set_ylabel('Dispatch [GW]')
+
+# Plot dispatch on the original y-axis
+axs.plot(n.stores_t.p['Storage'].resample('D').mean(), color='#8da0cb', label="Dispatch")
+
+# Adjust the layout for better appearance
+plt.tight_layout()
+
+# Save the figure to a PNG file
+plt.savefig('lonely_island_storage_powerflow_' + str(year) + '.png', format='png', bbox_inches='tight')
 
 
+#%%
+fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 5), dpi=300, constrained_layout=True)
+
+# Set labels and title for the plot
+axs.set_xlabel('Dispatch [GW]')
+axs.set_ylabel('Frequency')
+axs.set_title('Dispatch histogram for the lonely island in ' + str(year))
+
+# Create histogram bins based on the dispatch data
+dispatch_data = n.stores_t.p['Storage'].resample('D').mean() / 1000  # Divide by 1000 for GW
+bins = 50
+
+# Plot the histogram of dispatch with added spacing between bins
+axs.hist(dispatch_data, bins=bins, color='#8da0cb', rwidth=0.8)
+
+# Add a vertical line at 0
+axs.axvline(x=0, linestyle="--", color="k")
+
+# Add text annotations for charging and discharging
+axs.text(0.05, 0.9, 'Charging', transform=axs.transAxes, ha='left')
+axs.text(0.95, 0.9, 'Discharging', transform=axs.transAxes, ha='right')
+
+# Set the x-axis major ticks as even and round numbers
+tick_spacing = 0.5  # Set the desired tick spacing
+x_ticks_major = np.arange(np.floor(np.min(dispatch_data) / tick_spacing) * tick_spacing,
+                          np.ceil(np.max(dispatch_data) / tick_spacing) * tick_spacing + tick_spacing,
+                          tick_spacing)
+axs.set_xticks(x_ticks_major)
+
+# Set the x-axis minor ticks for every bin
+minor_tick_locations = np.arange(np.floor(np.min(dispatch_data)), np.ceil(np.max(dispatch_data)) + 1, 0.1)
+axs.set_xticks(minor_tick_locations, minor=True)
+
+# Set the x-axis limit
+axs.set_xlim([-1, 1.5])
+
+# Adjust the layout for better appearance
+plt.tight_layout()
+
+# Save the figure to a PNG file
+plt.savefig('dispatch_histogram_' + str(year) + '.png', format='png', bbox_inches='tight')
+
+#%%
 
 
+# Performing the calculation
+wind = n.generators_t.p['Wind'].resample('D').mean()
+
+# Generate data
+storage_data = n.stores_t.p['Storage'].resample('D').mean()
+p2x_data = n.generators_t.p['P2X'].resample('D').mean()
+data_data = n.generators_t.p['Data'].resample('D').mean()
+
+# Create a new figure
+fig, ax = plt.subplots()
+
+# Create a stacked plot
+ax.stackplot(storage_data.index, -data_data, -p2x_data, -storage_data, labels=['Data', 'P2X', 'Storage'])
+ax.set_xlim([n.stores_t.p['Storage'].index[0], n.stores_t.p['Storage'].index[-1]])
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+ax.plot(wind, label="Wind power")
+
+# Add title and labels
+ax.set_title('Stacked power plot of local demand in ' + str(year))
+ax.set_xlabel('Time [Day]')
+ax.set_ylabel('Power [MW]')
+
+# Add a legend below the plot
+ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), fancybox=True, ncol=5)
+
+# Adjust the layout to make room for the legend
+plt.subplots_adjust(bottom=0.2)
+
+# Adjust the layout for better appearance
+plt.tight_layout()
+
+# Save the figure to a PNG file
+plt.savefig('stacked_lonely_' + str(year) + '.png', format='png', bbox_inches='tight')
 
 
-
-
-
-
+#%%
+print('Length of data_data:', len(data_data))
+print('Length of p2x_data:', len(p2x_data))
+print('Length of storage_data:', len(storage_data))
+print('Length of wind:', len(wind))
 
 
 

@@ -17,7 +17,6 @@ from pytictoc import TicToc
 t = TicToc() #create instance of time class
 
 #%% Control
-
 year       = 2040
 input_name = '../Base0/v_' + str(year) +'_base0_opt.nc'
 
@@ -73,7 +72,7 @@ cc_ranges = {
     'P2X': np.arange(0,1.05,0.05),
     'Data': np.arange(1,4.05,0.05),
     'Storage': np.arange(0,1.05,0.05),
-    # 'Links': np.arange(0,4.05,0.05),    
+    'Links': np.arange(0,4.05,0.05),    
     }
 
 mc_ranges = {
@@ -258,7 +257,7 @@ else:
         mc_sensitivity_cap = pickle.load(fp)
         
 t.toc()
-# gm.its_britney_bitch()        
+gm.its_britney_bitch()        
 #%% Plot sweep: generators + storage
 colors = gm.get_color_codes()
 plot_components = []
@@ -304,9 +303,12 @@ for component in plot_components:
             cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
             cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
             
-            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
-            axs_copy.set_ylabel('Objective optimum [€]') 
+            axs_copy = axs[0].twinx()
             axs_copy.set_ylim([-0.05,1.05])
+            axs_copy.set_ylabel('Normalized optimum [-]')
+            axs_copy.yaxis.set_minor_locator(MultipleLocator(0.05))
+            
+            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
             
             if component == 'Data':
                 axs[i].set_xlim([1,4])
@@ -322,10 +324,10 @@ for component in plot_components:
         if i == 1:
             
             axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal revenue', pad = 10)
-            
+            axs[i].set_ylabel('Use of available island area [%]')
             axs[i].set_ylim([-0.05,1.05])
             axs[i].set_yticks(np.arange(0,1.2,0.2))
-            axs[i].set_yticklabels([])
+            # axs[i].set_yticklabels([])
             
             for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in mc_components]:
                 y2 = mc_sensitivity_cap[component][k].copy()
@@ -364,7 +366,7 @@ for component in plot_components:
                 axs[i].set_xlim([0,1])
                 axs[i].set_xticks(np.arange(0,1.1,0.1))
                 axs[i].set_xlabel('Marginal revenue coefficient [-]')
-                axs[i].set_title(f'{year}: Sensitivity of\nIT capital cost', pad = 5)
+                axs[i].set_title(f'{year}: Sensitivity of\nIT marginal revenue', pad = 5)
             if component == 'P2X':
                 axs[i].set_xlim([1,4])
                 axs[i].set_xticks(np.arange(1,4.5,0.5))
@@ -373,7 +375,7 @@ for component in plot_components:
                 axs[i].set_xlim([0,1])
                 axs[i].set_xticks(np.arange(0,1.1,0.1))
                 axs[i].set_xlabel('Marginal cost coefficient [-]')
-                axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal cost', pad = 10)
+                axs[i].set_title(f'{year}: Sensitivity of\n{component} marginal cost', pad = 10)
             
             lines, labels = axs[i].get_legend_handles_labels()
             lines2, labels2 = axs_copy.get_legend_handles_labels()
@@ -381,6 +383,125 @@ for component in plot_components:
             
     # plt.tight_layout() 
     plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
+plt.show()
+
+#%% Plot of links 
+
+for component in plot_components:
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(7*2,5), dpi = 300, constrained_layout = True)
+    for i in range(2):
+        if i == 0:
+
+            axs[i].set_title(f'{year}: Sensitivity of\n{component} capital cost', pad = 5)
+            axs[i].set_xlabel('Capital cost coefficient [-]')
+            axs[i].set_ylabel('Nominal capacity [GW]')
+            
+            axs[i].yaxis.set_major_locator(MultipleLocator(2000))
+            axs[i].yaxis.set_minor_locator(MultipleLocator(500))
+            axs[i].xaxis.set_minor_locator(MultipleLocator(0.1))
+            axs[i].set_yticks(np.arange(0,12_000,2_000),[0,2,4,6,8,10])
+            axs[i].set_ylim([-500,10_500])
+            
+            axs_copy = axs[i].twinx()
+            axs_copy.get_yaxis().set_visible(False)
+                                                  
+            for k in n.main_links:
+                y1 = cc_sensitivity_cap[component][k].copy()
+                x1 = cc_sensitivity_cap[component]['Step'].copy()
+                
+                if k == "Island_to_Denmark":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "DK link", linewidth = 3, color = colors["DK"])
+                if k == "Island_to_Norway":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "NO link", linewidth = 3, color = colors["NO"])
+                if k == "Island_to_Germany":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "DE link", linewidth = 3, color = colors["DE"])
+                if k == "Island_to_Netherlands":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "NL link", linewidth = 3, color = colors["NL"])
+                if k == "Island_to_Belgium":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "BE link", linewidth = 3, color = colors["BE"])
+                if k == "Island_to_United Kingdom":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "GB link", linewidth = 3, color = colors["GB"])
+                
+            cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
+            cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
+            
+            axs_copy = axs[0].twinx()
+            axs_copy.set_ylim([-0.05,1.05])
+            axs_copy.set_ylabel('Normalized optimum [-]')
+            axs_copy.yaxis.set_minor_locator(MultipleLocator(0.05))
+            
+            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            
+            if component == 'Data':
+                axs[i].set_xlim([1,4])
+                axs[i].set_xticks(np.arange(1,4.5,0.5))   
+                axs[i].set_title(f'{year}: Sensitivity of\n IT capital cost', pad = 5)
+            if component == 'P2X':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+            if component == 'Storage':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+            
+        if i == 1:
+            
+            axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal revenue', pad = 10)
+            axs[i].set_ylabel('Nominal capacity [GW]')
+            
+            for k in n.main_links:
+                y2 = mc_sensitivity_cap[component][k].copy()
+                x2 = mc_sensitivity_cap[component]['Step'].copy()
+                
+                if k == "Island_to_Denmark":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "DK link", linewidth = 3, color = colors["DK"])
+                if k == "Island_to_Norway":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "NO link", linewidth = 3, color = colors["NO"])
+                if k == "Island_to_Germany":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "DE link", linewidth = 3, color = colors["DE"])
+                if k == "Island_to_Netherlands":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "NL link", linewidth = 3, color = colors["NL"])
+                if k == "Island_to_Belgium":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "BE link", linewidth = 3, color = colors["BE"])
+                if k == "Island_to_United Kingdom":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "GB link", linewidth = 3, color = colors["GB"])
+            
+            axs[i].yaxis.set_major_locator(MultipleLocator(2000))
+            axs[i].yaxis.set_minor_locator(MultipleLocator(500))
+            axs[i].xaxis.set_minor_locator(MultipleLocator(0.1))
+            axs[i].set_yticks(np.arange(0,12_000,2_000),[0,2,4,6,8,10])
+            axs[i].set_ylim([-500,10_500])
+            
+            axs_copy2 = axs[1].twinx()
+            axs_copy2.set_ylim([-0.05,1.05])
+            axs_copy2.set_ylabel('Normalized optimum [-]')
+            axs_copy2.yaxis.set_minor_locator(MultipleLocator(0.05))
+            
+            mc_optimum = mc_sensitivity_cap[component]['Optimum'].copy()
+            mc_optimum[:] = [x / max(mc_optimum) for x in mc_optimum]
+            
+            axs_copy2.plot(x2, mc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            
+            if component == 'Data':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+                axs[i].set_xlabel('Marginal revenue coefficient [-]')
+                axs[i].set_title(f'{year}: Sensitivity of\nIT marginal revenue', pad = 5)
+            if component == 'P2X':
+                axs[i].set_xlim([1,4])
+                axs[i].set_xticks(np.arange(1,4.5,0.5))
+                axs[i].set_xlabel('Marginal revenue coefficient [-]')
+            if component == 'Storage':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+                axs[i].set_xlabel('Marginal cost coefficient [-]')
+                axs[i].set_title(f'{year}: Sensitivity of\n{component} marginal cost', pad = 10)
+            
+            lines, labels = axs[i].get_legend_handles_labels()
+            lines2, labels2 = axs_copy.get_legend_handles_labels()
+            axs[i].legend(lines + lines2, labels + labels2, loc='upper left', ncol=2, bbox_to_anchor=(0, 0.96), fontsize = 15)    
+            
+    # plt.tight_layout() 
+    plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_link_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
 plt.show()
 
 #%% Plot sweep: links
@@ -395,10 +516,10 @@ plt.show()
 #         y = cc_sensitivity_cap['Links'][i]
         
 #         plt.xlim([0,4])
-#         plt.ylim([-20,7_000])
+#         plt.ylim([-20,1_400])
         
-#         axs.yaxis.set_major_locator(MultipleLocator(1000))
-#         axs.yaxis.set_minor_locator(MultipleLocator(200))
+#         axs.yaxis.set_major_locator(MultipleLocator(200))
+#         axs.yaxis.set_minor_locator(MultipleLocator(50))
         
 #         axs.xaxis.set_minor_locator(MultipleLocator(0.1))
         
@@ -424,7 +545,6 @@ plt.show()
 # plt.xlabel('Capital cost coefficient [-]')
 # plt.ylabel('Installed capacity [MW]')
 
-    
 #%% Plot sweep: country generators
 # fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
 # for i in n.generators.index:
@@ -440,3 +560,30 @@ plt.show()
 # plt.title(f'{year}: Sensitivity of country  capital cost', pad = 5)
 # plt.xlabel('Capital cost coefficient [-]')
 # plt.ylabel('Installed capacity [MW]')
+
+#%% Plot link sweep: Local demand
+colors = gm.get_color_codes()
+
+for component in ["Links"]:
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
+    x1 = cc_sensitivity_cap['Links']['Step'].copy()
+    for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in cc_components]:
+        y1 = cc_sensitivity_cap[component][k].copy()
+        axs.plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
+    axs.legend(loc='upper right', bbox_to_anchor=(1.01, 0.925), ncol = 1, fontsize = 15)
+    
+    plt.xlim([0,4])
+    plt.ylim([-500,35_000])
+    
+    # plt.yscale("log")  
+    
+    axs.yaxis.set_major_locator(MultipleLocator(5_000))
+    axs.yaxis.set_minor_locator(MultipleLocator(1_000))
+    # axs.set_yticks([0, 1e1, 1e2, 10e5])
+
+plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
+
+plt.tight_layout() 
+plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_localdemand_sensitivity.pdf', format = 'pdf', bbox_inches='tight')

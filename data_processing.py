@@ -220,7 +220,7 @@ ax.hist([wind_data[h].values,
         rwidth=0.9,
         label = ['DEA',
                  'MERRA',
-                 'Mean corrected'])
+                 'MERRA (adjusted)'])
 
 ax.set_xticks(np.arange(0,27))
 ax.legend(fontsize = 11)
@@ -255,7 +255,7 @@ x2 = cut_wind_ninja_mean.sort_values(by='wind_speed')
 y2 = wind_data[h].sort_values()
 
 ax.plot(x,y, label = 'Raw data')
-ax.plot(x2,y2, label = 'Mean corrected')
+ax.plot(x2,y2, label = 'MERRA (adjusted)')
 
 ax.plot([0,35],[0,35],color = 'k', linestyle="--", linewidth = 1.5)
 
@@ -335,7 +335,7 @@ ax.tick_params(which='minor')
 
 ax.grid(visible=True)
 ax.legend()
-ax.set_title('Vestas v164-9.5')
+ax.set_title('Vestas v164-9.5 power curve')
 
 plt.tight_layout() 
 plt.savefig('images/wind_correction.png', format = 'png', bbox_inches='tight')

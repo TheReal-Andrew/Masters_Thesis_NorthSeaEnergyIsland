@@ -64,8 +64,8 @@ def extra_functionality(n,snapshots):
     gm.marry_links(n, snapshots)
 
 #%% Should run or not
-cc_mode = True # Choose to run capital cost sweep or not
-mc_mode = True # Choose to run marginal cost sweep or not
+cc_mode = False # Choose to run capital cost sweep or not
+mc_mode = False # Choose to run marginal cost sweep or not
     
 #%% Set sensitivity sweep parameters
 
@@ -309,6 +309,8 @@ for component in plot_components:
             axs_copy.set_ylabel('Normalized optimum [-]')
             axs_copy.yaxis.set_minor_locator(MultipleLocator(0.05))
             
+            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            
             if component == 'Data':
                 axs[i].set_xlim([1,4])
                 axs[i].set_xticks(np.arange(1,4.5,0.5))   
@@ -384,59 +386,187 @@ for component in plot_components:
     plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
 plt.show()
 
-#%% Plot sweep: links
-# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,5), dpi = 300, constrained_layout = True)
-# colors = gm.get_color_codes()
-# for i in n.main_links:
-    
-#     if i.startswith('Island_to_'):
-        
-#         # i = i.replace("_"," ")
-#         x = cc_sensitivity_cap['Links']['Step'].copy()
-#         y = cc_sensitivity_cap['Links'][i]
-        
-#         plt.xlim([0,4])
-#         plt.ylim([-20,1_400])
-        
-#         axs.yaxis.set_major_locator(MultipleLocator(200))
-#         axs.yaxis.set_minor_locator(MultipleLocator(50))
-        
-#         axs.xaxis.set_minor_locator(MultipleLocator(0.1))
-        
-#         i = i.replace('Island_to_', '')
-#         if i == 'Denmark':
-#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['DK'])
-#         if i == 'Norway':    
-#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['NO'])
-#         if i == 'Germany':    
-#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['DE'])
-#         if i == 'Netherlands':    
-#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['NL'])
-#         if i == 'Belgium':    
-#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['BE'])
-#         if i == 'United Kingdom':    
-#             axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['GB'])
+#%% Plot of links 
+
+for component in plot_components:
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(7*2,5), dpi = 300, constrained_layout = True)
+    for i in range(2):
+        if i == 0:
+
+            axs[i].set_title(f'{year}: Sensitivity of\n{component} capital cost', pad = 5)
+            axs[i].set_xlabel('Capital cost coefficient [-]')
+            axs[i].set_ylabel('Nominal capacity [GW]')
             
-#         axs.legend(loc='upper right', bbox_to_anchor=(1, 0.78), ncol = 2, fontsize = 15)
-#     else:
-#         continue
+            axs[i].yaxis.set_major_locator(MultipleLocator(500))
+            axs[i].yaxis.set_minor_locator(MultipleLocator(100))
+            axs[i].xaxis.set_minor_locator(MultipleLocator(0.1))
+            axs[i].set_yticks(np.arange(0,3000,500),[0.0,0.5,1.0,1.5,2.0,2.5])
+            axs[i].set_ylim([-125,2625])
+            
+            axs_copy = axs[i].twinx()
+            axs_copy.get_yaxis().set_visible(False)
+                                                  
+            for k in n.main_links:
+                y1 = cc_sensitivity_cap[component][k].copy()
+                x1 = cc_sensitivity_cap[component]['Step'].copy()
+                
+                if k == "Island_to_Denmark":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "DK link", linewidth = 3, color = colors["DK"])
+                if k == "Island_to_Norway":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "NO link", linewidth = 3, color = colors["NO"])
+                if k == "Island_to_Germany":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "DE link", linewidth = 3, color = colors["DE"])
+                if k == "Island_to_Netherlands":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "NL link", linewidth = 3, color = colors["NL"])
+                if k == "Island_to_Belgium":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "BE link", linewidth = 3, color = colors["BE"])
+                if k == "Island_to_United Kingdom":
+                    axs[i].plot(x1, y1, linestyle='-', marker='.', label = "GB link", linewidth = 3, color = colors["GB"])
+                
+            cc_optimum = cc_sensitivity_cap[component]['Optimum'].copy()
+            cc_optimum[:] = [x / max(cc_optimum) for x in cc_optimum]
+            
+            axs_copy = axs[0].twinx()
+            axs_copy.set_ylim([-0.05,1.05])
+            axs_copy.set_ylabel('Normalized optimum [-]')
+            axs_copy.yaxis.set_minor_locator(MultipleLocator(0.05))
+            
+            axs_copy.plot(x1, cc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            
+            if component == 'Data':
+                axs[i].set_xlim([1,4])
+                axs[i].set_xticks(np.arange(1,4.5,0.5))   
+                axs[i].set_title(f'{year}: Sensitivity of\n IT capital cost', pad = 5)
+            if component == 'P2X':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+            if component == 'Storage':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+            
+        if i == 1:
+            
+            axs[i].set_title(f'{year}: Sensitivity analysys of\n{component} marginal revenue', pad = 10)
+            axs[i].set_ylabel('Nominal capacity [GW]')
+            
+            for k in n.main_links:
+                y2 = mc_sensitivity_cap[component][k].copy()
+                x2 = mc_sensitivity_cap[component]['Step'].copy()
+                
+                if k == "Island_to_Denmark":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "DK link", linewidth = 3, color = colors["DK"])
+                if k == "Island_to_Norway":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "NO link", linewidth = 3, color = colors["NO"])
+                if k == "Island_to_Germany":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "DE link", linewidth = 3, color = colors["DE"])
+                if k == "Island_to_Netherlands":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "NL link", linewidth = 3, color = colors["NL"])
+                if k == "Island_to_Belgium":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "BE link", linewidth = 3, color = colors["BE"])
+                if k == "Island_to_United Kingdom":
+                    axs[i].plot(x2, y2, linestyle='-', marker='.', label = "GB link", linewidth = 3, color = colors["GB"])
+            
+            axs[i].yaxis.set_major_locator(MultipleLocator(500))
+            axs[i].yaxis.set_minor_locator(MultipleLocator(100))
+            axs[i].xaxis.set_minor_locator(MultipleLocator(0.1))
+            axs[i].set_yticks(np.arange(0,3000,500),[0.0,0.5,1.0,1.5,2.0,2.5])
+            axs[i].set_ylim([-125,2625])
+            
+            axs_copy2 = axs[1].twinx()
+            axs_copy2.set_ylim([-0.05,1.05])
+            axs_copy2.set_ylabel('Normalized optimum [-]')
+            axs_copy2.yaxis.set_minor_locator(MultipleLocator(0.05))
+            
+            mc_optimum = mc_sensitivity_cap[component]['Optimum'].copy()
+            mc_optimum[:] = [x / max(mc_optimum) for x in mc_optimum]
+            
+            axs_copy2.plot(x2, mc_optimum, linestyle='-.', marker='.', markersize=4, color = 'k', label = 'Optimum', linewidth = 0.4)
+            
+            if component == 'Data':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+                axs[i].set_xlabel('Marginal revenue coefficient [-]')
+                axs[i].set_title(f'{year}: Sensitivity of\nIT marginal revenue', pad = 5)
+            if component == 'P2X':
+                axs[i].set_xlim([1,4])
+                axs[i].set_xticks(np.arange(1,4.5,0.5))
+                axs[i].set_xlabel('Marginal revenue coefficient [-]')
+            if component == 'Storage':
+                axs[i].set_xlim([0,1])
+                axs[i].set_xticks(np.arange(0,1.1,0.1))
+                axs[i].set_xlabel('Marginal cost coefficient [-]')
+                axs[i].set_title(f'{year}: Sensitivity of\n{component} marginal cost', pad = 10)
+            
+            lines, labels = axs[i].get_legend_handles_labels()
+            lines2, labels2 = axs_copy.get_legend_handles_labels()
+            axs[i].legend(lines + lines2, labels + labels2, loc='upper left', ncol=2, bbox_to_anchor=(0, 0.96), fontsize = 15)    
+            
+    # plt.tight_layout() 
+    plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_link_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
+plt.show()
 
-# plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
-# plt.xlabel('Capital cost coefficient [-]')
-# plt.ylabel('Installed capacity [MW]')
+#%% Plot sweep: links
+fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,5), dpi = 300, constrained_layout = True)
+colors = gm.get_color_codes()
+for i in n.main_links:
+    
+    if i.startswith('Island_to_'):
+        
+        # i = i.replace("_"," ")
+        x = cc_sensitivity_cap['Links']['Step'].copy()
+        y = cc_sensitivity_cap['Links'][i]
+        
+        plt.xlim([0,4])
+        plt.ylim([-20,1_400])
+        
+        axs.yaxis.set_major_locator(MultipleLocator(200))
+        axs.yaxis.set_minor_locator(MultipleLocator(50))
+        
+        axs.xaxis.set_minor_locator(MultipleLocator(0.1))
+        
+        i = i.replace('Island_to_', '')
+        if i == 'Denmark':
+            axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['DK'])
+        if i == 'Norway':    
+            axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['NO'])
+        if i == 'Germany':    
+            axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['DE'])
+        if i == 'Netherlands':    
+            axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['NL'])
+        if i == 'Belgium':    
+            axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['BE'])
+        if i == 'United Kingdom':    
+            axs.plot(x, y, linestyle='-.', marker='.',label = i, linewidth = 3, color = colors['GB'])
+            
+        axs.legend(loc='upper right', bbox_to_anchor=(1, 0.78), ncol = 2, fontsize = 15)
+    else:
+        continue
 
-#%% Plot sweep: country generators
-# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
-# for i in n.generators.index:
-#     if i in ['Wind','MoneyBin','P2X','Data']:
-#         continue
-#     try:
-#         axs.plot(mc_sensitivity_cap['Country_gen'][i], label = i)
-#         axs.legend(loc = 'best')
-#     except KeyError:
-#         plt.clf()
-#         continue
+plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
 
-# plt.title(f'{year}: Sensitivity of country  capital cost', pad = 5)
-# plt.xlabel('Capital cost coefficient [-]')
-# plt.ylabel('Installed capacity [MW]')
+#%% Plot sweep links: Local demand
+# fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(10,5), dpi = 300, constrained_layout = True)
+colors = gm.get_color_codes()
+
+for component in ["Links"]:
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(7,5), dpi = 300, constrained_layout = True)
+    x1 = cc_sensitivity_cap['Links']['Step'].copy()
+    for k in [s for s in (list(n.generators.index) + list(n.stores.index)) if s in cc_components]:
+        y1 = cc_sensitivity_cap[component][k].copy()
+        axs.plot(x1, y1, linestyle='-', marker='.', label = k, linewidth = 3, color = colors[k])
+    axs.legend(loc='upper right', bbox_to_anchor=(1.01, 0.925), ncol = 1, fontsize = 15)
+    
+    plt.xlim([0,4])
+    plt.ylim([-50,2_400])
+    
+    axs.yaxis.set_major_locator(MultipleLocator(200))
+    axs.yaxis.set_minor_locator(MultipleLocator(50))
+
+plt.title(f'{year}: Sensitivity of link capital cost', pad = 5)
+plt.xlabel('Capital cost coefficient [-]')
+plt.ylabel('Installed capacity [MW]')
+
+plt.tight_layout() 
+plt.savefig('../../images/sensitivity/' + str(year) + '_' + component + '_localdemand_sensitivity.pdf', format = 'pdf', bbox_inches='tight')
