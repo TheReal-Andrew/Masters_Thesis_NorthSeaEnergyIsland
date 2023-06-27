@@ -416,7 +416,7 @@ plt.tight_layout()
 plt.savefig('dispatch_histogram_' + str(year) + '.png', format='png', bbox_inches='tight')
 
 #%%
-
+colors = gm.get_color_codes()
 
 # Performing the calculation
 wind = n.generators_t.p['Wind'].resample('D').mean()
@@ -427,16 +427,16 @@ p2x_data = n.generators_t.p['P2X'].resample('D').mean()
 data_data = n.generators_t.p['Data'].resample('D').mean()
 
 # Create a new figure
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 5), dpi=300, constrained_layout=True)
 
 # Create a stacked plot
-ax.stackplot(storage_data.index, -data_data, -p2x_data, -storage_data, labels=['Data', 'P2X', 'Storage'])
+ax.stackplot(storage_data.index, -data_data, -p2x_data, -storage_data,colors=[colors['Data'],colors['P2X'],colors['Storage']] ,labels=['IT', 'P2X', 'Storage'])
 ax.set_xlim([n.stores_t.p['Storage'].index[0], n.stores_t.p['Storage'].index[-1]])
 ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
-ax.plot(wind, label="Wind power")
+ax.plot(wind, label="Wind power", color = "k")
 
 # Add title and labels
-ax.set_title('Stacked power plot of local demand in ' + str(year))
+ax.set_title('Stacked power plot for lonely island in ' + str(year))
 ax.set_xlabel('Time [Day]')
 ax.set_ylabel('Power [MW]')
 
@@ -450,7 +450,7 @@ plt.subplots_adjust(bottom=0.2)
 plt.tight_layout()
 
 # Save the figure to a PNG file
-plt.savefig('stacked_lonely_' + str(year) + '.png', format='png', bbox_inches='tight')
+plt.savefig('stacked_lonely_' + str(year) + '.pdf', format='pdf', bbox_inches='tight')
 
 
 #%%

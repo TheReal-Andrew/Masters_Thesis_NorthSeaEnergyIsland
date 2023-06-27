@@ -366,7 +366,9 @@ ax.text(8760*0.50, 0.02, '0.50 quantile', rotation = -90, fontsize = 10)
 ax.axvline(x = 8760*0.75, color = 'k', linestyle = '--', linewidth = 0.5)
 ax.text(8760*0.75, 0.02, '0.75 quantile', rotation = -90, fontsize = 10)
 
-ax.plot(np.sort(cf_wind[0:8760])[::-1], color = 'tab:blue')
+ax.plot(np.sort(cf_wind[0:8760])[::-1], color = 'tab:blue', label = "MERRA (Adjusted)")
+
+ax.legend(loc="upper right")
 
 plt.tight_layout() 
 plt.savefig('images/wind_cf_duration.png', format = 'png', bbox_inches='tight')
