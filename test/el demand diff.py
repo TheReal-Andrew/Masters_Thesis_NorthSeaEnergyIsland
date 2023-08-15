@@ -45,30 +45,34 @@ data.columns = ['2015 input demand',
                 ]
 data.index = pd.to_datetime(data.index)
 
+data = data/1000 # Convert to GW
 
 #%%
-fig, ax = plt.subplots(2,1,figsize = (20, 10), dpi = 300)
+fig, ax = plt.subplots(2,1,figsize = (20, 8), dpi = 300)
 
 plt.subplots_adjust(hspace = 0.5)
 
 data.plot(ax = ax[0])
-ax[0].set_title('Time series of 2015 demand and adjusted 2030 and 2040 demand for ' + country)
+ax[0].set_title(f'{country} - Electricity demand time series for actual and modeled data')
 ax[0].set_xlabel('Time [hr]')
-ax[0].set_ylabel('Demand [MW]')
-ax[0].legend(loc = 'upper right')
+ax[0].set_ylabel('Demand [GW]')
+ax[0].legend(labels = ['2015 actual demand',
+         '2030 PES30P demand',
+         '2040 PES30P demand'],
+             loc = 'upper center')
 
 ax[1].hist([data['2015 input demand'].values,
         data['2030 adjusted'].values, 
         data['2040 adjusted'].values],
-        bins = np.arange(-4000,30000,1000), 
+        bins = np.arange(-4,30,0.5), 
         rwidth=1,
-        label = ['2015 input demand',
-                 '2030 adjusted',
-                 '2040 adjusted'])
-ax[1].legend(loc = 'upper right')
-ax[1].set_title(country +' Histogram of 2015 demand and adjusted 2030 and 2040 demand for ' + country)
-ax[1].set_xlabel('Demand [MW]')
+        label = ['2015 actual demand',
+                 '2030 PES30P demand',
+                 '2040 PES30P demand'])
+ax[1].legend(loc = 'upper center')
+ax[1].set_title(f'{country} - Electricity demand histogram for actual and modeled data')
+ax[1].set_xlabel('Demand [GW]')
 ax[1].set_ylabel('Frequency')
 
-# fig.savefig('energy_adjusted.pdf', format = 'pdf', bbox_inches='tight')
+fig.savefig('energy_adjusted.pdf', format = 'pdf', bbox_inches='tight')
 

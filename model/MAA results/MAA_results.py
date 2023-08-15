@@ -58,10 +58,10 @@ linksG140_opt   = pypsa.Network('../v_2040_links_G1/v_2040_links_G1_opt.nc')
 linksG240_opt   = pypsa.Network('../v_2040_links_G2/v_2040_links_G2_opt.nc')
 linksG340_opt   = pypsa.Network('../v_2040_links_G3/v_2040_links_G3_opt.nc')
 
-projects = ['local', 'local_nac', 
-            'local', 'local_nac', 
-            'links_G1', 'links_G2', 'links_G3',
-            'links_G1', 'links_G2', 'links_G3',
+projects = ['local', 'local_nac', #2030
+            'local', 'local_nac', #2040
+            'links_G1', 'links_G2', 'links_G3', #2030
+            'links_G1', 'links_G2', 'links_G3', #2040
             ]
 
 techs_list  = [['P2X', 'Data', 'Storage'], 
@@ -135,6 +135,88 @@ for n_opt in n_opt_list:
     opt_list.append(opt_system)
     
     i += 1
+    
+#%% Link time series
+
+n = local30_opt
+year = 2030
+filename = f'{year}_stacked_area_plot.pdf'
+
+# Define links that go to and from island
+main_links1          = n.links.loc[n.links.bus0 == "Energy Island"].index
+main_links2          = n.links.loc[n.links.bus1 == "Energy Island"].index
+
+# Get the list of column names
+column_order = main_links1.tolist()
+
+# Rearrange the column order as desired
+main_links1   = [column_order[5], 
+                 column_order[4], 
+                 column_order[3], 
+                 column_order[2],
+                 column_order[0],
+                 column_order[1]]
+
+# Get the list of column names
+column_order = main_links2.tolist()
+
+# Rearrange the column order as desired
+main_links2   = [column_order[5], 
+                 column_order[4], 
+                 column_order[3], 
+                 column_order[2],
+                 column_order[0],
+                 column_order[1]]
+
+colors = gm.get_color_codes()
+
+country_abbreviations = []
+color_codes = []
+
+for key, value in colors.items():
+    if len(key) == 2:  # Check if key is a country abbreviation
+        country_abbreviations.append(key)
+        color_codes.append(value)
+        
+color_codes.reverse()
+color_codes[4], color_codes[5] = color_codes[5], color_codes[4]
+
+
+fig, axs = plt.subplots(2, 1, figsize = (15,5))
+fig.subplots_adjust(hspace = 0.45)
+
+sending_df   = n.links_t.p0[main_links1].resample('D').mean()/1000
+recieving_df = n.links_t.p1[main_links2].resample('D').mean()/1000
+
+sending_df.columns = ['GB', 'BE', 'NL', 'DE', 'DK', 'NO']
+recieving_df.columns = ['GB', 'BE', 'NL', 'DE', 'DK', 'NO']
+
+# sending_df.index = sending_df.index - pd.DateOffset(years=1)
+# recieving_df.index = recieving_df.index - pd.DateOffset(years=1)
+
+# Time series of island to country link, positive when island is sending
+sending_df.plot.area(figsize = (20,10), ax = axs[0],
+                              title = f'{year} - Flow from island to countries in',
+                              color = color_codes)
+
+# Time series of country to island link, negative when island is recieving
+recieving_df.plot.area(figsize = (20,10), ax = axs[1],
+                               title = f'{year} - Flow from countries to island',
+                               color = color_codes,
+                               )
+
+# Plot formatting
+legend0 = axs[0].legend(loc='center left', 
+                        bbox_to_anchor=(1, 0.5))
+legend1 = axs[1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+axs[0].set_xlabel('Time [Day]')
+axs[1].set_xlabel('Time [Day]')
+axs[0].set_ylabel('Flow [GW]')
+axs[1].set_ylabel('Flow [GW]')
+
+
+fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
 
 #%% Create tables with relevant data
 
@@ -200,18 +282,25 @@ for i in range(len(case_list)):
 
 #%% Solutions_2D_small
 
-studyno = 6
+n_samples = 1000_000
+bins = 150
+legend_v = -0.47
+legend_h = 0.9
+
+
+# Solutions 2D Small for DE/NL in G2 2030 -------------------------------------
+studyno = 5 
 solutions = case_list[studyno]
 techs     = techs_list[studyno]
 opt       = opt_list[studyno]
 
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
 
-
-#
-chosen_techs = ['DK', 'BE']
+chosen_techs = ['DE', 'NL']
 year  = 2030
-study = 'G3'
-
+study = 'G2'
 title = f'{year} - MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
 
 axs = gm.solutions_2D_small(techs, solutions,
@@ -219,16 +308,188 @@ axs = gm.solutions_2D_small(techs, solutions,
                       chosen_techs = chosen_techs,
                       cheb = True, opt_system = opt,
                       show_minmax = False,
-                      n_samples = 100_000,
-                      legend_v = -0.45, legend_h = 0.5,
+                      n_samples = n_samples,
+                      legend_v = legend_v, legend_h = legend_h,
                       figsize = (20,4),
                       title = title,
+                      hist_bins = bins,
                       )
 
 fig = axs[0].get_figure()
-
 filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
 
+
+
+
+# Solutions 2D Small for DE/NL in G2 2040 -------------------------------------
+studyno = 5 + 3
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
+
+chosen_techs = ['DE', 'NL']
+year  = 2040
+study = 'G2'
+title = f'{year} - MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+
+axs = gm.solutions_2D_small(techs, solutions,
+                       # axs = axs,
+                      chosen_techs = chosen_techs,
+                      cheb = True, opt_system = opt,
+                      show_minmax = False,
+                      n_samples = n_samples,
+                      legend_v = legend_v, legend_h = legend_h,
+                      figsize = (20,4),
+                      title = title,
+                      hist_bins = bins,
+                      )
+
+fig = axs[0].get_figure()
+filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
+
+
+
+
+# Solutions 2D small for DK/BE in G3 2030 ------------------------------------
+studyno = 6
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
+
+chosen_techs = ['DK', 'BE']
+year  = 2030
+study = 'G3'
+title = f'{year} - MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+
+axs = gm.solutions_2D_small(techs, solutions,
+                       # axs = axs,
+                      chosen_techs = chosen_techs,
+                      cheb = True, opt_system = opt,
+                      show_minmax = False,
+                      n_samples = n_samples,
+                      legend_v = legend_v, legend_h = legend_h,
+                      figsize = (20,4),
+                      title = title,
+                      hist_bins = bins,
+                      )
+
+fig = axs[0].get_figure()
+filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
+
+
+
+
+# Solutions 2D small for DK/BE in G3 2040 ------------------------------------
+studyno = 6 + 3
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
+
+chosen_techs = ['DK', 'BE']
+year  = 2040
+study = 'G3'
+title = f'{year} - MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+
+axs = gm.solutions_2D_small(techs, solutions,
+                       # axs = axs,
+                      chosen_techs = chosen_techs,
+                      cheb = True, opt_system = opt,
+                      show_minmax = False,
+                      n_samples = n_samples,
+                      legend_v = legend_v, legend_h = legend_h,
+                      figsize = (20,4),
+                      title = title,
+                      hist_bins = bins,
+                      )
+
+fig = axs[0].get_figure()
+filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
+
+
+
+
+# Solutions 2D small for Data/Storage in Local 2030 -----------------------------
+studyno = 0
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
+
+chosen_techs = ['Data', 'Storage']
+year  = 2030
+study = 'local'
+tech_names = ['IT' if tech == 'Data' else tech for tech in chosen_techs]
+title = f'{year} - MAA and histogram plot for MAA variables: {tech_names[0]}, {tech_names[1]}'
+
+axs = gm.solutions_2D_small(techs, solutions,
+                       # axs = axs,
+                      chosen_techs = chosen_techs,
+                      cheb = True, opt_system = opt,
+                      show_minmax = False,
+                      n_samples = n_samples,
+                      legend_v = legend_v, legend_h = legend_h,
+                      figsize = (20,4),
+                      title = title,
+                      hist_bins = bins,
+                      )
+
+fig = axs[0].get_figure()
+filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
+
+
+
+
+
+# Solutions 2D small for Data/Storage in Local 2040 -----------------------------
+
+studyno = 2
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
+
+chosen_techs = ['Data', 'Storage']
+year  = 2040
+study = 'local'
+title = f'{year} - MAA and histogram plot for MAA variables: {tech_names[0]}, {tech_names[1]}'
+
+axs = gm.solutions_2D_small(techs, solutions,
+                       # axs = axs,
+                      chosen_techs = chosen_techs,
+                      cheb = True, opt_system = opt,
+                      show_minmax = False,
+                      n_samples = n_samples,
+                      legend_v = legend_v, legend_h = legend_h,
+                      figsize = (20,4),
+                      title = title,
+                      hist_bins = bins,
+                      )
+
+fig = axs[0].get_figure()
+filename = f'v_{year}_{study}_{chosen_techs[0]}-{chosen_techs[1]}_MAA_small.pdf'
 fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
 
 #%% MAA densityplot
@@ -265,24 +526,39 @@ fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
 #                         cheb = True, show_minmax = True,
 #                         ax = ax)
 
-#%% Chebyshev center and radius
+#%% Chebyshev center and radius - plus reduced chebyshev center
 
-sol0 = np.load('../v_2040_links_G3/v_2040_links_G3_3MAA_10p_solutions.npy')
-sol1 = np.load('../v_2030_local/v_2030_local_3MAA_10p_solutions.npy')
+studyno = 4 
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
 
-techs1 = ['P2X', 'Data', 'Storage'] 
-techs0  = ["DK","NO","BE"]
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
 
-p1 = polytope.qhull(sol1)
-p2 = polytope.qhull(sol0)
+p1 = polytope.qhull(solutions)
 
 cheb_center = p1.chebXc # Chebyshev ball center
 cheb_radius = p1.chebR
 
-axs = gm.solutions_2D(techs1, sol1, n_samples = 10_000, title = '2040 Links G2',
-                      cheb = cheb_center,
-                      xlim = [0, None], ylim = [0, None]
-                      )
+axs = gm.solutions_2D_small(techs, solutions, chosen_techs = ['DK', 'NL'],
+                            n_samples = 100, title = '2040 Links G2',
+                            cheb = True, legend_v = -0.3
+                            # xlim = [0, None], ylim = [0, None]
+                            )
+
+# axs[0]
+
+#
+p2 = polytope.qhull(solutions[:,[0,2,3]])
+
+cheb_center = p2.chebXc # Chebyshev ball center
+
+axs[0].plot(cheb_center[0], cheb_center[2],
+              marker = 'o', linestyle = '',
+              ms = 15, zorder = 3,
+              color = 'gold',)
 
 #%% Polyhedron union area
 
@@ -305,7 +581,7 @@ gm.solutions_3D(techs, sol11, markersize = 2, linewidth = 2,
 
 intersection = gm.get_intersection(sol1, sol11)
 
-#%%
+#%% Intersection plot
 # gm.solutions_3D(techs, intersection, markersize = 2, linewidth = 2,
 #                 xlim = xlim, ylim = ylim, zlim = zlim)
         
@@ -333,39 +609,32 @@ years    = [2030, 2030,
             2030, 2030, 2030, 
             2040, 2040, 2040,]
 
-
 for i in range(len(case_list)):
     
-    filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
+    filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA_minmax.pdf'
     
     tech_titles = ['IT' if item == 'Data' else item for item in techs_list[i]]
     
-    gm.solutions_2D(techs_list[i], case_list[i],
+    opt = [x/1000 for x in opt_list[i]]
+    
+    limits = [0, case_list[i].max()/1000]
+    
+    ncols = 5 if len(techs_list[i]) == 4 else 4
+    
+    gm.solutions_2D(techs_list[i], case_list[i]/1000,
                     tech_titles = tech_titles,
                     # minmax_techs = ['P2X', 'Data'],
-                    n_samples = 1_000_000, ncols = 4,
+                    n_samples = 1000_000, ncols = ncols,
                     filename = filename,
+                    # xlim = limits, ylim = limits,
                     title = titles[i],
-                    opt_system = opt_list[i],
-                    cheb = True,
-                    show_minmax = False,
+                    opt_system = opt,
+                    cheb = True, 
+                        # show_cheb_radius = True,
+                    show_minmax = True,
                     )
     
 gm.its_britney_bitch()
-    
-#%% 
-i = 7
-
-filename = f'graphics/v_{years[i]}_{projects[i]}_{len(techs_list[i])}MAA_10p_plot_2D_MAA.pdf'
-
-gm.solutions_2D(techs_list[i], case_list[i],
-                n_samples = 1_000_000,
-                filename = filename,
-                title = titles[i],
-                opt_system = opt_list[i]
-                )
-
-
 #%% Load solutions
 
 project = 'local'
@@ -389,7 +658,7 @@ opt_system = None
 
 #%% Overlapping histograms
 
-n_samples   = 100_000
+n_samples   = 10_000
 tech_colors = gm.get_color_codes()
 
 # project, n_MAA, techs, title
@@ -408,14 +677,17 @@ titles      = ['MAA solution histograms for local demand',
                'MAA solution histograms for high capacity links',
                ]
 
+projects = ['links_G1']
+techs_list = [['DK', 'DE', 'NL', 'BE']]
+
 i = 0
 for techs, project in zip(techs_list, projects):
     #Local:
-    filename = f'MAA_overlap_hist_{project}.pdf'
+    # filename = f'MAA_overlap_hist_{project}.pdf'
     n_MAA   = len(techs)
     sol30 = np.load(f'../v_2030_{project}/v_2030_{project}_{n_MAA}MAA_10p_solutions.npy')
     sol40 = np.load(f'../v_2040_{project}/v_2040_{project}_{n_MAA}MAA_10p_solutions.npy')
-    sols  = [sol30, sol40]
+    sols  = [sol30/1000, sol40/1000]
     title = titles[i]
     
     if i == 2:
@@ -425,7 +697,7 @@ for techs, project in zip(techs_list, projects):
     
     gm.histograms_3MAA(techs, sols, title = title, n_samples = n_samples,
                        titlesize = 20, titley = y,
-                       filename = filename,
+                       # filename = filename,
                        )
     
     i += 1
@@ -680,7 +952,169 @@ for solutions in [solutions30, solutions40]:
                   loc = 'center', ncol = ncols,fancybox=False, shadow=False,)
 
 
-#%%
+#%% local_nac case MAA near-optimal space diagrams
+
+studyno = 3 
+year    = 2040
+solutions = case_list[studyno]
+techs     = techs_list[studyno]
+opt       = opt_list[studyno]
+
+# Convert to GW
+opt = [x/1000 for x in opt]
+solutions = solutions/1000
+
+n_samples = 1_000_000
+
+# Initialize figure
+plt.figure()
+
+fig, axs = plt.subplots(1, 3, figsize = (18,5))
+fig.subplots_adjust(wspace = 0.3, hspace = 0.3)
+fig.suptitle(f'{year} Unconstrained area MAA - near optimal spaces', fontsize = 24)
+
+# chosen_techs = ['P2X', 'Data']
+# year  = 2030
+# study = 'G2'
+
+gm.MAA_density_for_vars(techs, solutions, ['P2X', 'Data'],
+                        n_samples = n_samples,
+                        ax = axs[0],
+                        opt_system = opt, cheb = True,
+                        show_legend = False,
+                        )
+
+gm.MAA_density_for_vars(techs, solutions, ['P2X', 'Storage'],
+                        n_samples = n_samples,
+                        ax = axs[1],
+                        opt_system = opt, cheb = True,
+                        show_legend = True, ncols = 4,
+                        legend_v = -0.3
+                        )
+
+gm.MAA_density_for_vars(techs, solutions, ['Data', 'Storage'],
+                        n_samples = n_samples,
+                        ax = axs[2],
+                        opt_system = opt, cheb = True,
+                        show_legend = False,
+                        )
+
+# title = f'{year} - MAA and histogram plot for MAA variables: {chosen_techs[0]}, {chosen_techs[1]}'
+
+fig = axs[0].get_figure()
+
+filename = f'MAA_{year}_unconstrained_spaces.pdf'
+
+fig.savefig(f'graphics/{filename}', format = 'pdf', bbox_inches='tight')
+
+#%% 3D plots
+
+projects = ['local', 'local_nac', 
+            'local', 'local_nac', 
+            'links_G1', 'links_G2', 'links_G3',
+            'links_G1', 'links_G2', 'links_G3',
+            ]
+
+titles   = ['MAA results 2030 - Local demand', 'MAA results, 2030 - Unconstrained local demand',
+               'MAA results 2040 - Local demand', 'MAA results, 2040 - Unconstrained local demand',
+               'MAA results 2030 - Planned links', 'MAA results 2030 - Low capacity links', 'MAA results 2030 - High capacity links',
+               'MAA results 2040 - Planned links', 'MAA results 2040 - Low capacity links', 'MAA results 2040 - High capacity links',
+               ]
+
+years    = [2030, 2030, 
+            2040, 2040,
+            2030, 2030, 2030, 
+            2040, 2040, 2040,]
+
+# for i in [8]: #range(len(case_list)):
+    
+filename = f'graphics/3D/v_{years[i]}_{projects[i]}_3D.pdf'
+
+i = 6
+
+techs     = techs_list[i]
+solutions = case_list[i]/1000
+opt       = opt_list[i]
+
+tech_titles = ['IT' if item == 'Data' else item for item in techs]
+
+opt = [x/1000 for x in opt]
+
+ax = gm.solutions_3D(techs, solutions,
+                title = '3D - near-optimal space for \n High capacity links, 2030 vs 2040',
+                markersize = 0, linewidth = 0.5,
+                # filename = filename,
+                )
+
+i = 9
+
+techs     = techs_list[i]
+solutions = case_list[i]/1000
+opt       = opt_list[i]
+
+tech_titles = ['IT' if item == 'Data' else item for item in techs]
+
+opt = [x/1000 for x in opt]
+
+gm.solutions_3D(techs, solutions, ax = ax,
+                title = f'3D - {titles[i]} - i: {i}',
+                markersize = 0, linewidth = 0.5,
+                # filename = filename,
+                )
+    
+# fig = ax.get_figure()
+    
+# fig.savefig('graphics/3D/G3_2030_vs_2040.pdf', format = 'pdf', bbox_inches='tight')
+
+
+    # ncols = 5 if len(techs_list[i]) == 4 else 4
+    
+    
+    # gm.solutions_2D(techs_list[i], case_list[i]/1000,
+    #                 tech_titles = tech_titles,
+    #                 # minmax_techs = ['P2X', 'Data'],
+    #                 n_samples = 1000_000, ncols = ncols,
+    #                 # filename = filename,
+    #                 # xlim = limits, ylim = limits,
+    #                 title = titles[i],
+    #                 opt_system = opt,
+    #                 cheb = True, 
+    #                     # show_cheb_radius = True,
+    #                 show_minmax = True,
+    #                 )
+
+#%% Export 3D Models
+# 3D cases: 0, 1, 2, 3,   5, 6,   8, 9
+
+import numpy as np
+from scipy.spatial import ConvexHull
+
+for case_number in [0, 1, 2, 3, 5, 6, 8, 9]:
+    solutions = case_list[case_number]
+    
+    gm.generate_3D_model(solutions, f'3D_models/output_{case_number}.stl')
+
+#%% 
+
+i = 6
+
+techs     = techs_list[i]
+solutions = case_list[i]/1000
+opt       = opt_list[i]
+
+tech_titles = ['IT' if item == 'Data' else item for item in techs]
+
+opt = [x/1000 for x in opt]
+
+ax = gm.solutions_3D(techs, solutions,
+                title = f'3D',
+                opt = opt,
+                markersize = 0, linewidth = 0.5,
+                # filename = filename,
+                )
+
+
+
 
 
 

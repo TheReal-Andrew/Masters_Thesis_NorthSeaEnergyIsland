@@ -25,6 +25,8 @@ import pypsa_diagrams as pdiag
 
 gm.set_plot_options()
 
+colors = gm.get_color_codes()
+
 #%% Import data
 
 techs = ['P2X', 'Data', 'Storage']
@@ -49,51 +51,23 @@ for tech in techs:
         
         df_dict[key] = sol_df
         
-        
-#%%
-import cdd as pcdd
-from scipy.spatial import ConvexHull
 
-tech = 'Data'
-
-sol1 = df_dict[(tech, 0.8)].values
-sol2 = df_dict[(tech, 1)].values
-
-intersection = gm.get_intersection(sol1, sol2)
-
-xlim = [0, sol2[:,0].max()]
-ylim = [0, sol2[:,1].max()]
-zlim = [0, sol2[:,2].max()]
-
-gm.solutions_3D(techs, sol1, markersize = 2, linewidth = 2,
-                xlim = xlim, ylim = ylim, zlim = zlim)
-gm.solutions_3D(techs, sol2, markersize = 2, linewidth = 2,
-                xlim = xlim, ylim = ylim, zlim = zlim)
-
-gm.solutions_3D(techs, intersection, markersize = 2, linewidth = 2,
-                xlim = xlim, ylim = ylim, zlim = zlim)
-
-# gm.solutions_2D(techs, sol1,
-#                 xlim = [0, 3500], ylim = [0, 6000])
-# gm.solutions_2D(techs, sol2,
-#                 xlim = [0, 3500], ylim = [0, 6000])
-# gm.solutions_2D(techs, intersection,
-#                 xlim = [0, 3500], ylim = [0, 6000])
-
-#%%
+#%% 
 
 cmap = plt.get_cmap('viridis')
 vmin = 0.5
 vmax = 1.5
-
-# plt.figure()
-# fig, axs = plt.subplots(2, 2, figsize = (10, 10),)
 
 # Loop through techs
 for sensitivity_tech in techs:
     
     plt.figure()
     fig, axs = plt.subplots(2, 2, figsize = (10, 10),)
+    
+    axs[0,1].set_visible(False)
+    
+    fig.suptitle(f'MAA sensitivity analysis of {sensitivity_tech} capital cost',
+                 y = 0.925)
 
     # Loop through axes
     for j in range(len(techs)-1):
@@ -112,10 +86,42 @@ for sensitivity_tech in techs:
                     
                 p = round(p, 1)
                 p_norm = (p - vmin) / (vmax - vmin)
+                
+                color = 'tab:red' if p == 0.5 else cmap(p_norm) 
+                zorder = 1 if p == 0.5 else 0
+                
                 gm.MAA_density_for_vars(techs, df_dict[(sensitivity_tech, p)].values, [tech0, tech1],
                                         density = False, show_legend = False,
-                                        cheb = cheb,
-                                        polycolor = cmap(p_norm), ax = ax)
+                                        cheb = cheb, zorder = zorder,
+                                        polycolor = color, ax = ax)
 
+
+#%% Minimum areas to overlap
+
+# Get solutions
+P2X_min   = df_dict[('P2X', 1.5)]
+IT_min    = df_dict[('Data', 0.5)]
+Store_min = df_dict[('Storage', 1.5)]
+
+# New plot
+plt.figure()
+fig, axs = plt.subplots(2, 2, figsize = (10, 10))
+axs[0,1].set_visible(False)
+
+for j in range(len(techs)-1):
+    for i in range(j+1):
+        
+        ax = axs[j][i]
+        tech0 = techs[i]
+        tech1 = techs[j+1]
+        
+        k = 0
+        for sol in [P2X_min, IT_min, Store_min]:
+            gm.MAA_density_for_vars(techs, sol.values, [tech0, tech1],
+                                    density = False, show_legend = False,
+                                    ax = ax, polycolor = colors[techs[k]]
+                                    )
+            
+            k += 1
 
         

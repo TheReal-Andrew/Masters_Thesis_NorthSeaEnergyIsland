@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Mon May 15 15:28:16 2023
 
@@ -110,35 +110,70 @@ prices = pd.DataFrame({'2030 price': island_price_30.copy().reset_index(drop = T
                       )
 # prices = remove_outliers2(prices, prices.columns, 0)
 
+prices_raw = prices.copy()
+
 rent_df = pd.DataFrame({'2030':rent_30,
                         '2040':rent_40},
                        )
 
 #%% plot prices
-from tabulate import tabulate
+
+fig, axs = plt.subplots(2, 1, figsize = (15,5))
+fig.subplots_adjust(hspace = 0.7)
+
+prices = prices_raw.copy()
 
 filename = 'island_electricity_prices.pdf'
 
-fig, axs = plt.subplots(2, 1, figsize = (15,5))
+date30 = pd.date_range(start = '2030-01-01 00:00:00', 
+                       end = '2030-12-31 23:00:00', 
+                       freq='H')
 
-prices['2030 price'].plot(ax = axs[0])
+date40 = pd.date_range(start = '2041-01-01 00:00:00', 
+                       end = '2041-12-31 23:00:00', 
+                       freq='H')
 
-prices['2040 price'].plot(ax = axs[1], color = 'tab:blue')
+
+for i in [0, 2, 3]:
+    prices = gm.remove_outliers(prices, ['2040 price', '2030 price'], i)
+
+data30 = prices['2030 price']
+data30.index = date30
+# data30 = data30.to_frame()
+
+data40 = prices['2040 price']
+data40.index = date40
+# data40 = data40.to_frame()
+
+data30 = data30.resample('D').mean()
+data40 = data40.resample('D').mean()
+
+#
+data30.plot(ax = axs[0])
+data40.plot(ax = axs[1], color = 'tab:blue')
+
+for ax in axs:
+    ax.set_ylim([0, 200])
+    ax.set_yticks([0, 50, 100, 150, 200])
+    ax.set(ylabel = 'Price [EUR/MW]',
+            xlabel = 'Time [Day]',
+            )
 
 fig.legend(loc = 'center',
-           bbox_to_anchor = (0.5, -0.05),
+           bbox_to_anchor = (0.5, -0.1),
           ncols = 2,
           fancybox=False, shadow=False,)
 
-for ax, year in zip(axs, [2030, 2040]):
-    ax.set(ylabel = 'Price [EUR/MW]',
-            xlabel = 'Time [hr]',
-            # title = f'{year}',
-            )
+fig.suptitle('Electricity price on the energy island in 2030 and 2040')
 
-fig.suptitle('Electricity price on the energy island')
+fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
 
-# fig.savefig('graphics/'+filename, format = 'pdf', bbox_inches='tight')
+#%% price statistics
+stats = prices[['2030 price', '2040 price']].describe()
+
+# print stats to latex
+
+print(stats.T[['mean', 'std', 'min', 'max']].to_latex())
 
 #%% Adjusted objective values with and without area constraint
 
@@ -269,9 +304,9 @@ values = []
 totals = []
 n      = n_2040_nac
 year   = 2040
-title  = f'{year} optimal system without area constraint'
+title  = f'Unconstrained area: {year} optimal system'
 
-filename = f'waffle_{year}_area_capacity.pdf' 
+filename = f'waffle_{year}_nac_area_capacity.pdf' 
 
 col = gm.get_color_codes()
 col_a = [col['P2X'], col['Data'], col['Storage']]
@@ -308,8 +343,8 @@ fig = plt.figure(
     plots = {
             311: {
                  'values': val_a,
-                 'title':  {'label': f'Area use distribution - Area available: {round(total_a)} $m^2$', 'loc': 'left'},
-                 'labels': [f"{k} ({int(v)}%) \n {round(v/100*total_a)} $m^2$" for k, v in val_a.items()],
+                 'title':  {'label': f'Area use distribution - Area available: {int(round(total_a,-3))} $m^2$', 'loc': 'left'},
+                 'labels': [f"{k} ({round(v,2)}%) \n {int(round(v/100*total_a, -3))} $m^2$" for k, v in val_a.items()],
                  'legend': {'loc': 'lower left', 'bbox_to_anchor': (0, -0.325), 'ncol': len(val_a), 'framealpha': 0},
                  'colors': col_a,
                   },
@@ -406,25 +441,49 @@ year = 2040
 nac  = True
 filename = f'{year}_nac_link_histograms.pdf'
 
+fig, axs = plt.subplots(3, 2, figsize = (20,10))
+fig.subplots_adjust(hspace = 0.6)
+
+axs = axs.ravel()
+
+cols = gm.get_color_codes()
 flow = gm.get_link_flow(n)
 
 if nac == True:
     flow = flow[['Denmark', 'Norway']]
     v = 3.33
+    
+    fig.delaxes(axs[5])
+    fig.delaxes(axs[4])
+    fig.delaxes(axs[3])
+    fig.delaxes(axs[2])
+    
 elif year == 2040:
     flow = flow.drop(['Belgium', 'United Kingdom'], axis = 1)
     v = 6.66
+    colors = [cols['DK'], cols['NO'], cols['DE'], cols['NL']]
+    fig.delaxes(axs[5])
+    fig.delaxes(axs[4])
 elif year == 2030:
     flow = flow.drop('Germany', axis = 1)
     v = 10
+    colors = [cols['DK'], cols['NO'], cols['NL'], cols['BE'], cols['GB']]
+    # axs[5].set_visible(False)
+    fig.delaxes(axs[5])
+    
+    # Get the position of the fifth plot
+    position = axs[4].get_position()
+    axs[4].set_position([0.32, 0.12, position.width, position.height])
 
-axs = flow.hist(figsize = (20, v), bins = 100)
-
-axs = axs.ravel()
+i = 0
+for ax, country in zip(axs, flow.keys()):
+    flow[country].hist(ax = ax, bins = 100,
+                       color = colors[i])
+    ax.set_title(country)
+    i += 1
 
 fig = axs[0].get_figure()
-fig.subplots_adjust(hspace = 0.7)
-fig.suptitle(f'{year} - Link histograms for unconstrained case', fontsize = 30, y = 1.1)
+fig.suptitle(f'{year} - Link histograms, unconstrained area', fontsize = 30, y = 0.95)
 
 for ax in axs:
     ax.set_xlabel('Power flow [MW]')
